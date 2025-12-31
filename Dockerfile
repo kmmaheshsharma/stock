@@ -1,25 +1,25 @@
-# Cache bust: blank line
-# Force rebuild: cache bust comment
 FROM python:3.11-slim
 
-# Install python explicitly
-RUN apt-get update && apt-get install -y curl \
+# Install Node.js
+RUN apt-get update && apt-get install -y curl build-essential \
     && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y nodejs build-essential
+    && apt-get install -y nodejs \
+    && apt-get clean
 
-WORKDIR /app
+# 👇 IMPORTANT
+WORKDIR /app/node
 
-COPY node/package*.json ./node/
-COPY python/requirements.txt ./python/
-ARG CACHEBUST=20251228_3
+# Copy Node files
+COPY node/package*.json ./
 RUN npm install --omit=dev
-COPY . .
-# Debug: print pip version before install
-RUN pip --version
-# Install Python dependencies after all files are copied
+
+# Copy rest of Node app
+COPY node/ ./
+
+# (Optional) Python
+WORKDIR /app
+COPY python/requirements.txt ./python/
 RUN pip install -r python/requirements.txt
-# Debug: print pip version after install
-RUN pip --version
 
 ENV PORT=3000
 EXPOSE 3000
