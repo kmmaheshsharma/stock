@@ -1,8 +1,6 @@
 
 import os
 from dotenv import load_dotenv
-#dotenv_path = os.path.abspath("../node/.env")  # adjust if needed
-#load_dotenv(dotenv_path)
 load_dotenv()
 import psycopg2
 from sentiment import sentiment_for_symbol
