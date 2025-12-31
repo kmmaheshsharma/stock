@@ -16,6 +16,7 @@ RUN python3 -m pip install --upgrade pip \
     && python3 -m pip install -r ./python/requirements.txt
 
 # Copy rest of project
+COPY .env .env
 COPY . .
 
 CMD ["node", "node/alerts.js"]
