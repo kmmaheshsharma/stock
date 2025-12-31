@@ -18,4 +18,4 @@ RUN python3 -m pip install --upgrade pip \
 # Copy rest of project
 COPY . .
 
-CMD ["node", "alerts.js"]  # Or whatever your start command is
+CMD ["node", "node/alerts.js"]
