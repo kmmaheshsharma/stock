@@ -1,0 +1,12 @@
+# Node
+node/node_modules/
+
+# Python
+python/__pycache__/
+python/*.pyc
+
+# Charts (runtime generated)
+node/chart/*.png
+
+# Env
+node/.env
