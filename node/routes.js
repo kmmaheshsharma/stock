@@ -116,7 +116,7 @@ async function runPythonEngine(args, phone = null) {
   if (typeof args === "string") args = [args]; // ensure args is array
 
   return new Promise((resolve) => {
-    const proc = spawn("python", args, { cwd: __dirname });
+    const proc = spawn("python3", args, { cwd: __dirname });
 
     let out = "", err = "";
     proc.stdout.on("data", d => out += d);

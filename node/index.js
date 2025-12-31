@@ -13,7 +13,7 @@ const { runAlerts } = require("./alerts");
 // ================= SENTIMENT UPDATE =================
 function updateSentiment(symbol) {
   const args = [path.join(__dirname, "../python/update_sentiment.py"), symbol];
-  const proc = spawn("python", args, { env: process.env });
+  const proc = spawn("python3", args, { env: process.env });
 
   let out = "";
   let err = "";
@@ -64,11 +64,12 @@ runSentimentCron();
 // ================= EXPRESS =================
 const app = express();
 app.use(bodyParser.json());
-
+ console.log("VERIFY_TOKEN:", process.env.VERIFY_TOKEN);
 /**
  * ✅ META WEBHOOK VERIFICATION (GET)
  */
 app.get("/webhook", (req, res) => {
+ 
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
