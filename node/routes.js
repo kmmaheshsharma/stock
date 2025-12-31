@@ -123,7 +123,7 @@ async function runPythonEngine(args, phone = null) {
     proc.stderr.on("data", d => err += d);
 
     proc.on("close", async () => {
-      if (err) console.error(`[ALERTS] Python stderr: ${err}`);
+      if (err) console.error(err); // keep only critical errors
       try {
         const result = JSON.parse(out);
 
@@ -131,7 +131,7 @@ async function runPythonEngine(args, phone = null) {
 
         resolve(result);
       } catch (e) {
-        console.error("[ALERTS] Failed to parse Python output:", e, out);
+        console.error("Failed to parse Python output:", e, out);
         if (phone) {
           await sendWhatsApp(phone, "❌ Could not fetch stock data. Please check symbol or try later.");
         }
@@ -150,10 +150,9 @@ async function addToPortfolio(userId, symbol, entryPrice, quantity) {
        RETURNING *`,
       [userId, symbol.toUpperCase(), entryPrice, quantity]
     );
-    console.log(`[PORTFOLIO] Added:`, res.rows[0]);
     return res.rows[0];
   } catch (err) {
-    console.error("[PORTFOLIO] Failed to add entry:", err);
+    console.error("Failed to add portfolio entry:", err);
     throw err;
   }
 }
@@ -165,26 +164,25 @@ exports.handleMessage = async (req, res) => {
 
   const phone = msg.from;
   const text = msg.text?.body?.toUpperCase();
-  console.log(`[ROUTES] Incoming message from ${phone}: ${text}`);
 
   const userId = await getOrCreateUser(phone);
-  console.log(`[ROUTES] User ID for phone ${phone}: ${userId}`);
 
   // --- Welcome / first-time instruction ---
-if (!text || text === "HI" || text === "HELLO") {
-  await sendWhatsApp(phone,
-    "🌟👋 *Welcome to StockBot!* 👋🌟\n\n" +
-    "💹 Track your stocks, manage your portfolio, and get smart recommendations in real-time.\n\n" +
-    "📚 *Commands you can use:*\n" +
-    "• 📌 Show my *watchlist* (example: type `Show my watchlist`)\n" +
-    "• 📊 Show my *portfolio* (example: type `Show my portfolio`)\n" +
-    "• ➕ Track a stock: *TRACK SYMBOL* (example: `TRACK IFL`)\n" +
-    "• 💰 Buy: *BUY SYMBOL ENTRY_PRICE QUANTITY* (example: `BUY IFL 1574 10`)\n" +
-    "• 📉 Sell: *SELL SYMBOL EXIT_PRICE* (example: `SELL IFL 1600`)\n" +
-    "• 🔎 Or just send a stock symbol like *IFL* or *KPIGREEN* to get instant updates"
-  );
-  return res.sendStatus(200);
-}
+  if (!text || text === "HI" || text === "HELLO") {
+    await sendWhatsApp(phone,
+      "🌟👋 *Welcome to StockBot!* 👋🌟\n\n" +
+      "💹 Track your stocks, manage your portfolio, and get smart recommendations in real-time.\n\n" +
+      "📚 *Commands you can use:*\n" +
+      "• 📌 Show my *watchlist* (example: type `Show my watchlist`)\n" +
+      "• 📊 Show my *portfolio* (example: type `Show my portfolio`)\n" +
+      "• ➕ Track a stock: *TRACK SYMBOL* (example: `TRACK IFL`)\n" +
+      "• 💰 Buy: *BUY SYMBOL ENTRY_PRICE QUANTITY* (example: `BUY IFL 1574 10`)\n" +
+      "• 📉 Sell: *SELL SYMBOL EXIT_PRICE* (example: `SELL IFL 1600`)\n" +
+      "• 🔎 Or just send a stock symbol like *IFL* or *KPIGREEN* to get instant updates"
+    );
+    return res.sendStatus(200);
+  }
+
   const intent = detectIntent(text);
 
   switch(intent) {
