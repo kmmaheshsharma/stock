@@ -15,7 +15,7 @@ exports.sendWhatsApp = async (to, message) => {
     },
     {
       headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
         "Content-Type": "application/json"
       }
     }
@@ -37,7 +37,7 @@ exports.sendWhatsAppImage = async (to, imagePath, caption = "") => {
     form,
     {
       headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
         ...form.getHeaders()
       }
     }
@@ -59,7 +59,7 @@ exports.sendWhatsAppImage = async (to, imagePath, caption = "") => {
     },
     {
       headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
         "Content-Type": "application/json"
       }
     }
