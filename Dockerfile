@@ -1,28 +1,28 @@
 FROM node:22-bullseye
 
-# Install Python
-RUN apt-get update \
-  && apt-get install -y python3 python3-pip \
-  && ln -sf /usr/bin/python3 /usr/bin/python \
-  && python3 --version
+# ---- Install Python 3.11 ----
+RUN apt-get update && apt-get install -y \
+    software-properties-common \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update && apt-get install -y \
+    python3.11 python3.11-distutils python3-pip \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python \
+    && python --version
 
-# App root
 WORKDIR /app
 
-# Copy Node package files FIRST
+# ---- Node deps ----
 COPY node/package*.json ./node/
-
-# Install Node deps inside /node
 RUN cd node && npm install --omit=dev
 
-# Copy full source
+# ---- App source ----
 COPY . .
 
-# Install Python deps
-RUN pip install -r python/requirements.txt
+# ---- Python deps ----
+RUN pip install --upgrade pip \
+    && pip install -r python/requirements.txt
 
 ENV PORT=3000
 EXPOSE 3000
 
-# 🔥 IMPORTANT: run index.js from node folder
 CMD ["node", "node/index.js"]

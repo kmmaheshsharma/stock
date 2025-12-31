@@ -1,0 +1,6 @@
+yfinance
+pandas
+nltk
+vaderSentiment
+python-dotenv
+
