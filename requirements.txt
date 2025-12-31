@@ -1,6 +1,6 @@
-yfinance
-pandas
-nltk
-vaderSentiment
 python-dotenv
-
+matplotlib
+yfinance
+requests
+pandas
+numpy
