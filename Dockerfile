@@ -21,4 +21,4 @@ RUN pip install -r python/requirements.txt
 ENV PORT=3000
 EXPOSE 3000
 
-CMD ["node", "index.js"]
+CMD ["node", "node/index.js"]
