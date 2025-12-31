@@ -14,6 +14,10 @@ RUN npm install --omit=dev
 
 COPY node/ ./
 
+WORKDIR /app
+COPY python/requirements.txt ./python/
+RUN pip install -r python/requirements.txt
+
 ENV PORT=3000
 EXPOSE 3000
 
