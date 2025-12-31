@@ -8,14 +8,14 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Node deps
-COPY package*.json ./
+COPY node/package*.json ./
 RUN npm install --omit=dev
 
 # App code
 COPY . .
 
 # Python deps
-RUN pip install -r ../python/requirements.txt
+RUN pip install -r python/requirements.txt
 
 ENV PORT=3000
 EXPOSE 3000
