@@ -2,7 +2,9 @@ yfinance
 pandas
 nltk
 vaderSentiment
-python-dotenv
 matplotlib
 requests
 numpy
+python-dotenv
+psycopg2-binary
+
