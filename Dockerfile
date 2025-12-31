@@ -1,29 +1,25 @@
-# ---- Base: Python 3.11 (guaranteed compatible with yfinance) ----
 FROM python:3.11-slim
 
-# ---- Install Node.js 22 ----
-RUN apt-get update && apt-get install -y curl \
-  && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-  && apt-get install -y nodejs \
-  && node --version \
-  && python --version
+# Install Node and dependencies
+RUN apt-get update && apt-get install -y curl build-essential \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs python3-dev python3-pip
 
-# ---- App directory ----
 WORKDIR /app
 
-# ---- Node dependencies ----
+# Copy Node files and install dependencies
 COPY node/package*.json ./node/
 RUN cd node && npm install --omit=dev
 
-# ---- Python dependencies ----
+# Copy Python requirements and install for python3
 COPY python/requirements.txt ./python/
-RUN pip install --upgrade pip \
-  && pip install -r python/requirements.txt
+RUN python3 -m pip install --upgrade pip \
+    && python3 -m pip install -r python/requirements.txt
 
-# ---- App source ----
+# Copy rest of project
 COPY . .
 
-ENV PORT=3000
-EXPOSE 3000
+# Optional: make 'python' point to 'python3' for Node scripts
+RUN ln -s /usr/local/bin/python3 /usr/local/bin/python
 
-CMD ["node", "node/index.js"]
+CMD ["node", "alerts.js"]
