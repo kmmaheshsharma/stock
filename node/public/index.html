@@ -3,21 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My PWA App</title>
-  <link rel="stylesheet" href="/style.css">
+  <title>NoBroko WhatsApp Bot</title>
+
+  <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0d6efd">
+
+  <!-- Theme colors for PWA -->
+  <meta name="theme-color" content="#0a74da">
+
+  <!-- Fallback icons for mobile -->
+  <link rel="icon" href="/icons/icon-192x192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <h1>Welcome to My PWA!</h1>
-  <p>This is your WhatsApp bot PWA front-end.</p>
+  <div id="app">
+    <h1>NoBroko WhatsApp Bot</h1>
+    <p>Real-time stock alerts, sentiment updates & portfolio tracking.</p>
 
-  <script src="/bundle.js"></script>
+    <button id="test-alert">Test Alert</button>
+    <div id="alerts"></div>
+  </div>
+
+  <script src="/main.js"></script>
+
+  <!-- Register Service Worker -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js')
-        .then(reg => console.log('Service Worker registered', reg))
-        .catch(err => console.log('Service Worker failed', err));
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('Service Worker registered:', reg))
+          .catch(err => console.error('Service Worker registration failed:', err));
+      });
     }
   </script>
 </body>
