@@ -24,7 +24,7 @@ COPY node/package*.json ./
 
 RUN npm install --omit=dev
 
-# Copy rest of Node app
+# Copy rest of Node app (includes public/)
 COPY node/ ./
 
 # =========================
@@ -32,7 +32,7 @@ COPY node/ ./
 # =========================
 WORKDIR /app
 
-# Copy FULL python folder (IMPORTANT)
+# Copy FULL python folder
 COPY python/ ./python/
 
 RUN pip install --no-cache-dir -r python/requirements.txt
@@ -43,7 +43,10 @@ RUN pip install --no-cache-dir -r python/requirements.txt
 ENV PORT=3000
 EXPOSE 3000
 
+# 🔥 VERY IMPORTANT FIX
+WORKDIR /app/node
+
 # =========================
 # Start Node app
 # =========================
-CMD ["node", "node/index.js"]
+CMD ["node", "index.js"]
