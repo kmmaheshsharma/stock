@@ -24,6 +24,7 @@ form.addEventListener("submit", async (e) => {
 
   appendMessage("You", msg);
   input.value = "";
+  input.disabled = true;
 
   try {
     const res = await fetch("/api/chat", {
@@ -32,10 +33,12 @@ form.addEventListener("submit", async (e) => {
       body: JSON.stringify({ message: msg })
     });
     const data = await res.json();
-    appendMessage("Bot", data.reply);
+    appendMessage("Bot", data.reply || "⚠️ No response from server");
   } catch (err) {
     appendMessage("Bot", "⚠️ Error fetching response");
     console.error(err);
+  } finally {
+    input.disabled = false;
   }
 });
 
@@ -52,7 +55,7 @@ async function loadSentiments() {
       card.innerHTML = `
         <strong>${stock.symbol}</strong><br>
         Sentiment: <strong style="color:${getColor(stock.sentiment)}">${stock.sentiment}</strong>
-        <div class="progress-bar"><div class="indicator" style="left:${stock.percent}%"></div></div>
+        <div class="progress-bar"><div class="indicator" style="width:${stock.percent ?? 50}%"></div></div>
         ${stock.change} | ${stock.trend}
       `;
       cardsEl.appendChild(card);
@@ -70,9 +73,11 @@ function getColor(sentiment) {
 
 // Initial load + refresh every 30s
 loadSentiments();
-setInterval(loadSentiments, 30000);
+setInterval(() => loadSentiments().catch(err => console.error(err)), 30000);
 
 // Register service worker
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js").then(() => console.log("Service Worker registered"));
+  navigator.serviceWorker.register("sw.js")
+    .then(() => console.log("Service Worker registered"))
+    .catch(err => console.error("Service Worker registration failed:", err));
 }
