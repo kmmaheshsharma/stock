@@ -172,58 +172,63 @@ exports.handleChat = async (req, res) => {
       }
 
       case "SYMBOL": {
-      const symbolQuery = text.toUpperCase();
-      const result = await processMessage(symbolQuery);
+      try
+      {
+        const symbolQuery = text.toUpperCase();
+        const result = await processMessage(symbolQuery);
 
-      if (typeof result === "object" && result.symbol) {
-        let msgText = `📊 *${result.symbol}* Update\n\n`;
-        msgText += `💰 Price: ₹${result.price}\n`;
-        if (result.low && result.high) msgText += `📉 Low / 📈 High: ₹${result.low} / ₹${result.high}\n`;
-        if (result.volume && result.avg_volume) {
-          const volEmoji = result.volume > result.avg_volume ? "📈" : "📉";
-          msgText += `${volEmoji} Volume: ${result.volume} | Avg: ${result.avg_volume.toFixed(0)}\n`;
-        }
-        if (result.change_percent !== undefined) {
-          const changeEmoji = result.change_percent > 0 ? "🔺" : (result.change_percent < 0 ? "🔻" : "➖");
-          msgText += `${changeEmoji} Change: ${result.change_percent.toFixed(2)}%\n`;
-        }
-
-        let sentimentEmoji = "🧠";
-        if (result.sentiment_type === "accumulation") sentimentEmoji = "🟢";
-        if (result.sentiment_type === "distribution") sentimentEmoji = "🔴";
-        if (result.sentiment_type === "hype") sentimentEmoji = "🚀";
-        msgText += `${sentimentEmoji} Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "UNKNOWN"} (${result.sentiment ?? 0})\n\n`;
-
-        let recommendation = result.recommendation || "Wait / Monitor";
-        if (result.suggested_entry) {
-          const lower = result.suggested_entry.lower;
-          const upper = result.suggested_entry.upper;
-          recommendation += ` | Suggested entry: ₹${lower} - ₹${upper}`;
-        }
-        msgText += `⚡ Recommendation: *${recommendation}*\n`;
-
-        if (!result.alerts || result.alerts.length === 0) msgText += `⚠️ No strong signal yet\n📌 Stock is in watch mode`;
-        else {
-          msgText += `🚨 Alerts:\n`;
-          for (const alert of result.alerts) {
-            if (alert === "buy_signal") msgText += `• 🟢 Accumulation detected\n`;
-            if (alert === "trap_warning") msgText += `• 🚨 Hype trap risk\n`;
-            if (alert === "invalid_symbol") msgText += `• ❌ Invalid symbol\n`;
-            if (alert === "error") msgText += `• ⚠️ Error fetching data\n`;
+        if (typeof result === "object" && result.symbol) {
+          let msgText = `📊 *${result.symbol}* Update\n\n`;
+          msgText += `💰 Price: ₹${result.price}\n`;
+          if (result.low && result.high) msgText += `📉 Low / 📈 High: ₹${result.low} / ₹${result.high}\n`;
+          if (result.volume && result.avg_volume) {
+            const volEmoji = result.volume > result.avg_volume ? "📈" : "📉";
+            msgText += `${volEmoji} Volume: ${result.volume} | Avg: ${result.avg_volume.toFixed(0)}\n`;
           }
-        }
-        return res.json({
-          text: msgText,
-          chart: result.chart || null
-        });
-      } else {
-          return {
-            text: "❌ Unable to fetch stock data",
-            chart: null
-          };
-      }    
+          if (result.change_percent !== undefined) {
+            const changeEmoji = result.change_percent > 0 ? "🔺" : (result.change_percent < 0 ? "🔻" : "➖");
+            msgText += `${changeEmoji} Change: ${result.change_percent.toFixed(2)}%\n`;
+          }
 
-    }
+          let sentimentEmoji = "🧠";
+          if (result.sentiment_type === "accumulation") sentimentEmoji = "🟢";
+          if (result.sentiment_type === "distribution") sentimentEmoji = "🔴";
+          if (result.sentiment_type === "hype") sentimentEmoji = "🚀";
+          msgText += `${sentimentEmoji} Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "UNKNOWN"} (${result.sentiment ?? 0})\n\n`;
+
+          let recommendation = result.recommendation || "Wait / Monitor";
+          if (result.suggested_entry) {
+            const lower = result.suggested_entry.lower;
+            const upper = result.suggested_entry.upper;
+            recommendation += ` | Suggested entry: ₹${lower} - ₹${upper}`;
+          }
+          msgText += `⚡ Recommendation: *${recommendation}*\n`;
+
+          if (!result.alerts || result.alerts.length === 0) msgText += `⚠️ No strong signal yet\n📌 Stock is in watch mode`;
+          else {
+            msgText += `🚨 Alerts:\n`;
+            for (const alert of result.alerts) {
+              if (alert === "buy_signal") msgText += `• 🟢 Accumulation detected\n`;
+              if (alert === "trap_warning") msgText += `• 🚨 Hype trap risk\n`;
+              if (alert === "invalid_symbol") msgText += `• ❌ Invalid symbol\n`;
+              if (alert === "error") msgText += `• ⚠️ Error fetching data\n`;
+            }
+          }
+          return res.json({
+            text: msgText,
+            chart: result.chart || null
+          });
+        } else {
+            return {
+              text: "❌ Unable to fetch stock data",
+              chart: null
+            };
+        }    
+      } catch (err) {
+          console.error("Error in SYMBOL case:", err);
+          return res.json({ text: "❌ Error fetching stock data", chart: null });
+        }
+      }
     default:
        return res.json({
          text:
