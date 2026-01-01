@@ -64,6 +64,13 @@ exports.handleMessage = async (req, res) => {
 
   const phone = msg.from;
   const text = msg.text?.body?.trim();
+
+  // --- Ignore WhatsApp sandbox test messages ---
+  if (text && text.toLowerCase().includes("test")) {
+    console.log("Ignored WhatsApp sandbox test message");
+    return res.sendStatus(200);
+  }
+
   const userId = await getOrCreateUser(phone);
 
   // --- Handle greetings directly ---
@@ -156,11 +163,9 @@ exports.handleMessage = async (req, res) => {
 
     case "SYMBOL": {
       const symbolQuery = text.toUpperCase();
-      // --- Use processMessage to get Python JSON output ---
       const result = await processMessage(symbolQuery);
 
       if (typeof result === "object" && result.symbol) {
-        // Build text message from Python result
         let msgText = `📊 *${result.symbol}* Update\n\n`;
         msgText += `💰 Price: ₹${result.price}\n`;
         if (result.low && result.high) msgText += `📉 Low / 📈 High: ₹${result.low} / ₹${result.high}\n`;
@@ -200,13 +205,11 @@ exports.handleMessage = async (req, res) => {
 
         await sendWhatsApp(phone, msgText);
 
-        // Send chart image if available
         if (result.chart) {
           await sendWhatsAppImage(phone, result.chart, `📊 ${result.symbol} Price Chart`);
         }
 
       } else {
-        // Fallback plain text
         await sendWhatsApp(phone, result || "❌ Could not fetch stock info. Try again later.");
       }
       break;
