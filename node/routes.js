@@ -67,16 +67,19 @@ exports.handleChat = async (req, res) => {
     // ---------- GREETING ----------
     const greetings = ["hi", "hello", "hey", "hii"];
     if (greetings.includes(text.toLowerCase())) {
-      const welcomeMsg =
-      "🌟👋 *Welcome to StockBot!* 👋🌟\n\n" +
-      "💹 Track your stocks, manage your portfolio, and get smart recommendations in real-time.\n\n" +
-      "📚 *Commands you can use:*\n" +
-      "• 📌 Show my *watchlist* (example: type `Show my watchlist`)\n" +
-      "• 📊 Show my *portfolio* (example: type `Show my portfolio`)\n" +
-      "• ➕ Track a stock: *TRACK SYMBOL* (example: `TRACK IFL`)\n" +
-      "• 💰 Buy: *BUY SYMBOL ENTRY_PRICE QUANTITY* (example: `BUY IFL 1574 10`)\n" +
-      "• 📉 Sell: *SELL SYMBOL EXIT_PRICE* (example: `SELL IFL 1600`)\n" +
-      "• 🔎 Or just send a stock symbol like *IFL* or *KPIGREEN* to get instant updates";
+      const welcomeMsg = `
+      🌟👋 *Welcome to StockBot!* 👋🌟
+
+      💹 Track your stocks, manage your portfolio, and get smart recommendations in real-time.
+
+      📚 *Commands you can use:*
+      • 📌 Show my *watchlist* (example: type \`Show my watchlist\`)
+      • 📊 Show my *portfolio* (example: type \`Show my portfolio\`)
+      • ➕ Track a stock: *TRACK SYMBOL* (example: \`TRACK IFL\`)
+      • 💰 Buy: *BUY SYMBOL ENTRY_PRICE QUANTITY* (example: \`BUY IFL 1574 10\`)
+      • 📉 Sell: *SELL SYMBOL EXIT_PRICE* (example: \`SELL IFL 1600\`)
+      • 🔎 Or just send a stock symbol like *IFL* or *KPIGREEN* to get instant updates
+      `;
       return res.json({
         text: welcomeMsg,
         chart: null
@@ -171,20 +174,32 @@ exports.handleChat = async (req, res) => {
         });
       }
 
-      case "SYMBOL": {
-      try
-      {
-        const symbolQuery = text.toUpperCase();
-        const result = await processMessage(symbolQuery);
+     case "SYMBOL": {
+        try {
+          const symbolQuery = text.toUpperCase();
+          console.log(`[SYMBOL] Request received for symbol: ${symbolQuery}`);
 
-        if (typeof result === "object" && result.symbol) {
+          const result = await processMessage(symbolQuery);
+          console.log(`[SYMBOL] processMessage result:`, result);
+
+          // Check if result is valid
+          if (!result || typeof result !== "object" || !result.symbol) {
+            console.warn(`[SYMBOL] Invalid or empty result for symbol: ${symbolQuery}`);
+            return res.json({
+              text: "❌ Unable to fetch stock data",
+              chart: null
+            });
+          }
+
           let msgText = `📊 *${result.symbol}* Update\n\n`;
-          msgText += `💰 Price: ₹${result.price}\n`;
+          msgText += `💰 Price: ₹${result.price ?? "N/A"}\n`;
           if (result.low && result.high) msgText += `📉 Low / 📈 High: ₹${result.low} / ₹${result.high}\n`;
+
           if (result.volume && result.avg_volume) {
             const volEmoji = result.volume > result.avg_volume ? "📈" : "📉";
             msgText += `${volEmoji} Volume: ${result.volume} | Avg: ${result.avg_volume.toFixed(0)}\n`;
           }
+
           if (result.change_percent !== undefined) {
             const changeEmoji = result.change_percent > 0 ? "🔺" : (result.change_percent < 0 ? "🔻" : "➖");
             msgText += `${changeEmoji} Change: ${result.change_percent.toFixed(2)}%\n`;
@@ -198,14 +213,15 @@ exports.handleChat = async (req, res) => {
 
           let recommendation = result.recommendation || "Wait / Monitor";
           if (result.suggested_entry) {
-            const lower = result.suggested_entry.lower;
-            const upper = result.suggested_entry.upper;
+            const lower = result.suggested_entry.lower ?? "N/A";
+            const upper = result.suggested_entry.upper ?? "N/A";
             recommendation += ` | Suggested entry: ₹${lower} - ₹${upper}`;
           }
           msgText += `⚡ Recommendation: *${recommendation}*\n`;
 
-          if (!result.alerts || result.alerts.length === 0) msgText += `⚠️ No strong signal yet\n📌 Stock is in watch mode`;
-          else {
+          if (!Array.isArray(result.alerts) || result.alerts.length === 0) {
+            msgText += `⚠️ No strong signal yet\n📌 Stock is in watch mode`;
+          } else {
             msgText += `🚨 Alerts:\n`;
             for (const alert of result.alerts) {
               if (alert === "buy_signal") msgText += `• 🟢 Accumulation detected\n`;
@@ -214,21 +230,19 @@ exports.handleChat = async (req, res) => {
               if (alert === "error") msgText += `• ⚠️ Error fetching data\n`;
             }
           }
+
+          console.log(`[SYMBOL] Response prepared for symbol: ${symbolQuery}`);
           return res.json({
             text: msgText,
             chart: result.chart || null
           });
-        } else {
-            return {
-              text: "❌ Unable to fetch stock data",
-              chart: null
-            };
-        }    
-      } catch (err) {
-          console.error("Error in SYMBOL case:", err);
+
+        } catch (err) {
+          console.error(`[SYMBOL] Error processing symbol "${text}":`, err);
           return res.json({ text: "❌ Error fetching stock data", chart: null });
         }
       }
+
     default:
        return res.json({
          text:
