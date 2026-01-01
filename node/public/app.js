@@ -7,16 +7,16 @@ const cardsEl = document.getElementById("sentiment-cards");
 messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
 
-// Append chat messages
-function appendMessage(sender, text) {
+// ---------------------- Append chat messages ----------------------
+function appendMessage(sender, html) {
   const div = document.createElement("div");
   div.className = sender === "You" ? "user-msg" : "bot-msg";
-  div.textContent = text;
+  div.innerHTML = html; // render HTML instead of plain text
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-// Send chat messages
+// ---------------------- Send chat messages ----------------------
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const msg = input.value.trim();
@@ -24,7 +24,6 @@ form.addEventListener("submit", async (e) => {
 
   appendMessage("You", msg);
   input.value = "";
-  input.disabled = true;
 
   try {
     const res = await fetch("/api/chat", {
@@ -33,16 +32,15 @@ form.addEventListener("submit", async (e) => {
       body: JSON.stringify({ message: msg })
     });
     const data = await res.json();
-    appendMessage("Bot", data.reply || "⚠️ No response from server");
+    appendMessage("Bot", data.text); // use HTML text
   } catch (err) {
     appendMessage("Bot", "⚠️ Error fetching response");
     console.error(err);
-  } finally {
-    input.disabled = false;
   }
 });
 
-// Load sentiment cards
+
+// ---------------------- Load sentiment cards ----------------------
 async function loadSentiments() {
   try {
     const res = await fetch("/api/sentiments");
@@ -55,7 +53,7 @@ async function loadSentiments() {
       card.innerHTML = `
         <strong>${stock.symbol}</strong><br>
         Sentiment: <strong style="color:${getColor(stock.sentiment)}">${stock.sentiment}</strong>
-        <div class="progress-bar"><div class="indicator" style="width:${stock.percent ?? 50}%"></div></div>
+        <div class="progress-bar"><div class="indicator" style="left:${stock.percent}%"></div></div>
         ${stock.change} | ${stock.trend}
       `;
       cardsEl.appendChild(card);
@@ -65,19 +63,18 @@ async function loadSentiments() {
   }
 }
 
+// ---------------------- Sentiment color ----------------------
 function getColor(sentiment) {
   if (sentiment === "Bullish") return "green";
   if (sentiment === "Bearish") return "red";
   return "goldenrod";
 }
 
-// Initial load + refresh every 30s
+// ---------------------- Initial load & refresh ----------------------
 loadSentiments();
-setInterval(() => loadSentiments().catch(err => console.error(err)), 30000);
+setInterval(loadSentiments, 30000);
 
-// Register service worker
+// ---------------------- Service Worker ----------------------
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js")
-    .then(() => console.log("Service Worker registered"))
-    .catch(err => console.error("Service Worker registration failed:", err));
+  navigator.serviceWorker.register("sw.js").then(() => console.log("Service Worker registered"));
 }
