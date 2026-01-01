@@ -171,14 +171,24 @@ exports.handleChat = async (req, res) => {
       }
 
       case "SYMBOL": {
-        const result = await processMessage(text.toUpperCase());
+        const result = await runPythonEngine([
+          "../python/engine.py",
+          text.toUpperCase()
+        ]);
 
-        if (!result || typeof result !== "object")
-          return res.json({ text: "❌ Unable to fetch stock data", chart: null });
+        if (!result || typeof result !== "object") {
+          return {
+            text: "❌ Unable to fetch stock data",
+            chart: null
+          };
+        }
 
+        // ✅ Use formatter only (no WhatsApp sending)
         const reply = buildWhatsAppMessage(result);
-        return res.json(reply);
+
+        return reply;
       }
+
 
       default:
         return res.json({

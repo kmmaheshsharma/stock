@@ -133,7 +133,7 @@ function startBackgroundJobs() {
   console.log("⏱️ Starting background jobs");
   runSentimentCron();
   runAlerts([]); // pass empty array to avoid errors
-  setInterval(() => runAlerts([]), 1 * 60 * 1000);
+  setInterval(() => runAlerts([]), 240 * 60 * 1000);
 }
 
 // ================= SUBSCRIPTIONS (IN-MEMORY) =================
