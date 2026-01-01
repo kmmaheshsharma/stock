@@ -12,108 +12,81 @@ const { pool } = require("./db");
 const { handleMessage } = require("./routes");
 const { runAlerts } = require("./alerts");
 
-// ================= SENTIMENT UPDATE =================
-function updateSentiment(symbol) {
-  const scriptPath = path.join(__dirname, "../python/update_sentiment.py");
-  const proc = spawn("python3", [scriptPath, symbol], {
-    env: process.env,
-  });
-
-  let out = "";
-  let err = "";
-
-  proc.stdout.on("data", d => (out += d.toString()));
-  proc.stderr.on("data", d => (err += d.toString()));
-
-  proc.on("close", () => {
-    if (err) console.error(`[SENTIMENT] ${symbol} stderr:\n${err}`);
-    if (out) console.log(`[SENTIMENT] ${symbol} output:\n${out}`);
-  });
-}
-
-// ================= FETCH SYMBOLS FROM DB =================
-async function fetchSentimentSymbols() {
-  const res = await pool.query(`
-    SELECT DISTINCT symbol
-    FROM watchlist
-  `);
-
-  return res.rows.map(r => r.symbol.toUpperCase());
-}
-
-// ================= CRON RUNNER =================
-async function runSentimentCron() {
-  try {
-    const sentimentSymbols = await fetchSentimentSymbols();
-
-    if (!sentimentSymbols.length) {
-      console.log("[SENTIMENT] No symbols found in watchlist");
-      return;
-    }
-
-    for (const symbol of sentimentSymbols) {
-      updateSentiment(symbol);
-    }
-  } catch (e) {
-    console.error("[SENTIMENT] Cron failed:", e);
-  }
-}
-
-// Run sentiment cron once at startup
-runSentimentCron();
-
 // ================= EXPRESS APP =================
 const app = express();
 app.use(bodyParser.json());
 
-console.log("VERIFY_TOKEN:", process.env.VERIFY_TOKEN);
-
 // ================= PWA STATIC FILES =================
 const publicPath = path.join(__dirname, "public");
-
-// 🔎 DEBUG (keep for Railway logs)
 console.log("DIRNAME:", __dirname);
 console.log("PUBLIC PATH:", publicPath);
 
-// Serve static assets
 app.use(express.static(publicPath));
 
-// ✅ ROOT ROUTE (CRITICAL FIX)
+// ✅ ROOT ROUTE
 app.get("/", (req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
-// ================= META WEBHOOK VERIFICATION (GET) =================
+// ================= META WEBHOOK VERIFICATION =================
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  console.log("🔍 Webhook verification:", { mode, token });
-
   if (mode === "subscribe" && token === process.env.VERIFY_TOKEN) {
-    console.log("✅ Webhook verified successfully");
     return res.status(200).send(challenge);
-  } else {
-    console.log("❌ Webhook verification failed");
-    return res.sendStatus(403);
   }
+  return res.sendStatus(403);
 });
 
-// ================= MESSAGE RECEIVER (POST) =================
+// ================= MESSAGE RECEIVER =================
 app.post("/webhook", handleMessage);
 
-// ================= SPA FALLBACK (AFTER WEBHOOK) =================
+// ================= SPA FALLBACK =================
 app.get("*", (req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
-// ================= START SERVER =================
+// ================= START SERVER FIRST (CRITICAL) =================
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log(`🚀 WhatsApp bot + PWA running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+
+  // ⏱️ Delay background jobs (IMPORTANT)
+  setTimeout(startBackgroundJobs, 3000);
 });
 
-// ================= AUTO ALERT ENGINE =================
-setInterval(runAlerts, 24 * 60 * 60 * 1000);
-runAlerts();
+// ================= BACKGROUND JOBS =================
+function updateSentiment(symbol) {
+  const scriptPath = path.join(__dirname, "../python/update_sentiment.py");
+  spawn("python3", [scriptPath, symbol], { env: process.env });
+}
+
+async function fetchSentimentSymbols() {
+  const res = await pool.query(`
+    SELECT DISTINCT symbol FROM watchlist
+  `);
+  return res.rows.map(r => r.symbol.toUpperCase());
+}
+
+async function runSentimentCron() {
+  try {
+    const symbols = await fetchSentimentSymbols();
+    for (const s of symbols) updateSentiment(s);
+  } catch (e) {
+    console.error("[SENTIMENT] Error:", e.message);
+  }
+}
+
+function startBackgroundJobs() {
+  console.log("⏱️ Starting background jobs");
+
+  // Run once after startup
+  runSentimentCron();
+  runAlerts();
+
+  // Scheduled jobs
+  setInterval(runAlerts, 24 * 60 * 60 * 1000);
+}
