@@ -36,17 +36,17 @@ function runPythonEngine(args) {
     const py = spawn("python3", Array.isArray(args) ? args : ["./python/engine.py", args]);
     let output = "";
 
-    py.stdout.on("data", (data) => {
-      output += data.toString();
-    });
-
-    py.stderr.on("data", (err) => {
-      console.error("Python error:", err.toString());
-    });
+    py.stdout.on("data", (data) => { output += data.toString(); });
+    py.stderr.on("data", (err) => console.error("Python error:", err.toString()));
 
     py.on("close", (code) => {
       if (code === 0) {
-        resolve(output.trim());
+        try {
+          resolve(JSON.parse(output)); // parse JSON
+        } catch (err) {
+          console.error("Invalid JSON from Python:", output);
+          resolve(null);
+        }
       } else {
         resolve(null); // fail silently
       }

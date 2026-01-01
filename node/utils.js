@@ -1,113 +1,95 @@
-// utils.js
 const { spawn } = require("child_process");
 
-// ---------------------- RUN PYTHON ENGINE ----------------------
+// ---------------------- Run Python Engine ----------------------
 function runPythonEngine(args) {
   return new Promise((resolve, reject) => {
     const py = spawn("python3", args);
     let output = "";
 
-    py.stdout.on("data", (data) => {
-      output += data.toString();
-    });
-
-    py.stderr.on("data", (err) => {
-      console.error("Python error:", err.toString());
-    });
+    py.stdout.on("data", (data) => { output += data.toString(); });
+    py.stderr.on("data", (err) => console.error("Python error:", err.toString()));
 
     py.on("close", (code) => {
       if (code === 0) {
         try {
-          resolve(JSON.parse(output)); // parse JSON output
+          resolve(JSON.parse(output)); // parse JSON here
         } catch (err) {
-          console.error("Raw Python output:", output);
           reject(new Error("Python output is not valid JSON"));
         }
-      } else {
-        reject(new Error("Python script failed with code " + code));
-      }
+      } else reject(new Error("Python script failed"));
     });
   });
 }
 
-// ---------------------- BUILD WHATSAPP MESSAGE ----------------------
+// ---------------------- Build WhatsApp / PWA Message ----------------------
 function buildWhatsAppMessage(result) {
-  if (!result) return "⚠️ No data received from engine.";
+  let msg = `<strong>📊 ${result.symbol} Update</strong><br><br>`;
 
-  let msg = `📊 *${result.symbol || "N/A"}* Update\n\n`;
-
-  if (result.error) {
-    msg += `❌ Error: ${result.error}\n`;
-    return msg;
+  // Price & Entry
+  if (result.price !== undefined) {
+    msg += `💰 Price: ₹${result.price}`;
+    if (result.entry_price) msg += ` (Entry: ₹${result.entry_price})`;
+    msg += "<br>";
   }
 
-  // Price & entry
-  msg += `💰 Price: ₹${result.price ?? "N/A"}`;
-  if (result.entry_price) msg += ` (Entry: ₹${result.entry_price})`;
-  msg += "\n";
+  // P/L & Exit
+  if (result.entry_price) {
+    const pl = ((result.price - result.entry_price) / result.entry_price) * 100;
+    msg += pl >= 0 ? `🟢 P/L: +${pl.toFixed(2)}%<br>` : `🔴 P/L: ${pl.toFixed(2)}%<br>`;
 
-  // P/L and suggested exit
-  if (result.entry_price && result.price !== undefined) {
-    const pnl = ((result.price - result.entry_price) / result.entry_price) * 100;
-    const emoji = pnl > 0 ? "🟢" : pnl < 0 ? "🔴" : "➖";
-    msg += `${emoji} P/L: ${pnl.toFixed(2)}%\n`;
-
-    if (result.exit_price) msg += `🔵 Exit Price: ₹${result.exit_price}\n`;
+    if (result.exit_price) msg += `🔵 Exit Price: ₹${result.exit_price}<br>`;
+    else {
+      const suggestedExit = result.entry_price * 0.95;
+      msg += `🔴 Suggested Exit (Stop Loss): ₹${suggestedExit.toFixed(2)}<br>`;
+    }
   }
 
-  // Low / High
-  if (result.low !== undefined && result.high !== undefined) {
-    msg += `📉 Low / 📈 High: ₹${result.low} / ₹${result.high}\n`;
+  // High / Low
+  if (result.low && result.high) {
+    msg += `📉 Low / 📈 High: ₹${result.low} / ₹${result.high}<br>`;
   }
 
   // Volume
   if (result.volume !== undefined && result.avg_volume !== undefined) {
     const volEmoji = result.volume > result.avg_volume ? "📈" : "📉";
-    msg += `${volEmoji} Volume: ${result.volume} | Avg: ${result.avg_volume}\n`;
+    msg += `${volEmoji} Volume: ${result.volume} | Avg: ${result.avg_volume.toFixed(0)}<br>`;
   }
 
   // Change %
   if (result.change_percent !== undefined) {
-    const changeEmoji = result.change_percent > 0 ? "🔺" : result.change_percent < 0 ? "🔻" : "➖";
-    msg += `${changeEmoji} Change: ${result.change_percent.toFixed(2)}%\n`;
+    const changeEmoji = result.change_percent > 0 ? "🔺" : (result.change_percent < 0 ? "🔻" : "➖");
+    msg += `${changeEmoji} Change: ${result.change_percent.toFixed(2)}%<br>`;
   }
 
-  // Sentiment
-  if (result.sentiment_type) {
-    let sentimentEmoji = "🧠";
-    if (result.sentiment_type === "accumulation") sentimentEmoji = "🟢";
-    else if (result.sentiment_type === "distribution") sentimentEmoji = "🔴";
-    else if (result.sentiment_type === "hype") sentimentEmoji = "🚀";
-
-    msg += `${sentimentEmoji} Twitter Sentiment: ${result.sentiment_type.toUpperCase()} (${result.sentiment ?? 0})\n`;
-  }
-
-  // Suggested entry zone
-  if (result.suggested_entry) {
-    msg += `📌 Suggested Entry Zone: ₹${result.suggested_entry.lower} - ₹${result.suggested_entry.upper}\n`;
-  }
+  // Twitter Sentiment
+  msg += `🧠 Sentiment: ${result.sentiment_type?.toUpperCase() || "N/A"} (${result.sentiment || 0})<br><br>`;
 
   // Alerts
-  if (result.alerts && result.alerts.length > 0) {
-    msg += `🚨 Alerts:\n`;
-    result.alerts.forEach((alert) => {
-      if (alert === "profit") msg += "• 📈 Profit booking zone\n";
-      else if (alert === "loss") msg += "• 📉 Stoploss breached\n";
-      else if (alert === "buy_signal") msg += "• 🟢 Accumulation detected\n";
-      else if (alert === "trap_warning") msg += "• 🚨 Hype trap risk\n";
-      else if (alert === "invalid_symbol") msg += "• ❌ Invalid symbol\n";
-      else if (alert === "error") msg += "• ⚠️ Error fetching data\n";
-    });
+  if (!result.alerts || result.alerts.length === 0) {
+    msg += `⚠️ No strong signal yet<br>📌 Stock is in watch mode<br>`;
   } else {
-    msg += "⚠️ No strong signal yet\n📌 Stock is in watch mode\n";
+    msg += `🚨 Alerts:<br>`;
+    result.alerts.forEach(alert => {
+      if (alert === "profit") msg += `* 📈 Profit booking zone<br>`;
+      if (alert === "loss") msg += `* 📉 Stoploss breached<br>`;
+      if (alert === "buy_signal") msg += `* 🟢 Accumulation detected<br>`;
+      if (alert === "trap_warning") msg += `* 🚨 Hype trap risk<br>`;
+      if (alert === "invalid_symbol") msg += `* ❌ Invalid symbol<br>`;
+      if (alert === "error") msg += `* ⚠️ Engine error<br>`;
+    });
   }
 
-  // Chart link
+  // Suggested Entry Zone
+  if (result.suggested_entry) {
+    msg += `<br>🎯 Suggested Entry: ₹${result.suggested_entry.lower} - ₹${result.suggested_entry.upper}<br>`;
+  }
+
+  // Chart
   if (result.chart) {
-    msg += `📊 Chart available\n`; // could also send as image via sendWhatsAppImage
+    msg += `<br><img src="data:image/png;base64,${result.chart}" style="max-width:100%;margin-top:10px;">`;
   }
 
-  return msg;
+  return { text: msg, chart: result.chart || null };
 }
 
 module.exports = { runPythonEngine, buildWhatsAppMessage };

@@ -33,21 +33,10 @@ function detectIntent(text) {
     return "SHOW_PORTFOLIO";
   }
 
-  if (text.startsWith("buy") || text.includes("purchase")) {
-    return "BUY";
-  }
-
-  if (text.startsWith("sell") || text.includes("exit")) {
-    return "SELL";
-  }
-
-  if (text.startsWith("track") || text.includes("add to watchlist")) {
-    return "TRACK";
-  }
-
-  if (/^[A-Z]{2,15}$/.test(text.toUpperCase())) {
-    return "SYMBOL";
-  }
+  if (text.startsWith("buy") || text.includes("purchase")) return "BUY";
+  if (text.startsWith("sell") || text.includes("exit")) return "SELL";
+  if (text.startsWith("track") || text.includes("add to watchlist")) return "TRACK";
+  if (/^[A-Z]{2,15}$/.test(text.toUpperCase())) return "SYMBOL";
 
   return "UNKNOWN";
 }
@@ -75,7 +64,6 @@ exports.handleMessage = async (req, res) => {
 
   const phone = msg.from;
   const text = msg.text?.body?.trim();
-
   const userId = await getOrCreateUser(phone);
 
   // --- Handle greetings directly ---
@@ -99,16 +87,9 @@ exports.handleMessage = async (req, res) => {
 
   switch(intent) {
     case "SHOW_WATCHLIST": {
-      const watchlistRes = await pool.query(
-        "SELECT symbol FROM watchlist WHERE user_id=$1",
-        [userId]
-      );
-      if (!watchlistRes.rows.length) {
-        await sendWhatsApp(phone, "📌 Your watchlist is empty");
-      } else {
-        const symbols = watchlistRes.rows.map(r => r.symbol).join(", ");
-        await sendWhatsApp(phone, `📌 Your Watchlist: ${symbols}`);
-      }
+      const watchlistRes = await pool.query("SELECT symbol FROM watchlist WHERE user_id=$1", [userId]);
+      if (!watchlistRes.rows.length) await sendWhatsApp(phone, "📌 Your watchlist is empty");
+      else await sendWhatsApp(phone, `📌 Your Watchlist: ${watchlistRes.rows.map(r => r.symbol).join(", ")}`);
       break;
     }
 
@@ -117,9 +98,8 @@ exports.handleMessage = async (req, res) => {
         "SELECT symbol, quantity, entry_price, exit_price FROM portfolio WHERE user_id=$1",
         [userId]
       );
-      if (!portfolioRes.rows.length) {
-        await sendWhatsApp(phone, "📌 Your portfolio is empty");
-      } else {
+      if (!portfolioRes.rows.length) await sendWhatsApp(phone, "📌 Your portfolio is empty");
+      else {
         let msgText = "📊 Your Portfolio:\n\n";
         portfolioRes.rows.forEach(r => {
           msgText += `${r.symbol}: ${r.quantity} shares @ ₹${r.entry_price}`;
@@ -134,19 +114,14 @@ exports.handleMessage = async (req, res) => {
     case "TRACK": {
       const symbolTrack = text.split(" ")[1];
       if (symbolTrack) {
-        await pool.query(
-          "INSERT INTO watchlist(user_id, symbol) VALUES($1,$2)",
-          [userId, symbolTrack.toUpperCase()]
-        );
+        await pool.query("INSERT INTO watchlist(user_id, symbol) VALUES($1,$2)", [userId, symbolTrack.toUpperCase()]);
         await sendWhatsApp(phone, `✅ ${symbolTrack.toUpperCase()} added to watchlist`);
-      } else {
-        await sendWhatsApp(phone, "❌ Please provide a symbol, e.g. TRACK IFL");
-      }
+      } else await sendWhatsApp(phone, "❌ Please provide a symbol, e.g. TRACK IFL");
       break;
     }
 
     case "BUY": {
-      const parts = text.split(" "); // BUY SYMBOL ENTRY_PRICE QUANTITY
+      const parts = text.split(" ");
       const symbol = parts[1];
       const entryPrice = parseFloat(parts[2]);
       const quantity = parseInt(parts[3], 10);
@@ -155,16 +130,13 @@ exports.handleMessage = async (req, res) => {
         await sendWhatsApp(phone, "❌ Usage: BUY SYMBOL ENTRY_PRICE QUANTITY");
       } else {
         await addToPortfolio(userId, symbol, entryPrice, quantity);
-        await sendWhatsApp(
-          phone,
-          `✅ Added ${quantity} shares of ${symbol.toUpperCase()} at ₹${entryPrice} to your portfolio`
-        );
+        await sendWhatsApp(phone, `✅ Added ${quantity} shares of ${symbol.toUpperCase()} at ₹${entryPrice} to your portfolio`);
       }
       break;
     }
 
     case "SELL": {
-      const parts = text.split(" "); // SELL SYMBOL EXIT_PRICE
+      const parts = text.split(" ");
       const symbol = parts[1];
       const exitPrice = parseFloat(parts[2]);
 
@@ -177,19 +149,66 @@ exports.handleMessage = async (req, res) => {
            WHERE user_id=$2 AND symbol=$3 AND exit_price IS NULL`,
           [exitPrice, userId, symbol.toUpperCase()]
         );
-        await sendWhatsApp(
-          phone,
-          `✅ Exit price for ${symbol.toUpperCase()} set at ₹${exitPrice}`
-        );
+        await sendWhatsApp(phone, `✅ Exit price for ${symbol.toUpperCase()} set at ₹${exitPrice}`);
       }
       break;
     }
 
     case "SYMBOL": {
       const symbolQuery = text.toUpperCase();
-      // Use processMessage from alerts.js to safely get Python response
-      const reply = await processMessage(symbolQuery);
-      await sendWhatsApp(phone, reply);
+      // --- Use processMessage to get Python JSON output ---
+      const result = await processMessage(symbolQuery);
+
+      if (typeof result === "object" && result.symbol) {
+        // Build text message from Python result
+        let msgText = `📊 *${result.symbol}* Update\n\n`;
+        msgText += `💰 Price: ₹${result.price}\n`;
+        if (result.low && result.high) msgText += `📉 Low / 📈 High: ₹${result.low} / ₹${result.high}\n`;
+        if (result.volume && result.avg_volume) {
+          const volEmoji = result.volume > result.avg_volume ? "📈" : "📉";
+          msgText += `${volEmoji} Volume: ${result.volume} | Avg: ${result.avg_volume.toFixed(0)}\n`;
+        }
+        if (result.change_percent !== undefined) {
+          const changeEmoji = result.change_percent > 0 ? "🔺" : (result.change_percent < 0 ? "🔻" : "➖");
+          msgText += `${changeEmoji} Change: ${result.change_percent.toFixed(2)}%\n`;
+        }
+
+        let sentimentEmoji = "🧠";
+        if (result.sentiment_type === "accumulation") sentimentEmoji = "🟢";
+        if (result.sentiment_type === "distribution") sentimentEmoji = "🔴";
+        if (result.sentiment_type === "hype") sentimentEmoji = "🚀";
+        msgText += `${sentimentEmoji} Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "UNKNOWN"} (${result.sentiment ?? 0})\n\n`;
+
+        let recommendation = result.recommendation || "Wait / Monitor";
+        if (result.suggested_entry) {
+          const lower = result.suggested_entry.lower;
+          const upper = result.suggested_entry.upper;
+          recommendation += ` | Suggested entry: ₹${lower} - ₹${upper}`;
+        }
+        msgText += `⚡ Recommendation: *${recommendation}*\n`;
+
+        if (!result.alerts || result.alerts.length === 0) msgText += `⚠️ No strong signal yet\n📌 Stock is in watch mode`;
+        else {
+          msgText += `🚨 Alerts:\n`;
+          for (const alert of result.alerts) {
+            if (alert === "buy_signal") msgText += `• 🟢 Accumulation detected\n`;
+            if (alert === "trap_warning") msgText += `• 🚨 Hype trap risk\n`;
+            if (alert === "invalid_symbol") msgText += `• ❌ Invalid symbol\n`;
+            if (alert === "error") msgText += `• ⚠️ Error fetching data\n`;
+          }
+        }
+
+        await sendWhatsApp(phone, msgText);
+
+        // Send chart image if available
+        if (result.chart) {
+          await sendWhatsAppImage(phone, result.chart, `📊 ${result.symbol} Price Chart`);
+        }
+
+      } else {
+        // Fallback plain text
+        await sendWhatsApp(phone, result || "❌ Could not fetch stock info. Try again later.");
+      }
       break;
     }
 

@@ -83,21 +83,28 @@ app.get("/api/sentiments", async (req, res) => {
 });
 
 // POST /api/chat
+// ---------------- POST /api/chat ----------------
 app.post("/api/chat", async (req, res) => {
   try {
     const { message } = req.body;
 
-    // --- run python engine ---
-    const resultStr = await runPythonEngine(message); // pass string
-    const result = JSON.parse(resultStr); // parse JSON safely
+    // Call Python engine
+    const result = await runPythonEngine(["../python/engine.py", message]);
+
+    // Build WhatsApp / PWA message
     const reply = buildWhatsAppMessage(result);
 
-    res.json({ reply });
+    // Return text + chart (if any)
+    res.json({
+      text: reply.text,         // HTML formatted message
+      chart: reply.chart || null // base64 chart string
+    });
   } catch (err) {
     console.error("[API /chat]", err);
-    res.status(500).json({ error: "Chat engine error", details: err.message });
+    res.status(500).json({ error: "Chat engine error" });
   }
 });
+
 
 // ================= HEALTH CHECK =================
 app.get("/health", (req, res) => {
