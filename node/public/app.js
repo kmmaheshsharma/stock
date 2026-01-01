@@ -9,32 +9,32 @@ messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
 
 // ---------------------- Append chat messages ----------------------
-function appendMessage(sender, html, isTyping = false) {
+function appendMessage(sender, html) {
   const div = document.createElement("div");
   div.className = sender === "You" ? "user-msg" : "bot-msg";
-
   div.innerHTML = `
     <div class="msg-content">${html}</div>
-    <div class="msg-time">${isTyping ? "..." : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+    <div class="msg-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
   `;
-
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+}
 
+// ---------------------- Typing simulation ----------------------
+function botTypingIndicator() {
+  const div = document.createElement("div");
+  div.className = "bot-msg";
+  div.innerHTML = `<div class="msg-content">Bot is typing...</div><div class="msg-time">...</div>`;
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
   return div;
 }
 
-// ---------------------- Show typing indicator ----------------------
-function botTypingIndicator() {
-  return appendMessage("Bot", "Bot is typing...", true);
-}
-
-// ---------------------- Delay helper ----------------------
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// ---------------------- Send chat messages ----------------------
+// ---------------------- Handle web chat messages ----------------------
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const msg = input.value.trim();
@@ -46,18 +46,19 @@ form.addEventListener("submit", async (e) => {
   const typingDiv = botTypingIndicator();
 
   try {
-    const res = await fetch("/api/chat", {
+    // Send message to backend that uses processMessage (like handleMessage)
+    const res = await fetch("/api/webchat", { // <-- create this endpoint
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: msg })
     });
     const data = await res.json();
 
-    // simulate 1–2 second typing delay
+    // simulate typing delay
     await delay(Math.random() * 1000 + 1000);
 
     typingDiv.remove();
-    appendMessage("Bot", data.text); // display bot message
+    appendMessage("Bot", data.text); // display the bot response
   } catch (err) {
     typingDiv.remove();
     appendMessage("Bot", "⚠️ Error fetching response");
@@ -68,14 +69,10 @@ form.addEventListener("submit", async (e) => {
 // ---------------------- Alerts Button ----------------------
 alertsBtn.addEventListener("click", async () => {
   const typingDiv = botTypingIndicator();
-
   try {
     const res = await fetch("/api/alerts");
     const data = await res.json();
-
-    // simulate 1–2 second typing delay
     await delay(Math.random() * 1000 + 1000);
-
     typingDiv.remove();
 
     if (!data || data.length === 0) {
@@ -84,7 +81,7 @@ alertsBtn.addEventListener("click", async () => {
     }
 
     data.forEach(alert => {
-      appendMessage("Bot", `<strong>${alert.symbol}</strong> | ${alert.message}`);
+      appendMessage("Bot", `🚨 ${alert.symbol}: ${alert.message}`);
     });
   } catch (err) {
     typingDiv.remove();
