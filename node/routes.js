@@ -174,26 +174,31 @@ exports.handleChat = async (req, res) => {
         });
       }
 
-     case "SYMBOL": {
+      case "SYMBOL": {
         try {
           const symbolQuery = text.toUpperCase();
           console.log(`[SYMBOL] Request received for symbol: ${symbolQuery}`);
 
+          // Call your Python/engine function
           const result = await processMessage(symbolQuery);
           console.log(`[SYMBOL] processMessage result:`, result);
 
-          // Check if result is valid
+          // --- Validate result ---
           if (!result || typeof result !== "object" || !result.symbol) {
             console.warn(`[SYMBOL] Invalid or empty result for symbol: ${symbolQuery}`);
             return res.json({
-              text: "❌ Unable to fetch stock data",
+              text: `❌ Unable to fetch stock data for "${symbolQuery}"`,
               chart: null
             });
           }
 
+          // --- Build response message safely ---
           let msgText = `📊 *${result.symbol}* Update\n\n`;
           msgText += `💰 Price: ₹${result.price ?? "N/A"}\n`;
-          if (result.low && result.high) msgText += `📉 Low / 📈 High: ₹${result.low} / ₹${result.high}\n`;
+
+          if (result.low && result.high) {
+            msgText += `📉 Low / 📈 High: ₹${result.low} / ₹${result.high}\n`;
+          }
 
           if (result.volume && result.avg_volume) {
             const volEmoji = result.volume > result.avg_volume ? "📈" : "📉";
@@ -205,12 +210,15 @@ exports.handleChat = async (req, res) => {
             msgText += `${changeEmoji} Change: ${result.change_percent.toFixed(2)}%\n`;
           }
 
+          // --- Sentiment ---
           let sentimentEmoji = "🧠";
           if (result.sentiment_type === "accumulation") sentimentEmoji = "🟢";
           if (result.sentiment_type === "distribution") sentimentEmoji = "🔴";
           if (result.sentiment_type === "hype") sentimentEmoji = "🚀";
+
           msgText += `${sentimentEmoji} Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "UNKNOWN"} (${result.sentiment ?? 0})\n\n`;
 
+          // --- Recommendation and suggested entry ---
           let recommendation = result.recommendation || "Wait / Monitor";
           if (result.suggested_entry) {
             const lower = result.suggested_entry.lower ?? "N/A";
@@ -219,6 +227,7 @@ exports.handleChat = async (req, res) => {
           }
           msgText += `⚡ Recommendation: *${recommendation}*\n`;
 
+          // --- Alerts ---
           if (!Array.isArray(result.alerts) || result.alerts.length === 0) {
             msgText += `⚠️ No strong signal yet\n📌 Stock is in watch mode`;
           } else {
@@ -239,9 +248,13 @@ exports.handleChat = async (req, res) => {
 
         } catch (err) {
           console.error(`[SYMBOL] Error processing symbol "${text}":`, err);
-          return res.json({ text: "❌ Error fetching stock data", chart: null });
+          return res.json({
+            text: `❌ Error fetching stock data for "${text}"`,
+            chart: null
+          });
         }
       }
+
 
     default:
        return res.json({

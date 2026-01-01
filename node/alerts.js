@@ -69,19 +69,36 @@ async function processMessage(message) {
   if (!message) return "Please type something!";
 
   const greetings = ["hi", "hello", "hey", "hii"];
-  if (greetings.includes(message.toLowerCase().trim())) {
+  const trimmedMessage = message.toLowerCase().trim();
+  if (greetings.includes(trimmedMessage)) {
+    console.log(`[GREETINGS] User said: "${message}"`);
     return "Hello! 👋 How can I help you today?";
   }
 
-  // Otherwise, call Python engine
+  console.log(`[SYMBOL] Processing symbol: ${message}`);
   const result = await runPythonEngine(message);
-  if (!result) return "❌ Could not fetch stock info. Try again later.";
 
-  // Build WhatsApp message
+  // --- Check if Python engine returned anything ---
+  if (!result) {
+    console.warn(`[SYMBOL] No result from Python engine for: ${message}`);
+    return `❌ Could not fetch stock info for "${message}". Try again later.`;
+  }
+
+  // --- Check if symbol is valid ---
+  if (!result.symbol || (Array.isArray(result.alerts) && result.alerts.includes("invalid_symbol"))) {
+    console.warn(`[SYMBOL] Invalid or unknown symbol: ${message}`);
+    return `❌ Unable to fetch stock data for "${message}"`;
+  }
+
+  console.log(`[SYMBOL] Valid symbol received: ${result.symbol}`);
+
+  // --- Build the WhatsApp-style message safely ---
   let msgText = `📊 *${result.symbol}* Update\n\n`;
-  msgText += `💰 Price: ₹${result.price}\n`;
-  if (result.low !== undefined && result.high !== undefined)
+  msgText += `💰 Price: ₹${result.price ?? "N/A"}\n`;
+
+  if (result.low !== undefined && result.high !== undefined) {
     msgText += `📉 Low / 📈 High: ₹${result.low} / ₹${result.high}\n`;
+  }
 
   if (result.volume !== undefined && result.avg_volume !== undefined) {
     const volEmoji = result.volume > result.avg_volume ? "📈" : "📉";
@@ -89,7 +106,8 @@ async function processMessage(message) {
   }
 
   if (result.change_percent !== undefined) {
-    const changeEmoji = result.change_percent > 0 ? "🔺" : result.change_percent < 0 ? "🔻" : "➖";
+    const changeEmoji =
+      result.change_percent > 0 ? "🔺" : result.change_percent < 0 ? "🔻" : "➖";
     msgText += `${changeEmoji} Change: ${result.change_percent.toFixed(2)}%\n`;
   }
 
@@ -97,17 +115,18 @@ async function processMessage(message) {
   if (result.sentiment_type === "accumulation") sentimentEmoji = "🟢";
   if (result.sentiment_type === "distribution") sentimentEmoji = "🔴";
   if (result.sentiment_type === "hype") sentimentEmoji = "🚀";
+
   msgText += `${sentimentEmoji} Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "UNKNOWN"} (${result.sentiment ?? 0})\n\n`;
 
   let recommendation = result.recommendation || "Wait / Monitor";
   if (result.suggested_entry) {
-    const lower = result.suggested_entry.lower;
-    const upper = result.suggested_entry.upper;
+    const lower = result.suggested_entry.lower ?? "N/A";
+    const upper = result.suggested_entry.upper ?? "N/A";
     recommendation += ` | Suggested entry: ₹${lower} - ₹${upper}`;
   }
   msgText += `⚡ Recommendation: *${recommendation}*\n`;
 
-  if (!result.alerts || result.alerts.length === 0) {
+  if (!Array.isArray(result.alerts) || result.alerts.length === 0) {
     msgText += `⚠️ No strong signal yet\n📌 Stock is in watch mode`;
   } else {
     msgText += `🚨 Alerts:\n`;
@@ -116,16 +135,17 @@ async function processMessage(message) {
       if (alert === "loss") msgText += `• 📉 Stoploss breached\n`;
       if (alert === "buy_signal") msgText += `• 🟢 Accumulation detected\n`;
       if (alert === "trap_warning") msgText += `• 🚨 Hype trap risk\n`;
-      if (alert === "invalid_symbol") msgText += `• ❌ Invalid symbol\n`;
       if (alert === "error") msgText += `• ⚠️ Error fetching data\n`;
+      // No invalid_symbol here because we already filtered above
     }
   }
 
-  // Send chart image if available
-  //if (result.chart) {
-  //  await sendWhatsAppImage(msg.from || msg.phone, result.chart, `📊 ${result.symbol} Price Chart`);
-  //}
+  // Optional: send chart if exists
+  // if (result.chart) {
+  //   await sendWhatsAppImage(msg.from || msg.phone, result.chart, `📊 ${result.symbol} Price Chart`);
+  // }
 
+  console.log(`[SYMBOL] Response ready for symbol: ${result.symbol}`);
   return msgText;
 }
 
