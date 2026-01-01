@@ -1,23 +1,20 @@
-// ================= ENV =================
 require("dotenv").config();
 
-// ================= CORE =================
 const { spawn } = require("child_process");
 const path = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
 
-// ================= APP MODULES =================
 const { pool } = require("./db");
 const { handleMessage } = require("./routes");
 const { runAlerts } = require("./alerts");
 
-// ================= EXPRESS APP =================
 const app = express();
 app.use(bodyParser.json());
 
 // ================= PWA STATIC FILES =================
 const publicPath = path.join(__dirname, "public");
+
 console.log("DIRNAME:", __dirname);
 console.log("PUBLIC PATH:", publicPath);
 
@@ -28,7 +25,7 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
-// ================= META WEBHOOK VERIFICATION =================
+// ================= META WEBHOOK =================
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -40,21 +37,18 @@ app.get("/webhook", (req, res) => {
   return res.sendStatus(403);
 });
 
-// ================= MESSAGE RECEIVER =================
 app.post("/webhook", handleMessage);
 
-// ================= SPA FALLBACK =================
-app.get("*", (req, res) => {
+// ================= SPA FALLBACK (EXPRESS 5 SAFE) =================
+app.get("/*", (req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
-// ================= START SERVER FIRST (CRITICAL) =================
+// ================= START SERVER =================
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-
-  // ⏱️ Delay background jobs (IMPORTANT)
   setTimeout(startBackgroundJobs, 3000);
 });
 
@@ -65,9 +59,7 @@ function updateSentiment(symbol) {
 }
 
 async function fetchSentimentSymbols() {
-  const res = await pool.query(`
-    SELECT DISTINCT symbol FROM watchlist
-  `);
+  const res = await pool.query(`SELECT DISTINCT symbol FROM watchlist`);
   return res.rows.map(r => r.symbol.toUpperCase());
 }
 
@@ -76,17 +68,13 @@ async function runSentimentCron() {
     const symbols = await fetchSentimentSymbols();
     for (const s of symbols) updateSentiment(s);
   } catch (e) {
-    console.error("[SENTIMENT] Error:", e.message);
+    console.error("[SENTIMENT]", e.message);
   }
 }
 
 function startBackgroundJobs() {
   console.log("⏱️ Starting background jobs");
-
-  // Run once after startup
   runSentimentCron();
   runAlerts();
-
-  // Scheduled jobs
   setInterval(runAlerts, 24 * 60 * 60 * 1000);
 }
