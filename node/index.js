@@ -53,6 +53,8 @@ app.get("/api/sentiments", async (req, res) => {
       if (r.sentiment_type === "accumulation") percent = 75;
       else if (r.sentiment_type === "distribution") percent = 25;
 
+      const changePercent = parseFloat(r.change_percent) || 0; // ensure numeric
+
       return {
         symbol: r.symbol,
         sentiment:
@@ -62,15 +64,16 @@ app.get("/api/sentiments", async (req, res) => {
             ? "Bearish"
             : "Neutral",
         percent,
-        change: r.change_percent ? `${r.change_percent.toFixed(2)}%` : "0%",
+        change: `${changePercent.toFixed(2)}%`,
         trend:
-          r.change_percent > 0
+          changePercent > 0
             ? "Trending Upward"
-            : r.change_percent < 0
+            : changePercent < 0
             ? "Trending Downward"
             : "Stable",
       };
     });
+
 
     res.json(data);
   } catch (err) {
