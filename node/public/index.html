@@ -3,15 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NoBroko Market Sentiment</title>
+  <title>NoBroko WhatsApp Bot</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.json">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background:#f5f5f5; }
+    header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#222; color:white; }
+    header h1 { margin:0; font-size:1.2em; }
+    main { padding:20px; }
+    #sentiment-cards { display:grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:10px; margin-bottom:20px; }
+    .card { background:white; padding:10px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+    .progress-bar { width:100%; height:6px; background:#ddd; border-radius:3px; margin:5px 0; position:relative; }
+    .indicator { position:absolute; top:0; width:6px; height:6px; border-radius:50%; background:#000; }
+    #chat-container { background:white; border-radius:10px; padding:10px; max-height:400px; display:flex; flex-direction:column; }
+    #messages { flex:1; overflow-y:auto; margin-bottom:10px; }
+    .user-msg { text-align:right; background:#dcf8c6; padding:5px 10px; border-radius:10px; margin:5px 0; display:inline-block; }
+    .bot-msg { text-align:left; background:#f1f0f0; padding:5px 10px; border-radius:10px; margin:5px 0; display:inline-block; }
+    #chat-form { display:flex; gap:5px; }
+    #chat-form input { flex:1; padding:5px 10px; border-radius:5px; border:1px solid #ccc; }
+    #chat-form button { padding:5px 10px; border:none; border-radius:5px; background:#222; color:white; cursor:pointer; }
+  </style>
 </head>
 <body>
   <header>
-    <h1>📈 Market Sentiment</h1>
-    <button id="alerts-btn">🔔</button>
-    <button id="menu-btn">☰</button>
+    <h1>📈 NoBroko Bot</h1>
+    <div>
+      <button id="alerts-btn">🔔 Alerts</button>
+      <button id="menu-btn">☰</button>
+    </div>
   </header>
 
   <main>
