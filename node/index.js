@@ -84,25 +84,7 @@ app.get("/api/sentiments", async (req, res) => {
 
 // POST /api/chat
 // ---------------- POST /api/chat ----------------
-app.post("/api/chat", async (req, res) => {
-  try {
-    const { message } = req.body;
-    if (!message) return res.status(400).json({ error: "No message provided" });
-
-    // Call handleMessage for all messages
-    const reply = await handleChat(message);
-
-    // Send response
-    res.json({
-      text: reply.text,
-      chart: reply.chart || null
-    });
-
-  } catch (err) {
-    console.error("[API /chat]", err);
-    res.status(500).json({ error: "Chat engine error" });
-  }
-});
+app.post("/api/chat", handleChat);
 
 // ================= HEALTH CHECK =================
 app.get("/health", (req, res) => {
