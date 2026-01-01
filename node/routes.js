@@ -66,25 +66,34 @@ exports.handleChat = async (req, res) => {
 
     // ---------- GREETING ----------
     const greetings = ["hi", "hello", "hey", "hii"];
+
     if (greetings.includes(text.toLowerCase())) {
       const welcomeMsg = `
-      🌟👋 *Welcome to StockBot!* 👋🌟
+    🌟👋 *Welcome to StockBot!* 👋🌟
 
-      💹 Track your stocks, manage your portfolio, and get smart recommendations in real-time.
+    💹 Track your stocks, manage your portfolio, and get smart recommendations in real-time.
 
-      📚 *Commands you can use:*
-      • 📌 Show my *watchlist* (example: type \`Show my watchlist\`)
-      • 📊 Show my *portfolio* (example: type \`Show my portfolio\`)
-      • ➕ Track a stock: *TRACK SYMBOL* (example: \`TRACK IFL\`)
-      • 💰 Buy: *BUY SYMBOL ENTRY_PRICE QUANTITY* (example: \`BUY IFL 1574 10\`)
-      • 📉 Sell: *SELL SYMBOL EXIT_PRICE* (example: \`SELL IFL 1600\`)
-      • 🔎 Or just send a stock symbol like *IFL* or *KPIGREEN* to get instant updates
+    📚 *Commands you can use:*
+    • 📌 Show my *watchlist*  
+      (example: type \`Show my watchlist\`)
+    • 📊 Show my *portfolio*  
+      (example: type \`Show my portfolio\`)
+    • ➕ Track a stock: *TRACK SYMBOL*  
+      (example: \`TRACK IFL\`)
+    • 💰 Buy: *BUY SYMBOL ENTRY_PRICE QUANTITY*  
+      (example: \`BUY IFL 1574 10\`)
+    • 📉 Sell: *SELL SYMBOL EXIT_PRICE*  
+      (example: \`SELL IFL 1600\`)
+    • 🔎 Or just send a stock symbol like *IFL* or *KPIGREEN*  
+      to get instant updates
       `;
+
       return res.json({
         text: welcomeMsg,
         chart: null
       });
     }
+
 
     const intent = detectIntent(text);
 
@@ -191,7 +200,7 @@ exports.handleChat = async (req, res) => {
 
           console.log(`[SYMBOL] Sending response for symbol: ${symbolQuery}`);
           return res.json({
-            text: result.text,
+            text: result.text, // HTML formatted
             chart: result.chart
           });
 
@@ -203,6 +212,7 @@ exports.handleChat = async (req, res) => {
           });
         }
       }
+
     default:
        return res.json({
          text:

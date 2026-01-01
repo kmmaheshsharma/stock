@@ -81,65 +81,53 @@ async function processMessage(message) {
   // --- Early check for invalid symbol ---
   if (!result || !result.symbol || (Array.isArray(result.alerts) && result.alerts.includes("invalid_symbol"))) {
     console.warn(`[SYMBOL] Invalid or unknown symbol: ${message}`);
-    return null; // Return null so Node handler knows it's invalid
+    return null; // Node handler will catch this and respond
   }
 
   console.log(`[SYMBOL] Valid symbol received: ${result.symbol}`);
 
-  // --- Build message safely ---
-  let msgText = `📊 *${result.symbol}* Update\n\n`;
-  msgText += `💰 Price: ₹${result.price ?? "N/A"}\n`;
-
-  if (result.low !== undefined && result.high !== undefined) {
-    msgText += `📉 Low / 📈 High: ₹${result.low} / ₹${result.high}\n`;
-  }
-
-  if (result.volume !== undefined && result.avg_volume !== undefined) {
-    const volEmoji = result.volume > result.avg_volume ? "📈" : "📉";
-    msgText += `${volEmoji} Volume: ${result.volume} | Avg: ${result.avg_volume.toFixed(0)}\n`;
-  }
-
-  if (result.change_percent !== undefined) {
-    const changeEmoji =
-      result.change_percent > 0 ? "🔺" : result.change_percent < 0 ? "🔻" : "➖";
-    msgText += `${changeEmoji} Change: ${result.change_percent.toFixed(2)}%\n`;
-  }
-
-  let sentimentEmoji = "🧠";
-  if (result.sentiment_type === "accumulation") sentimentEmoji = "🟢";
-  if (result.sentiment_type === "distribution") sentimentEmoji = "🔴";
-  if (result.sentiment_type === "hype") sentimentEmoji = "🚀";
-  msgText += `${sentimentEmoji} Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "UNKNOWN"} (${result.sentiment ?? 0})\n\n`;
-
+  // --- Build HTML message ---
   let recommendation = result.recommendation || "Wait / Monitor";
   if (result.suggested_entry) {
     const lower = result.suggested_entry.lower ?? "N/A";
     const upper = result.suggested_entry.upper ?? "N/A";
     recommendation += ` | Suggested entry: ₹${lower} - ₹${upper}`;
   }
-  msgText += `⚡ Recommendation: *${recommendation}*\n`;
 
+  let alertsHTML = "";
   if (!Array.isArray(result.alerts) || result.alerts.length === 0) {
-    msgText += `⚠️ No strong signal yet\n📌 Stock is in watch mode`;
+    alertsHTML = `<p>⚠️ No strong signal yet<br>📌 Stock is in watch mode</p>`;
   } else {
-    msgText += `🚨 Alerts:\n`;
+    alertsHTML = `<p>🚨 Alerts:<br>`;
     for (const alert of result.alerts) {
-      if (alert === "profit") msgText += `• 📈 Profit booking zone\n`;
-      if (alert === "loss") msgText += `• 📉 Stoploss breached\n`;
-      if (alert === "buy_signal") msgText += `• 🟢 Accumulation detected\n`;
-      if (alert === "trap_warning") msgText += `• 🚨 Hype trap risk\n`;
-      if (alert === "error") msgText += `• ⚠️ Error fetching data\n`;
-      // invalid_symbol is already filtered above
+      if (alert === "profit") alertsHTML += `• 📈 Profit booking zone<br>`;
+      if (alert === "loss") alertsHTML += `• 📉 Stoploss breached<br>`;
+      if (alert === "buy_signal") alertsHTML += `• 🟢 Accumulation detected<br>`;
+      if (alert === "trap_warning") alertsHTML += `• 🚨 Hype trap risk<br>`;
+      if (alert === "error") alertsHTML += `• ⚠️ Error fetching data<br>`;
     }
+    alertsHTML += `</p>`;
   }
+
+  const msgHTML = `
+<div class="stock-update">
+  <h3>📊 ${result.symbol} Update</h3>
+  <p>💰 <strong>Price:</strong> ₹${result.price ?? "N/A"}</p>
+  <p>📉 Low / 📈 High: ₹${result.low ?? "N/A"} / ₹${result.high ?? "N/A"}</p>
+  <p>📊 Volume: ${result.volume ?? "N/A"} | Avg: ${result.avg_volume?.toFixed(0) ?? "N/A"}</p>
+  <p>🔻 Change: ${result.change_percent?.toFixed(2) ?? "0"}%</p>
+  <p>🧠 Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "NEUTRAL"} (${result.sentiment ?? 0})</p>
+  <p>⚡ Recommendation: <strong>${recommendation}</strong></p>
+  ${alertsHTML}
+</div>
+`;
 
   console.log(`[SYMBOL] Response ready for symbol: ${result.symbol}`);
   return {
-    text: msgText,
+    text: msgHTML, // HTML content for PWA chat
     chart: result.chart || null
   };
 }
-
 
 // --- Main alert runner for users ---
 async function runAlerts(extraSymbols = []) {
