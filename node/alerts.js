@@ -30,36 +30,45 @@ function calculateAggregatedPosition(rows) {
   return { totalQuantity, avgEntryPrice };
 }
 
-// --- Helper to run Python engine and return JSON ---
-async function runPythonEngine(args, phone = null) {
-  if (typeof args === "string") args = [args]; // ensure args is array
-
+// --- Helper to run Python engine safely ---
+function runPythonEngine(args) {
   return new Promise((resolve) => {
-    const proc = spawn("python3", args, { cwd: __dirname });
+    const py = spawn("python3", Array.isArray(args) ? args : ["./python/engine.py", args]);
+    let output = "";
 
-    let out = "", err = "";
-    proc.stdout.on("data", d => out += d);
-    proc.stderr.on("data", d => err += d);
+    py.stdout.on("data", (data) => {
+      output += data.toString();
+    });
 
-    proc.on("close", async () => {
-      if (err) console.error(err); // keep errors
-      try {
-        const result = JSON.parse(out);
+    py.stderr.on("data", (err) => {
+      console.error("Python error:", err.toString());
+    });
 
-        if (phone) await sendWhatsApp(phone, buildWhatsAppMessage(result));
-
-        resolve(result);
-      } catch (e) {
-        console.error("Failed to parse Python output:", e, out);
-        if (phone) {
-          await sendWhatsApp(phone, "❌ Could not fetch stock data. Please check symbol or try later.");
-        }
-        resolve(null);
+    py.on("close", (code) => {
+      if (code === 0) {
+        resolve(output.trim());
+      } else {
+        resolve(null); // fail silently
       }
     });
   });
 }
 
+// --- Handle chat messages (greetings included) ---
+async function processMessage(message) {
+  if (!message) return "Please type something!";
+
+  const greetings = ["hi", "hello", "hey", "hii"];
+  if (greetings.includes(message.toLowerCase().trim())) {
+    return "Hello! 👋 How can I help you today?";
+  }
+
+  // Otherwise, call Python engine
+  const result = await runPythonEngine(message);
+  return result || "Sorry, I couldn't fetch a response. Please try again.";
+}
+
+// --- Main alert runner ---
 async function runAlerts(extraSymbols = []) {
   const users = await pool.query("SELECT id, phone FROM users");
 
@@ -250,4 +259,4 @@ async function runAlerts(extraSymbols = []) {
   }
 }
 
-module.exports = { runAlerts };
+module.exports = { runAlerts, processMessage };

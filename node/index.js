@@ -8,20 +8,18 @@ const bodyParser = require("body-parser");
 const { pool } = require("./db");
 const { handleMessage } = require("./routes");
 const { runAlerts } = require("./alerts");
+const { runPythonEngine, buildWhatsAppMessage } = require("./utils"); // helpers for chat API
 
 const app = express();
 app.use(bodyParser.json());
 
 // ================= PWA STATIC FILES =================
 const publicPath = path.join(__dirname, "public");
-
 console.log("DIRNAME:", __dirname);
 console.log("PUBLIC PATH:", publicPath);
-
-// Serve static assets
 app.use(express.static(publicPath));
 
-// ✅ ROOT ROUTE
+// ================= ROOT ROUTE =================
 app.get("/", (req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
@@ -41,8 +39,70 @@ app.get("/webhook", (req, res) => {
 // ================= MESSAGE RECEIVER =================
 app.post("/webhook", handleMessage);
 
+// ================= PWA API ROUTES =================
+
+// GET /api/sentiments
+app.get("/api/sentiments", async (req, res) => {
+  try {
+    const rows = await pool.query(
+      "SELECT symbol, sentiment_type, sentiment, change_percent FROM watchlist"
+    );
+
+    const data = rows.rows.map(r => {
+      let percent = 50;
+      if (r.sentiment_type === "accumulation") percent = 75;
+      else if (r.sentiment_type === "distribution") percent = 25;
+
+      return {
+        symbol: r.symbol,
+        sentiment:
+          r.sentiment_type === "accumulation"
+            ? "Bullish"
+            : r.sentiment_type === "distribution"
+            ? "Bearish"
+            : "Neutral",
+        percent,
+        change: r.change_percent ? `${r.change_percent.toFixed(2)}%` : "0%",
+        trend:
+          r.change_percent > 0
+            ? "Trending Upward"
+            : r.change_percent < 0
+            ? "Trending Downward"
+            : "Stable",
+      };
+    });
+
+    res.json(data);
+  } catch (err) {
+    console.error("[API /sentiments]", err);
+    res.status(500).json({ error: "Failed to fetch sentiments" });
+  }
+});
+
+// POST /api/chat
+app.post("/api/chat", async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    // --- run python engine ---
+    const resultStr = await runPythonEngine(message); // pass string
+    const result = JSON.parse(resultStr); // parse JSON safely
+    const reply = buildWhatsAppMessage(result);
+
+    res.json({ reply });
+  } catch (err) {
+    console.error("[API /chat]", err);
+    res.status(500).json({ error: "Chat engine error", details: err.message });
+  }
+});
+
+// ================= HEALTH CHECK =================
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", time: new Date().toISOString() });
+});
+
 // ================= SPA FALLBACK (EXPRESS 5 FIX) =================
-// 🚨 DO NOT use app.get("*") or "/*"
+// 🚨 Must be after all API routes
 app.use((req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
@@ -57,8 +117,12 @@ app.listen(PORT, () => {
 
 // ================= BACKGROUND JOBS =================
 function updateSentiment(symbol) {
-  const scriptPath = path.join(__dirname, "../python/update_sentiment.py");
-  spawn("python3", [scriptPath, symbol], { env: process.env });
+  try {
+    const scriptPath = path.join(__dirname, "../python/update_sentiment.py");
+    spawn("python3", [scriptPath, symbol], { env: process.env });
+  } catch (err) {
+    console.error("[updateSentiment]", err.message);
+  }
 }
 
 async function fetchSentimentSymbols() {
@@ -78,9 +142,15 @@ async function runSentimentCron() {
 function startBackgroundJobs() {
   console.log("⏱️ Starting background jobs");
   runSentimentCron();
-  runAlerts();
-  setInterval(runAlerts, 24 * 60 * 60 * 1000);
+  runAlerts([]); // pass empty array to avoid errors
+  setInterval(() => runAlerts([]), 24 * 60 * 60 * 1000); // every 24 hours
 }
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
+
+// ================= SUBSCRIPTIONS (IN-MEMORY) =================
+const subscriptions = [];
+
+app.post("/api/subscribe", async (req, res) => {
+  const sub = req.body;
+  subscriptions.push(sub);
+  res.json({ success: true });
 });
