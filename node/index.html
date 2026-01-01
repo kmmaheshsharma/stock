@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NoBroko Market Sentiment</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <header>
+    <h1>📈 Market Sentiment</h1>
+    <button id="alerts-btn">🔔</button>
+    <button id="menu-btn">☰</button>
+  </header>
+
+  <main>
+    <section id="sentiment-cards"></section>
+
+    <section id="chat-container">
+      <div id="messages"></div>
+      <form id="chat-form">
+        <input type="text" id="message-input" placeholder="Ask about a stock..." />
+        <button type="submit">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
