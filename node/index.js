@@ -81,3 +81,6 @@ function startBackgroundJobs() {
   runAlerts();
   setInterval(runAlerts, 24 * 60 * 60 * 1000);
 }
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", time: new Date().toISOString() });
+});
