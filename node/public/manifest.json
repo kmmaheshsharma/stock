@@ -1,21 +1,12 @@
 {
-  "name": "NoBroko WhatsApp Bot",
-  "short_name": "NoBrokoBot",
-  "description": "Real-time stock alerts & sentiment analysis via WhatsApp",
+  "name": "NoBroko Market Sentiment",
+  "short_name": "NoBroko",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0a74da",
+  "background_color": "#f5f7fa",
+  "theme_color": "#1b3b7a",
   "icons": [
-    {
-      "src": "/icons/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }

@@ -1,37 +1,14 @@
-const CACHE_NAME = "nobroko-pwa-v1";
-const urlsToCache = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/styles.css",
-  "/main.js",
-  "/icons/icon-192x192.png",
-  "/icons/icon-512x512.png"
-];
+const CACHE_NAME = "nobroko-cache-v1";
+const urlsToCache = ["/", "/index.html", "/app.js", "/styles.css", "/manifest.json"];
 
-// Install event: caching files
-self.addEventListener("install", event => {
-  console.log("[Service Worker] Installing...");
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+self.addEventListener("install", (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
   );
 });
 
-// Activate event: cleanup old caches
-self.addEventListener("activate", event => {
-  console.log("[Service Worker] Activating...");
-  event.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.map(key => {
-        if (key !== CACHE_NAME) return caches.delete(key);
-      })
-    ))
-  );
-});
-
-// Fetch event: serve cached files if offline
-self.addEventListener("fetch", event => {
-  event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+self.addEventListener("fetch", (e) => {
+  e.respondWith(
+    caches.match(e.request).then((res) => res || fetch(e.request))
   );
 });

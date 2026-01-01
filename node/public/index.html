@@ -3,40 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NoBroko WhatsApp Bot</title>
-
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
-
-  <!-- Theme colors for PWA -->
-  <meta name="theme-color" content="#0a74da">
-
-  <!-- Fallback icons for mobile -->
-  <link rel="icon" href="/icons/icon-192x192.png" sizes="192x192">
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
-
-  <link rel="stylesheet" href="/styles.css">
+  <title>NoBroko Market Sentiment</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <div id="app">
-    <h1>NoBroko WhatsApp Bot</h1>
-    <p>Real-time stock alerts, sentiment updates & portfolio tracking.</p>
+  <header>
+    <h1>📈 Market Sentiment</h1>
+    <button id="alerts-btn">🔔</button>
+    <button id="menu-btn">☰</button>
+  </header>
 
-    <button id="test-alert">Test Alert</button>
-    <div id="alerts"></div>
-  </div>
+  <main>
+    <section id="sentiment-cards"></section>
 
-  <script src="/main.js"></script>
+    <section id="chat-container">
+      <div id="messages"></div>
+      <form id="chat-form">
+        <input type="text" id="message-input" placeholder="Ask about a stock..." />
+        <button type="submit">Send</button>
+      </form>
+    </section>
+  </main>
 
-  <!-- Register Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('Service Worker registered:', reg))
-          .catch(err => console.error('Service Worker registration failed:', err));
-      });
-    }
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
