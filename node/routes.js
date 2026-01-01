@@ -67,17 +67,18 @@ exports.handleChat = async (req, res) => {
     // ---------- GREETING ----------
     const greetings = ["hi", "hello", "hey", "hii"];
     if (greetings.includes(text.toLowerCase())) {
+      const welcomeMsg =
+      "🌟👋 *Welcome to StockBot!* 👋🌟\n\n" +
+      "💹 Track your stocks, manage your portfolio, and get smart recommendations in real-time.\n\n" +
+      "📚 *Commands you can use:*\n" +
+      "• 📌 Show my *watchlist* (example: type `Show my watchlist`)\n" +
+      "• 📊 Show my *portfolio* (example: type `Show my portfolio`)\n" +
+      "• ➕ Track a stock: *TRACK SYMBOL* (example: `TRACK IFL`)\n" +
+      "• 💰 Buy: *BUY SYMBOL ENTRY_PRICE QUANTITY* (example: `BUY IFL 1574 10`)\n" +
+      "• 📉 Sell: *SELL SYMBOL EXIT_PRICE* (example: `SELL IFL 1600`)\n" +
+      "• 🔎 Or just send a stock symbol like *IFL* or *KPIGREEN* to get instant updates";
       return res.json({
-        text:
-          "🌟👋 <strong>Welcome to StockBot!</strong> 👋🌟<br><br>" +
-          "💹 Track stocks, manage portfolio & get smart alerts.<br><br>" +
-          "<b>Commands:</b><br>" +
-          "• Show my watchlist<br>" +
-          "• Show my portfolio<br>" +
-          "• TRACK SYMBOL (TRACK IFL)<br>" +
-          "• BUY SYMBOL ENTRY QTY (BUY IFL 1574 10)<br>" +
-          "• SELL SYMBOL EXIT (SELL IFL 1600)<br>" +
-          "• Or send a symbol like IFL / KPIGREEN",
+        text: welcomeMsg,
         chart: null
       });
     }
@@ -171,36 +172,69 @@ exports.handleChat = async (req, res) => {
       }
 
       case "SYMBOL": {
-        const result = await runPythonEngine([
-          "../python/engine.py",
-          text.toUpperCase()
-        ]);
+      const symbolQuery = text.toUpperCase();
+      const result = await processMessage(symbolQuery);
 
-        if (!result || typeof result !== "object") {
+      if (typeof result === "object" && result.symbol) {
+        let msgText = `📊 *${result.symbol}* Update\n\n`;
+        msgText += `💰 Price: ₹${result.price}\n`;
+        if (result.low && result.high) msgText += `📉 Low / 📈 High: ₹${result.low} / ₹${result.high}\n`;
+        if (result.volume && result.avg_volume) {
+          const volEmoji = result.volume > result.avg_volume ? "📈" : "📉";
+          msgText += `${volEmoji} Volume: ${result.volume} | Avg: ${result.avg_volume.toFixed(0)}\n`;
+        }
+        if (result.change_percent !== undefined) {
+          const changeEmoji = result.change_percent > 0 ? "🔺" : (result.change_percent < 0 ? "🔻" : "➖");
+          msgText += `${changeEmoji} Change: ${result.change_percent.toFixed(2)}%\n`;
+        }
+
+        let sentimentEmoji = "🧠";
+        if (result.sentiment_type === "accumulation") sentimentEmoji = "🟢";
+        if (result.sentiment_type === "distribution") sentimentEmoji = "🔴";
+        if (result.sentiment_type === "hype") sentimentEmoji = "🚀";
+        msgText += `${sentimentEmoji} Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "UNKNOWN"} (${result.sentiment ?? 0})\n\n`;
+
+        let recommendation = result.recommendation || "Wait / Monitor";
+        if (result.suggested_entry) {
+          const lower = result.suggested_entry.lower;
+          const upper = result.suggested_entry.upper;
+          recommendation += ` | Suggested entry: ₹${lower} - ₹${upper}`;
+        }
+        msgText += `⚡ Recommendation: *${recommendation}*\n`;
+
+        if (!result.alerts || result.alerts.length === 0) msgText += `⚠️ No strong signal yet\n📌 Stock is in watch mode`;
+        else {
+          msgText += `🚨 Alerts:\n`;
+          for (const alert of result.alerts) {
+            if (alert === "buy_signal") msgText += `• 🟢 Accumulation detected\n`;
+            if (alert === "trap_warning") msgText += `• 🚨 Hype trap risk\n`;
+            if (alert === "invalid_symbol") msgText += `• ❌ Invalid symbol\n`;
+            if (alert === "error") msgText += `• ⚠️ Error fetching data\n`;
+          }
+        }
+        return res.json({
+          text: msgText,
+          chart: result.chart || null
+        });
+      } else {
           return {
             text: "❌ Unable to fetch stock data",
             chart: null
           };
-        }
+      }    
 
-        // ✅ Use formatter only (no WhatsApp sending)
-        const reply = buildWhatsAppMessage(result);
-
-        return reply;
-      }
-
-
-      default:
-        return res.json({
-          text:
-            "❌ I didn’t understand.<br><br>" +
-            "Try:<br>" +
-            "• Show my watchlist<br>" +
-            "• Show my portfolio<br>" +
-            "• BUY / SELL / TRACK<br>" +
-            "• Or send a stock symbol",
-          chart: null
-        });
+    }
+    default:
+       return res.json({
+         text:
+           "❌ I didn’t understand.<br><br>" +
+           "Try:<br>" +
+           "• Show my watchlist<br>" +
+           "• Show my portfolio<br>" +
+           "• BUY / SELL / TRACK<br>" +
+           "• Or send a stock symbol",
+         chart: null
+       });
     }
 
   } catch (err) {
