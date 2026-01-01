@@ -18,6 +18,7 @@ const publicPath = path.join(__dirname, "public");
 console.log("DIRNAME:", __dirname);
 console.log("PUBLIC PATH:", publicPath);
 
+// Serve static assets
 app.use(express.static(publicPath));
 
 // ✅ ROOT ROUTE
@@ -37,10 +38,12 @@ app.get("/webhook", (req, res) => {
   return res.sendStatus(403);
 });
 
+// ================= MESSAGE RECEIVER =================
 app.post("/webhook", handleMessage);
 
-// ================= SPA FALLBACK (EXPRESS 5 SAFE) =================
-app.get("/*", (req, res) => {
+// ================= SPA FALLBACK (EXPRESS 5 FIX) =================
+// 🚨 DO NOT use app.get("*") or "/*"
+app.use((req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
