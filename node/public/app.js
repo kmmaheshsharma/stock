@@ -2,6 +2,7 @@ const messagesEl = document.getElementById("messages");
 const form = document.getElementById("chat-form");
 const input = document.getElementById("message-input");
 const cardsEl = document.getElementById("sentiment-cards");
+const alertsBtn = document.getElementById("alerts-btn");
 
 // Clear previous content on load
 messagesEl.innerHTML = "";
@@ -11,7 +12,13 @@ cardsEl.innerHTML = "";
 function appendMessage(sender, html) {
   const div = document.createElement("div");
   div.className = sender === "You" ? "user-msg" : "bot-msg";
-  div.innerHTML = html; // render HTML instead of plain text
+
+  // WhatsApp-like style
+  div.innerHTML = `
+    <div class="msg-content">${html}</div>
+    <div class="msg-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+  `;
+
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
@@ -32,13 +39,32 @@ form.addEventListener("submit", async (e) => {
       body: JSON.stringify({ message: msg })
     });
     const data = await res.json();
-    appendMessage("Bot", data.text); // use HTML text
+    appendMessage("Bot", data.text); // HTML-friendly
   } catch (err) {
     appendMessage("Bot", "⚠️ Error fetching response");
     console.error(err);
   }
 });
 
+// ---------------------- Alerts Button ----------------------
+alertsBtn.addEventListener("click", async () => {
+  try {
+    const res = await fetch("/api/alerts");
+    const data = await res.json();
+
+    if (!data || data.length === 0) {
+      appendMessage("Bot", "No alerts at the moment 🔔");
+      return;
+    }
+
+    data.forEach(alert => {
+      appendMessage("Bot", `<strong>${alert.symbol}</strong> | ${alert.message}`);
+    });
+  } catch (err) {
+    appendMessage("Bot", "⚠️ Failed to fetch alerts");
+    console.error(err);
+  }
+});
 
 // ---------------------- Load sentiment cards ----------------------
 async function loadSentiments() {
