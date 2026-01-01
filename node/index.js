@@ -1,19 +1,23 @@
-// === CRON: Update Twitter Sentiment Table ===
+// ================= ENV =================
 require("dotenv").config();
 
+// ================= CORE =================
 const { spawn } = require("child_process");
 const path = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
 
+// ================= APP MODULES =================
 const { pool } = require("./db");
 const { handleMessage } = require("./routes");
 const { runAlerts } = require("./alerts");
 
 // ================= SENTIMENT UPDATE =================
 function updateSentiment(symbol) {
-  const args = [path.join(__dirname, "../python/update_sentiment.py"), symbol];
-  const proc = spawn("python3", args, { env: process.env });
+  const scriptPath = path.join(__dirname, "../python/update_sentiment.py");
+  const proc = spawn("python3", [scriptPath, symbol], {
+    env: process.env,
+  });
 
   let out = "";
   let err = "";
@@ -55,21 +59,32 @@ async function runSentimentCron() {
   }
 }
 
-// Run every 15 minutes
-setInterval(runAlerts, 24 * 60 * 60 * 1000);
-
-// Run once at startup
+// Run sentiment cron once at startup
 runSentimentCron();
 
-// ================= EXPRESS =================
+// ================= EXPRESS APP =================
 const app = express();
 app.use(bodyParser.json());
- console.log("VERIFY_TOKEN:", process.env.VERIFY_TOKEN);
-/**
- * ✅ META WEBHOOK VERIFICATION (GET)
- */
+
+console.log("VERIFY_TOKEN:", process.env.VERIFY_TOKEN);
+
+// ================= PWA STATIC FILES =================
+const publicPath = path.join(__dirname, "public");
+
+// 🔎 DEBUG (keep for Railway logs)
+console.log("DIRNAME:", __dirname);
+console.log("PUBLIC PATH:", publicPath);
+
+// Serve static assets
+app.use(express.static(publicPath));
+
+// ✅ ROOT ROUTE (CRITICAL FIX)
+app.get("/", (req, res) => {
+  res.sendFile(path.join(publicPath, "index.html"));
+});
+
+// ================= META WEBHOOK VERIFICATION (GET) =================
 app.get("/webhook", (req, res) => {
- 
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
@@ -85,17 +100,20 @@ app.get("/webhook", (req, res) => {
   }
 });
 
-/**
- * ✅ MESSAGE RECEIVER (POST)
- */
+// ================= MESSAGE RECEIVER (POST) =================
 app.post("/webhook", handleMessage);
 
-app.listen(3000, () => {
-  console.log("🚀 WhatsApp bot running on port 3000");
+// ================= SPA FALLBACK (AFTER WEBHOOK) =================
+app.get("*", (req, res) => {
+  res.sendFile(path.join(publicPath, "index.html"));
 });
 
-/**
- * ✅ AUTO ALERT ENGINE
- */
+// ================= START SERVER =================
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 WhatsApp bot + PWA running on port ${PORT}`);
+});
+
+// ================= AUTO ALERT ENGINE =================
 setInterval(runAlerts, 24 * 60 * 60 * 1000);
 runAlerts();
