@@ -1,22 +1,37 @@
 const { spawn } = require("child_process");
+const path = require("path");
 
 // ---------------------- Run Python Engine ----------------------
 function runPythonEngine(args) {
   return new Promise((resolve, reject) => {
-    const py = spawn("python3", args);
+    const enginePath = path.join(__dirname, "../python/engine.py");
+
+    const py = spawn("python3", [enginePath, ...args], {
+      env: process.env
+    });
+
     let output = "";
+    let error = "";
 
-    py.stdout.on("data", (data) => { output += data.toString(); });
-    py.stderr.on("data", (err) => console.error("Python error:", err.toString()));
+    py.stdout.on("data", data => {
+      output += data.toString();
+    });
 
-    py.on("close", (code) => {
-      if (code === 0) {
-        try {
-          resolve(JSON.parse(output)); // parse JSON here
-        } catch (err) {
-          reject(new Error("Python output is not valid JSON"));
-        }
-      } else reject(new Error("Python script failed"));
+    py.stderr.on("data", data => {
+      error += data.toString();
+    });
+
+    py.on("close", code => {
+      if (code !== 0) {
+        console.error("Python error:", error);
+        return reject(error);
+      }
+
+      try {
+        resolve(JSON.parse(output));
+      } catch (e) {
+        reject("Invalid Python JSON output");
+      }
     });
   });
 }

@@ -31,29 +31,35 @@ function calculateAggregatedPosition(rows) {
 }
 
 // --- Helper to run Python engine and parse JSON ---
-function runPythonEngine(args) {
+function runPythonEngine(message) {
   return new Promise((resolve) => {
-    const pyArgs = Array.isArray(args) ? args : ["./python/engine.py", args];
-    const py = spawn("python3", pyArgs);
+    const enginePath = path.join(__dirname, "../python/engine.py");
+
+    const py = spawn("python3", [enginePath, message], {
+      env: process.env
+    });
+
     let output = "";
 
-    py.stdout.on("data", (data) => {
+    py.stdout.on("data", data => {
       output += data.toString();
     });
 
-    py.stderr.on("data", (err) => {
+    py.stderr.on("data", err => {
       console.error("Python error:", err.toString());
     });
 
-    py.on("close", (code) => {
+    py.on("close", code => {
       if (code === 0) {
         try {
-          resolve(JSON.parse(output.trim())); // parse JSON safely
-        } catch (err) {
-          console.error("Python output JSON parse error:", err);
+          resolve(JSON.parse(output.trim()));
+        } catch (e) {
+          console.error("Python JSON parse error:", output);
           resolve(null);
         }
-      } else resolve(null); // fail silently
+      } else {
+        resolve(null);
+      }
     });
   });
 }
@@ -116,9 +122,9 @@ async function processMessage(message) {
   }
 
   // Send chart image if available
-  if (result.chart) {
-    await sendWhatsAppImage(msg.from || msg.phone, result.chart, `📊 ${result.symbol} Price Chart`);
-  }
+  //if (result.chart) {
+  //  await sendWhatsAppImage(msg.from || msg.phone, result.chart, `📊 ${result.symbol} Price Chart`);
+  //}
 
   return msgText;
 }

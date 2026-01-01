@@ -8,7 +8,6 @@ const bodyParser = require("body-parser");
 const { pool } = require("./db");
 const { handleMessage, handleChat } = require("./routes");
 const { runAlerts } = require("./alerts");
-const { runPythonEngine, buildWhatsAppMessage } = require("./utils"); // helpers for chat API
 
 const app = express();
 app.use(bodyParser.json());
