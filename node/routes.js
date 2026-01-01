@@ -56,6 +56,148 @@ async function addToPortfolio(userId, symbol, entryPrice, quantity) {
     throw err;
   }
 }
+exports.handleChat = async (req, res) => {
+  try {
+    const text = req.body.message?.trim();
+    if (!text) return res.json({ text: "❌ Empty message" });
+
+    // For PWA use a fixed user or session-based user
+    const userId = await getOrCreateUser("PWA_USER");
+
+    // ---------- GREETING ----------
+    const greetings = ["hi", "hello", "hey", "hii"];
+    if (greetings.includes(text.toLowerCase())) {
+      return res.json({
+        text:
+          "🌟👋 <strong>Welcome to StockBot!</strong> 👋🌟<br><br>" +
+          "💹 Track stocks, manage portfolio & get smart alerts.<br><br>" +
+          "<b>Commands:</b><br>" +
+          "• Show my watchlist<br>" +
+          "• Show my portfolio<br>" +
+          "• TRACK SYMBOL (TRACK IFL)<br>" +
+          "• BUY SYMBOL ENTRY QTY (BUY IFL 1574 10)<br>" +
+          "• SELL SYMBOL EXIT (SELL IFL 1600)<br>" +
+          "• Or send a symbol like IFL / KPIGREEN",
+        chart: null
+      });
+    }
+
+    const intent = detectIntent(text);
+
+    // ---------- SWITCH INTENT ----------
+    switch (intent) {
+
+      case "SHOW_WATCHLIST": {
+        const r = await pool.query(
+          "SELECT symbol FROM watchlist WHERE user_id=$1",
+          [userId]
+        );
+        return res.json({
+          text: r.rows.length
+            ? `📌 Your Watchlist: ${r.rows.map(x => x.symbol).join(", ")}`
+            : "📌 Your watchlist is empty",
+          chart: null
+        });
+      }
+
+      case "SHOW_PORTFOLIO": {
+        const r = await pool.query(
+          "SELECT symbol, quantity, entry_price, exit_price FROM portfolio WHERE user_id=$1",
+          [userId]
+        );
+
+        if (!r.rows.length)
+          return res.json({ text: "📊 Your portfolio is empty", chart: null });
+
+        let msg = "📊 <b>Your Portfolio</b><br><br>";
+        r.rows.forEach(row => {
+          msg += `${row.symbol}: ${row.quantity} @ ₹${row.entry_price}`;
+          if (row.exit_price) msg += ` | Exit ₹${row.exit_price}`;
+          msg += "<br>";
+        });
+
+        return res.json({ text: msg, chart: null });
+      }
+
+      case "TRACK": {
+        const symbol = text.split(" ")[1];
+        if (!symbol)
+          return res.json({ text: "❌ Usage: TRACK SYMBOL", chart: null });
+
+        await pool.query(
+          "INSERT INTO watchlist(user_id, symbol) VALUES($1,$2) ON CONFLICT DO NOTHING",
+          [userId, symbol.toUpperCase()]
+        );
+
+        return res.json({
+          text: `✅ ${symbol.toUpperCase()} added to watchlist`,
+          chart: null
+        });
+      }
+
+      case "BUY": {
+        const [, symbol, entry, qty] = text.split(" ");
+        if (!symbol || !entry || !qty)
+          return res.json({
+            text: "❌ Usage: BUY SYMBOL ENTRY_PRICE QUANTITY",
+            chart: null
+          });
+
+        await addToPortfolio(userId, symbol, parseFloat(entry), parseInt(qty));
+        return res.json({
+          text: `✅ Bought ${qty} shares of ${symbol.toUpperCase()} @ ₹${entry}`,
+          chart: null
+        });
+      }
+
+      case "SELL": {
+        const [, symbol, exit] = text.split(" ");
+        if (!symbol || !exit)
+          return res.json({
+            text: "❌ Usage: SELL SYMBOL EXIT_PRICE",
+            chart: null
+          });
+
+        await pool.query(
+          `UPDATE portfolio SET exit_price=$1 
+           WHERE user_id=$2 AND symbol=$3 AND exit_price IS NULL`,
+          [exit, userId, symbol.toUpperCase()]
+        );
+
+        return res.json({
+          text: `✅ Exit price set for ${symbol.toUpperCase()} @ ₹${exit}`,
+          chart: null
+        });
+      }
+
+      case "SYMBOL": {
+        const result = await processMessage(text.toUpperCase());
+
+        if (!result || typeof result !== "object")
+          return res.json({ text: "❌ Unable to fetch stock data", chart: null });
+
+        const reply = buildWhatsAppMessage(result);
+        return res.json(reply);
+      }
+
+      default:
+        return res.json({
+          text:
+            "❌ I didn’t understand.<br><br>" +
+            "Try:<br>" +
+            "• Show my watchlist<br>" +
+            "• Show my portfolio<br>" +
+            "• BUY / SELL / TRACK<br>" +
+            "• Or send a stock symbol",
+          chart: null
+        });
+    }
+
+  } catch (err) {
+    console.error("[handleChat]", err);
+    res.status(500).json({ text: "⚠️ Server error", chart: null });
+  }
+};
 
 // --- Main route handler ---
 exports.handleMessage = async (req, res) => {

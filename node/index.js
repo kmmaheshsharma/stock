@@ -6,7 +6,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 
 const { pool } = require("./db");
-const { handleMessage } = require("./routes");
+const { handleMessage, handleChat } = require("./routes");
 const { runAlerts } = require("./alerts");
 const { runPythonEngine, buildWhatsAppMessage } = require("./utils"); // helpers for chat API
 
@@ -90,7 +90,7 @@ app.post("/api/chat", async (req, res) => {
     if (!message) return res.status(400).json({ error: "No message provided" });
 
     // Call handleMessage for all messages
-    const reply = await handleMessage(message);
+    const reply = await handleChat(message);
 
     // Send response
     res.json({
@@ -103,7 +103,6 @@ app.post("/api/chat", async (req, res) => {
     res.status(500).json({ error: "Chat engine error" });
   }
 });
-
 
 // ================= HEALTH CHECK =================
 app.get("/health", (req, res) => {
