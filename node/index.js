@@ -1,9 +1,10 @@
 require("dotenv").config();
-
-const { spawn } = require("child_process");
 const path = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
+const { spawn } = require("child_process");
+const http = require("http");
+const { Server } = require("socket.io");
 
 const { pool } = require("./db");
 const { handleMessage, handleChat } = require("./routes");
@@ -14,8 +15,6 @@ app.use(bodyParser.json());
 
 // ================= PWA STATIC FILES =================
 const publicPath = path.join(__dirname, "public");
-console.log("DIRNAME:", __dirname);
-console.log("PUBLIC PATH:", publicPath);
 app.use(express.static(publicPath));
 
 // ================= ROOT ROUTE =================
@@ -36,11 +35,9 @@ app.get("/webhook", (req, res) => {
 });
 
 // ================= MESSAGE RECEIVER =================
-app.post("/webhook", handleMessage);
+// app.post("/webhook", handleMessage);
 
 // ================= PWA API ROUTES =================
-
-// GET /api/sentiments
 app.get("/api/sentiments", async (req, res) => {
   try {
     const rows = await pool.query(
@@ -52,7 +49,7 @@ app.get("/api/sentiments", async (req, res) => {
       if (r.sentiment_type === "accumulation") percent = 75;
       else if (r.sentiment_type === "distribution") percent = 25;
 
-      const changePercent = parseFloat(r.change_percent) || 0; // ensure numeric
+      const changePercent = parseFloat(r.change_percent) || 0;
 
       return {
         symbol: r.symbol,
@@ -73,7 +70,6 @@ app.get("/api/sentiments", async (req, res) => {
       };
     });
 
-
     res.json(data);
   } catch (err) {
     console.error("[API /sentiments]", err);
@@ -82,29 +78,58 @@ app.get("/api/sentiments", async (req, res) => {
 });
 
 // POST /api/chat
-// ---------------- POST /api/chat ----------------
 app.post("/api/chat", handleChat);
+
+// ================= SUBSCRIBE USER =================
+// Mark user as subscribed in DB
+app.post("/api/subscribe", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: "Missing userId" });
+
+    await pool.query("UPDATE users SET subscribed=true WHERE id=$1", [userId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[API /subscribe]", err);
+    res.status(500).json({ error: "Failed to subscribe user" });
+  }
+});
 
 // ================= HEALTH CHECK =================
 app.get("/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
-// ================= SPA FALLBACK (EXPRESS 5 FIX) =================
-// 🚨 Must be after all API routes
+// ================= SPA FALLBACK =================
 app.use((req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
-// ================= START SERVER =================
-const PORT = process.env.PORT || 3000;
+// ================= SOCKET.IO =================
+const server = http.createServer(app);
+const io = new Server(server);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  setTimeout(startBackgroundJobs, 3000);
+const userSockets = {};
+
+io.on("connection", (socket) => {
+  const userId = socket.handshake.query.userId;
+  if (userId) userSockets[userId] = socket;
+
+  socket.on("disconnect", () => {
+    delete userSockets[userId];
+  });
 });
 
+// Helper to send alerts to PWA bot
+function sendToBot(userId, text, chart) {
+  const socket = userSockets[userId];
+  if (!socket) return;
+  socket.emit("alertMessage", { text, chart });
+}
+
 // ================= BACKGROUND JOBS =================
+
+// Sentiment update
 function updateSentiment(symbol) {
   try {
     const scriptPath = path.join(__dirname, "../python/update_sentiment.py");
@@ -128,18 +153,27 @@ async function runSentimentCron() {
   }
 }
 
-function startBackgroundJobs() {
+// Start background jobs
+async function startBackgroundJobs() {
   console.log("⏱️ Starting background jobs");
+
+  // 1️⃣ Run sentiment cron
   runSentimentCron();
-  runAlerts([]); // pass empty array to avoid errors
-  setInterval(() => runAlerts([]), 240 * 60 * 1000);
+
+  // 2️⃣ Run PWA/bot alerts (dryRun = true)
+  const dryRunMessages = await runAlerts([], true);
+  console.log("✅ DryRun alerts sent to bot:", dryRunMessages.length);
+
+  // 3️⃣ Schedule WhatsApp alerts for subscribed users
+  setInterval(async () => {
+    await runAlerts([], true); // dryRun = false → WhatsApp
+    console.log("📨 Background WhatsApp alerts sent to subscribed users");
+  }, 1 * 60 * 60 * 1000); // every 4 hours
 }
 
-// ================= SUBSCRIPTIONS (IN-MEMORY) =================
-const subscriptions = [];
-
-app.post("/api/subscribe", async (req, res) => {
-  const sub = req.body;
-  subscriptions.push(sub);
-  res.json({ success: true });
+// ================= START SERVER =================
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  setTimeout(startBackgroundJobs, 3000);
 });

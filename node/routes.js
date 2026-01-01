@@ -68,8 +68,8 @@ exports.handleChat = async (req, res) => {
     const greetings = ["hi", "hello", "hey", "hii"];
 
     if (greetings.includes(text.toLowerCase())) {
-      const welcomeMsg = `
-    🌟👋 *Welcome to StockBot!* 👋🌟
+      const welcomeMsg =
+    `🌟👋 *Welcome to StockBot!* 👋🌟
 
     💹 Track your stocks, manage your portfolio, and get smart recommendations in real-time.
 
@@ -85,16 +85,13 @@ exports.handleChat = async (req, res) => {
     • 📉 Sell: *SELL SYMBOL EXIT_PRICE*  
       (example: \`SELL IFL 1600\`)
     • 🔎 Or just send a stock symbol like *IFL* or *KPIGREEN*  
-      to get instant updates
-      `;
+      to get instant updates`;
 
       return res.json({
         text: welcomeMsg,
         chart: null
       });
     }
-
-
     const intent = detectIntent(text);
 
     // ---------- SWITCH INTENT ----------

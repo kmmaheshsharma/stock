@@ -130,10 +130,19 @@ async function processMessage(message) {
 }
 
 // --- Main alert runner for users ---
-async function runAlerts(extraSymbols = []) {
-  const users = await pool.query("SELECT id, phone FROM users");
+async function runAlerts(extraSymbols = [], dryRun = false, userId = null) {
+  // Fetch only subscribed users or a specific subscribed user
+  const userQuery = userId
+    ? "SELECT id, phone FROM users WHERE id=$1 AND subscribed=true"
+    : "SELECT id, phone FROM users WHERE subscribed=true";
+  const userParams = userId ? [userId] : [];
 
-  for (const user of users.rows) {
+  const usersRes = await pool.query(userQuery, userParams);
+
+  const allMessages = []; // for PWA/dryRun
+
+  for (const user of usersRes.rows) {
+    // Get user's watchlist
     const watchlistRes = await pool.query(
       "SELECT symbol FROM watchlist WHERE user_id=$1",
       [user.id]
@@ -142,6 +151,7 @@ async function runAlerts(extraSymbols = []) {
     const allSymbols = [...new Set([...watchlist, ...extraSymbols])];
 
     for (const symbol of allSymbols) {
+      // Get portfolio info
       const portfolioRes = await pool.query(
         "SELECT id, entry_price, exit_price, stoploss_alert_sent, profit_alert_sent, quantity FROM portfolio WHERE user_id=$1 AND symbol=$2 AND status='open'",
         [user.id, symbol]
@@ -149,22 +159,47 @@ async function runAlerts(extraSymbols = []) {
 
       const { totalQuantity, avgEntryPrice } = calculateAggregatedPosition(portfolioRes.rows);
 
+      // Run Python engine
       const args = ["../python/engine.py", symbol];
       if (avgEntryPrice) args.push("--entry", avgEntryPrice);
 
       const result = await runPythonEngine(args);
       if (!result) continue;
 
-      let msgText = `📊 *${result.symbol}* Update\n\n`;
+      // Construct HTML message for PWA/bot
+      let msgText = `📊 <b>${result.symbol}</b> Update<br>`;
       msgText += `💰 Price: ₹${result.price}`;
       if (avgEntryPrice) msgText += ` (Avg Entry: ₹${avgEntryPrice.toFixed(2)})`;
       if (totalQuantity) msgText += ` | Qty: ${totalQuantity}`;
-      msgText += `\n⚡ Recommendation: ${result.recommendation || "Wait / Monitor"}\n`;
+      msgText += `<br>⚡ Recommendation: ${result.recommendation || "Wait / Monitor"}<br>`;
 
-      await sendWhatsApp(user.phone, msgText);
-      if (result.chart) await sendWhatsAppImage(user.phone, result.chart, `📊 ${result.symbol} Price Chart`);
+      if (!dryRun) {
+        // Send WhatsApp
+        await sendWhatsApp(user.phone, msgText);
+        if (result.chart) {
+          await sendWhatsAppImage(user.phone, result.chart, `📊 ${result.symbol} Price Chart`);
+        }
+      } else {
+        // Collect messages for PWA bot
+        allMessages.push({
+          userId: user.id,
+          phone: user.phone,
+          text: msgText,
+          chart: result.chart || null
+        });
+
+        console.log(`[DRY RUN] Message for user ${user.id} (${user.phone}):\n`, msgText);
+
+        // Optionally send to PWA bot in real-time
+        sendToBot(user.id, msgText, result.chart || null);
+      }
     }
   }
+
+  // Return messages if dryRun (for API)
+  if (dryRun) return allMessages;
 }
+
+
 
 module.exports = { runAlerts, processMessage };
