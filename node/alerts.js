@@ -78,21 +78,15 @@ async function processMessage(message) {
   console.log(`[SYMBOL] Processing symbol: ${message}`);
   const result = await runPythonEngine(message);
 
-  // --- Check if Python engine returned anything ---
-  if (!result) {
-    console.warn(`[SYMBOL] No result from Python engine for: ${message}`);
-    return `❌ Could not fetch stock info for "${message}". Try again later.`;
-  }
-
-  // --- Check if symbol is valid ---
-  if (!result.symbol || (Array.isArray(result.alerts) && result.alerts.includes("invalid_symbol"))) {
+  // --- Early check for invalid symbol ---
+  if (!result || !result.symbol || (Array.isArray(result.alerts) && result.alerts.includes("invalid_symbol"))) {
     console.warn(`[SYMBOL] Invalid or unknown symbol: ${message}`);
-    return `❌ Unable to fetch stock data for "${message}"`;
+    return null; // Return null so Node handler knows it's invalid
   }
 
   console.log(`[SYMBOL] Valid symbol received: ${result.symbol}`);
 
-  // --- Build the WhatsApp-style message safely ---
+  // --- Build message safely ---
   let msgText = `📊 *${result.symbol}* Update\n\n`;
   msgText += `💰 Price: ₹${result.price ?? "N/A"}\n`;
 
@@ -115,7 +109,6 @@ async function processMessage(message) {
   if (result.sentiment_type === "accumulation") sentimentEmoji = "🟢";
   if (result.sentiment_type === "distribution") sentimentEmoji = "🔴";
   if (result.sentiment_type === "hype") sentimentEmoji = "🚀";
-
   msgText += `${sentimentEmoji} Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "UNKNOWN"} (${result.sentiment ?? 0})\n\n`;
 
   let recommendation = result.recommendation || "Wait / Monitor";
@@ -136,18 +129,17 @@ async function processMessage(message) {
       if (alert === "buy_signal") msgText += `• 🟢 Accumulation detected\n`;
       if (alert === "trap_warning") msgText += `• 🚨 Hype trap risk\n`;
       if (alert === "error") msgText += `• ⚠️ Error fetching data\n`;
-      // No invalid_symbol here because we already filtered above
+      // invalid_symbol is already filtered above
     }
   }
 
-  // Optional: send chart if exists
-  // if (result.chart) {
-  //   await sendWhatsAppImage(msg.from || msg.phone, result.chart, `📊 ${result.symbol} Price Chart`);
-  // }
-
   console.log(`[SYMBOL] Response ready for symbol: ${result.symbol}`);
-  return msgText;
+  return {
+    text: msgText,
+    chart: result.chart || null
+  };
 }
+
 
 // --- Main alert runner for users ---
 async function runAlerts(extraSymbols = []) {
