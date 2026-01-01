@@ -87,18 +87,17 @@ app.get("/api/sentiments", async (req, res) => {
 app.post("/api/chat", async (req, res) => {
   try {
     const { message } = req.body;
+    if (!message) return res.status(400).json({ error: "No message provided" });
 
-    // Call Python engine
-    const result = await runPythonEngine(["../python/engine.py", message]);
+    // Call handleMessage for all messages
+    const reply = await handleMessage(message);
 
-    // Build WhatsApp / PWA message
-    const reply = buildWhatsAppMessage(result);
-
-    // Return text + chart (if any)
+    // Send response
     res.json({
-      text: reply.text,         // HTML formatted message
-      chart: reply.chart || null // base64 chart string
+      text: reply.text,
+      chart: reply.chart || null
     });
+
   } catch (err) {
     console.error("[API /chat]", err);
     res.status(500).json({ error: "Chat engine error" });
@@ -153,7 +152,7 @@ function startBackgroundJobs() {
   console.log("⏱️ Starting background jobs");
   runSentimentCron();
   runAlerts([]); // pass empty array to avoid errors
-  setInterval(() => runAlerts([]), 24 * 60 * 60 * 1000); // every 24 hours
+  setInterval(() => runAlerts([]), 1 * 60 * 1000);
 }
 
 // ================= SUBSCRIPTIONS (IN-MEMORY) =================
