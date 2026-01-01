@@ -56,7 +56,7 @@ async function runSentimentCron() {
 }
 
 // Run every 15 minutes
-setInterval(runSentimentCron, 720 * 60 * 1000);
+setInterval(runAlerts, 24 * 60 * 60 * 1000);
 
 // Run once at startup
 runSentimentCron();
@@ -97,5 +97,5 @@ app.listen(3000, () => {
 /**
  * ✅ AUTO ALERT ENGINE
  */
-setInterval(runAlerts, 720 * 60 * 1000);
+setInterval(runAlerts, 24 * 60 * 60 * 1000);
 runAlerts();
