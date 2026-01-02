@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NoBroko Bot</title>
-
+  
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#020617">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -274,7 +274,6 @@
 <body>
 
 <div class="app">
-
   <!-- Signup Screen -->
   <section id="signup-screen">
     <h2 style="color:white; text-align:center;">Welcome to NoBroko Bot</h2>
@@ -293,8 +292,6 @@
       <h1>📈 NoBroko Bot</h1>
       <div class="header-buttons">
         <button id="alerts-btn">🔔</button>
-        <button id="subscribe-btn">Subscribe</button>
-        <button id="unsubscribe-btn">Unsubscribe</button>
         <button>☰</button>
       </div>
     </header>
@@ -309,16 +306,40 @@
       </form>
     </section>
   </section>
-
 </div>
 
-<script src="app.js?v=16"></script>
+<script src="app.js?v=17"></script>
 <script>
   const messages = document.getElementById('messages');
   const observer = new MutationObserver(() => {
     messages.scrollTop = messages.scrollHeight;
   });
   observer.observe(messages, { childList: true });
+
+  document.getElementById("signup-form").addEventListener("submit", async function(event) {
+    event.preventDefault();
+    const phone = document.getElementById("phone").value;
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+    const subscribe = document.getElementById("subscribe").checked;
+
+    const response = await fetch("/check-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, name, email, subscribe })
+    });
+    
+    const data = await response.json();
+    if (data.status === "existing") {
+      // If the user is existing, show chat screen
+      document.getElementById("signup-screen").style.display = "none";
+      document.getElementById("chat-screen").style.display = "block";
+    } else if (data.status === "new") {
+      // If the user is new, continue with signup flow
+      document.getElementById("signup-screen").style.display = "none";
+      document.getElementById("chat-screen").style.display = "block";
+    }
+  });
 </script>
 
 </body>
