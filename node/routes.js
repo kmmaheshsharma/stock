@@ -77,7 +77,7 @@ exports.handleChat = async (req, res) => {
   try {
     const text = req.body.message?.trim();
     if (!text) return res.json({ text: "❌ Empty message" });
-    const phone = localStorage.getItem("userPhone");
+    const phone = req.body.phone;
     // For PWA use a fixed user or session-based user
     const user = await getOrCreateUser(phone);
 
@@ -87,7 +87,7 @@ exports.handleChat = async (req, res) => {
         text: `👋 Welcome! To use StockBot, you must subscribe first."`,
         chart: null
       });      
-    }
+   }
 
     // ---------- GREETING ----------
     const greetings = ["hi", "hello", "hey", "hii"];
