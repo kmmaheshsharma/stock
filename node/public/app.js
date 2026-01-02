@@ -18,12 +18,6 @@ cardsEl.innerHTML = "";
 
 // ---------------------- Signup Flow ----------------------
 // ---------------------- Check Local Storage for User ----------------------
-if (localStorage.getItem("userId")) {
-  signupScreen.style.display = "none";  // Hide sign-up screen
-  chatScreen.style.display = "";    // Show chat screen
-  initChatBot(localStorage.getItem("userId"));  // Initialize the chatbot with the stored userId
-} else {
-  // Check if user exists in the backend (e.g., by phone or email)
   const phone = localStorage.getItem("userPhone");
   if (phone) {
     // If phone exists, try to fetch user data from the backend
@@ -53,7 +47,6 @@ if (localStorage.getItem("userId")) {
     signupScreen.style.display = "";
     chatScreen.style.display = "none";
   }
-}
 // ---------------------- Handle Sign Up ----------------------
 signupBtn.addEventListener("click", async (e) => {
   e.preventDefault();
@@ -230,6 +223,8 @@ function delay(ms) {
 // ---------------------- Handle web chat ----------------------
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+  signupScreen.style.display = "none";
+  chatScreen.style.display = "";
   const msg = input.value.trim();
   if (!msg) return;
 
