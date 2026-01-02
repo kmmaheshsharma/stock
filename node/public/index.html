@@ -98,8 +98,9 @@
         display: flex;
         flex-direction: column;
         position: relative;
-        height: 100%;  /* Full height to make space for input */
-        overflow: hidden;
+        height: calc(100% - 60px);  /* Full height to make space for input */
+        overflow-y: auto;
+        padding-bottom: 60px;  /* To prevent the last message from hiding behind the input */
     }
 
     #messages {
@@ -147,7 +148,7 @@
         padding: 12px;
         border-top: 1px solid #1f2937;
         background: var(--bg);
-        position: sticky;
+        position: fixed; /* Make the input area fixed */
         bottom: 0;
         z-index: 10;
         width: 100%;
