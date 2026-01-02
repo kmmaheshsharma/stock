@@ -1,14 +1,111 @@
+// ---------------------- Elements ----------------------
 const messagesEl = document.getElementById("messages");
 const form = document.getElementById("chat-form");
 const input = document.getElementById("message-input");
 const cardsEl = document.getElementById("sentiment-cards");
 const alertsBtn = document.getElementById("alerts-btn");
 
-// Clear previous content on load
+const signupScreen = document.getElementById("signup-screen");
+const chatScreen = document.getElementById("chat-screen");
+const signupForm = document.getElementById("signup-form");
+const subscribeBtn = document.getElementById("subscribe-btn");
+const unsubscribeBtn = document.getElementById("unsubscribe-btn");
+// Clear previous content
 messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
 
-// ---------------------- Append chat messages ----------------------
+// ---------------------- Signup Flow ----------------------
+if (localStorage.getItem("userId")) {
+  signupScreen.style.display = "none";
+  chatScreen.style.display = "flex";
+  initChatBot(localStorage.getItem("userId"));
+}
+// ---------------------- Subscribe / Unsubscribe ----------------------
+subscribeBtn.addEventListener("click", async () => {
+  const phone = localStorage.getItem("userPhone"); // store phone on signup
+  if (!phone) {
+    alert("Phone number not found. Please signup again.");
+    return;
+  }
+
+  const typingDiv = botTypingIndicator();
+  try {
+    const res = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json();
+    await delay(Math.random() * 500 + 500);
+    typingDiv.remove();
+    appendMessage("Bot", data.message || "Subscribed successfully 🔔");
+  } catch (err) {
+    typingDiv.remove();
+    appendMessage("Bot", "⚠️ Failed to subscribe");
+    console.error(err);
+  }
+});
+
+unsubscribeBtn.addEventListener("click", async () => {
+  const phone = localStorage.getItem("userPhone");
+  if (!phone) {
+    alert("Phone number not found. Please signup again.");
+    return;
+  }
+
+  const typingDiv = botTypingIndicator();
+  try {
+    const res = await fetch("/api/unsubscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json();
+    await delay(Math.random() * 500 + 500);
+    typingDiv.remove();
+    appendMessage("Bot", data.message || "Unsubscribed successfully 🔕");
+  } catch (err) {
+    typingDiv.remove();
+    appendMessage("Bot", "⚠️ Failed to unsubscribe");
+    console.error(err);
+  }
+});
+signupForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const subscribed = document.getElementById("subscribe").checked;
+
+  try {
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone, email, subscribed })
+    });
+    const data = await res.json();
+
+    localStorage.setItem("userId", data.userId);
+    localStorage.setItem("userPhone", phone); // <-- store phone for later subscribe/unsubscribe
+
+    signupScreen.style.display = "none";
+    chatScreen.style.display = "flex";
+    initChatBot(data.userId);
+
+  } catch (err) {
+    console.error("Signup failed", err);
+    alert("Failed to sign up. Try again.");
+  }
+});
+
+
+function initChatBot(userId) {
+  console.log("Chat initialized for user", userId);
+  loadSentiments();
+  setInterval(loadSentiments, 30000);
+}
+
+// ---------------------- Chat Functions ----------------------
 function appendMessage(sender, html) {
   const div = document.createElement("div");
   div.className = sender === "You" ? "user-msg" : "bot-msg";
@@ -20,28 +117,20 @@ function appendMessage(sender, html) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-// ---------------------- Typing simulation ----------------------
 function botTypingIndicator() {
   const div = document.createElement("div");
   div.className = "bot-msg";
-  div.innerHTML = `
-    <div class="msg-content">
-      <div class="typing">
-        <span></span><span></span><span></span>
-      </div>
-    </div>
-  `;
+  div.innerHTML = `<div class="msg-content"><div class="typing"><span></span><span></span><span></span></div></div>`;
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
   return div;
 }
 
-
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// ---------------------- Handle web chat messages ----------------------
+// ---------------------- Handle web chat ----------------------
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const msg = input.value.trim();
@@ -51,21 +140,17 @@ form.addEventListener("submit", async (e) => {
   input.value = "";
 
   const typingDiv = botTypingIndicator();
-
   try {
-    // Send message to backend that uses processMessage (like handleMessage)
-    const res = await fetch("/api/webchat", { // <-- create this endpoint
+    const res = await fetch("/api/webchat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: msg })
     });
     const data = await res.json();
 
-    // simulate typing delay
     await delay(Math.random() * 1000 + 1000);
-
     typingDiv.remove();
-    appendMessage("Bot", data.text); // display the bot response
+    appendMessage("Bot", data.text);
   } catch (err) {
     typingDiv.remove();
     appendMessage("Bot", "⚠️ Error fetching response");
@@ -97,7 +182,7 @@ alertsBtn.addEventListener("click", async () => {
   }
 });
 
-// ---------------------- Load sentiment cards ----------------------
+// ---------------------- Sentiment Cards ----------------------
 async function loadSentiments() {
   try {
     const res = await fetch("/api/sentiments");
@@ -120,24 +205,16 @@ async function loadSentiments() {
   }
 }
 
-// ---------------------- Sentiment color ----------------------
 function getColor(sentiment) {
   if (sentiment === "Bullish") return "green";
   if (sentiment === "Bearish") return "red";
   return "goldenrod";
 }
 
-// ---------------------- Initial load & refresh ----------------------
-loadSentiments();
-setInterval(loadSentiments, 30000);
-
 // ---------------------- Service Worker ----------------------
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js").then((reg) => {
     reg.update();
-
-    if (reg.waiting) {
-      reg.waiting.postMessage({ type: "SKIP_WAITING" });
-    }
+    if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
   });
 }

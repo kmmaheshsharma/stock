@@ -36,7 +36,7 @@ body {
 
 /* 📱 Mobile shell */
 .app {
-  width: 700px; /* Increased width */
+  width: 800px; /* Increased width */
   height: 780px;
   background: var(--bg);
   border-radius: 28px;
@@ -82,12 +82,10 @@ header button {
 #sentiment-cards::-webkit-scrollbar {
   height: 6px;
 }
-
 #sentiment-cards::-webkit-scrollbar-thumb {
   background-color: var(--primary);
   border-radius: 3px;
 }
-
 #sentiment-cards::-webkit-scrollbar-track {
   background: #1f2937;
 }
@@ -269,28 +267,46 @@ header button {
 <body>
 
 <div class="app">
-  <header>
-    <h1>📈 NoBroko Bot</h1>
-    <div>
-      <button id="alerts-btn">🔔</button>
-      <button>☰</button>
-    </div>
-  </header>
 
-  <section id="sentiment-cards"></section>
-
-  <section id="chat-container">
-    <div id="messages"></div>
-    <form id="chat-form">
-      <input id="message-input" placeholder="Ask about a stock…" />
-      <button>➤</button>
+  <!-- Signup Screen -->
+  <section id="signup-screen">
+    <h2 style="color:white; text-align:center;">Welcome to NoBroko Bot</h2>
+    <form id="signup-form" style="display:flex; flex-direction:column; gap:12px; padding:20px;">
+      <input type="text" id="name" placeholder="Name" required style="padding:10px; border-radius:8px; border:none;">
+      <input type="text" id="phone" placeholder="Phone (+91xxxxxxx)" required style="padding:10px; border-radius:8px; border:none;">
+      <input type="email" id="email" placeholder="Email" required style="padding:10px; border-radius:8px; border:none;">
+      <label style="color:white;"><input type="checkbox" id="subscribe" checked> Subscribe to alerts</label>
+      <button type="submit" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000;">Sign Up</button>
     </form>
   </section>
+
+  <!-- Chat Bot Screen (hidden initially) -->
+  <section id="chat-screen" style="display:none;">
+    <header>
+      <h1>📈 NoBroko Bot</h1>
+      <div>
+        <button id="alerts-btn">🔔</button>
+        <button id="subscribe-btn">Subscribe</button>
+        <button id="unsubscribe-btn">Unsubscribe</button>
+        <button>☰</button>
+      </div>
+    </header>
+
+    <section id="sentiment-cards"></section>
+
+    <section id="chat-container">
+      <div id="messages"></div>
+      <form id="chat-form">
+        <input id="message-input" placeholder="Ask about a stock…" />
+        <button>➤</button>
+      </form>
+    </section>
+  </section>
+
 </div>
 
-<script src="app.js?v=13"></script>
+<script src="app.js?v=15"></script>
 <script>
-  // Ensure chat scrolls to bottom when new messages appear
   const messages = document.getElementById('messages');
   const observer = new MutationObserver(() => {
     messages.scrollTop = messages.scrollHeight;
