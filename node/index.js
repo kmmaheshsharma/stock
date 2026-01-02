@@ -76,7 +76,28 @@ app.get("/api/sentiments", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch sentiments" });
   }
 });
+app.post('/api/check-user', async (req, res) => {
+  const { phone, name, email, subscribe } = req.body;
 
+  try {
+    const result = await pool.query("SELECT id FROM users WHERE phone = $1", [phone]);
+
+    if (result.rows.length > 0) {
+      // User exists, return user status
+      return res.json({ status: "existing", user: result.rows[0] });
+    } else {
+      // New user, insert into DB
+      const newUser = await pool.query(
+        "INSERT INTO users (name, phone, email, subscribed) VALUES ($1, $2, $3, $4) RETURNING id",
+        [name, phone, email, subscribe]
+      );
+      return res.json({ status: "new", user: newUser.rows[0] });
+    }
+  } catch (err) {
+    console.error("Error checking user:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 // POST /api/chat
 app.post("/api/webchat", handleChat);
 
