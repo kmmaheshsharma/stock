@@ -168,12 +168,13 @@ form.addEventListener("submit", async (e) => {
 
   const typingDiv = botTypingIndicator();
   const phone = localStorage.getItem("userPhone");
-  try {
+  const userId = localStorage.getItem("userId");
+    try {
     // Send message to backend that uses processMessage (like handleMessage)
     const res = await fetch("/api/webchat", { // <-- create this endpoint
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: msg, phone: phone })
+      body: JSON.stringify({ message: msg, phone: phone, userId: userId })
     });
     const data = await res.json();
 
