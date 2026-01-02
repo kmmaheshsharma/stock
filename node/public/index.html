@@ -36,7 +36,7 @@ body {
 
 /* 📱 Mobile shell */
 .app {
-  width: 390px;
+  width: 420px;
   height: 780px;
   background: var(--bg);
   border-radius: 28px;
@@ -117,7 +117,8 @@ header button {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  scroll-behavior: smooth;
 }
 
 /* Messages */
@@ -130,11 +131,12 @@ header button {
 .bot-msg { align-items: flex-start; }
 
 .msg-content {
-  max-width: 75%;
-  padding: 10px 14px;
-  border-radius: 16px;
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: 18px;
   font-size: 14px;
   animation: slideUp .25s ease;
+  word-wrap: break-word;
 }
 
 .user-msg .msg-content {
@@ -149,12 +151,6 @@ header button {
   border-bottom-left-radius: 4px;
 }
 
-.msg-time {
-  font-size: 10px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-
 /* ⌨️ Input */
 #chat-form {
   display: flex;
@@ -165,16 +161,16 @@ header button {
 
 #message-input {
   flex: 1;
-  padding: 10px 14px;
-  border-radius: 20px;
+  padding: 12px 16px;
+  border-radius: 24px;
   border: 1px solid #1f2937;
   background: #020617;
   color: white;
 }
 
 #chat-form button {
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: none;
   background: var(--primary);
@@ -209,6 +205,47 @@ header button {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ✅ Professional bot message style */
+.message.bot {
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  color: #f0f0f0;
+  padding: 20px 25px;
+  border-radius: 15px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 500px;
+  margin: 15px auto;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  border-left: 5px solid #ffd700;
+  word-wrap: break-word;
+  transition: all 0.3s ease;
+}
+
+/* Highlight code elements inside bot messages */
+.message.bot code.code {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffd700;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+}
+
+/* Emoji styling to make it pop */
+.message.bot span.emoji {
+  font-size: 18px;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 600px) {
+  .message.bot {
+    font-size: 14px;
+    padding: 15px 20px;
+    max-width: 95%;
+  }
+}
 </style>
 </head>
 
@@ -234,6 +271,6 @@ header button {
   </section>
 </div>
 
-<script src="app.js?v=10"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>
