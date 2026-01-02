@@ -77,7 +77,7 @@ exports.handleChat = async (req, res) => {
   try {
     const text = req.body.message?.trim();
     if (!text) return res.json({ text: "❌ Empty message" });
-
+    const phone = localStorage.getItem("userPhone");
     // For PWA use a fixed user or session-based user
     const user = await getOrCreateUser(phone);
 
