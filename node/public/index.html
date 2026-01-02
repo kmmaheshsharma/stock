@@ -93,21 +93,21 @@
   }
 
   #chat-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;  /* Ensure messages are aligned at the bottom */
+      overflow: hidden;
+      position: relative;
   }
 
   #messages {
-    flex: 1;
-    padding: 12px;
-    overflow-y: scroll;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    scroll-behavior: smooth;
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      scroll-behavior: smooth;
   }
 
   .user-msg, .bot-msg {
@@ -140,14 +140,16 @@
   }
 
   #chat-form {
-    display: flex;
-    gap: 8px;
-    padding: 12px;
-    border-top: 1px solid #1f2937;
-    background: var(--bg);
-    position: sticky;
-    bottom: 0;
-    z-index: 10;
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-top: 1px solid #1f2937;
+      background: var(--bg);
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+      width: 100%;
+      box-sizing: border-box;
   }
 
   #message-input {
