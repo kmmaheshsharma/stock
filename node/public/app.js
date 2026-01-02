@@ -5,6 +5,9 @@ const cardsEl = document.getElementById("sentiment-cards");
 const alertsBtn = document.getElementById("alerts-btn");
 const signinBtn = document.getElementById("signin-btn");
 const signupBtn = document.getElementById("signup-btn");
+const signupScreen = document.getElementById("signup-screen");
+const chatScreen = document.getElementById("chat-screen");
+const signupForm = document.getElementById("signup-form");
 // Clear previous content on load
 messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
