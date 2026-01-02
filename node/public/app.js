@@ -15,12 +15,16 @@ window.onload = function() {
   // ---------------------- Check Local Storage for User ----------------------
   const phone = localStorage.getItem("userPhone");
   console.log("Fetched phone:", phone);
-  if (phone) {
-    // If phone exists, try to fetch user data from the backend
-    fetch(`/api/check-user/${phone}`)
-      .then((res) => res.json())
+  if (phone) {    
+    fetch(`/api/check-user/${phone}`, { method: 'POST' })  // Ensure POST method is used
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return res.json();  // Try parsing the response as JSON
+      })
       .then((data) => {
-        if (data.userId) {
+        if (data.status === 'existing' && data.userId) {
           // User found in the backend, log them in
           localStorage.setItem("userId", data.userId);
           localStorage.setItem("userPhone", phone);
@@ -44,6 +48,7 @@ window.onload = function() {
     chatScreen.style.display = "none"; // Hide chat screen
   }
 };
+
 
 // ---------------------- Append chat messages ----------------------
 function appendMessage(sender, html) {
@@ -113,9 +118,22 @@ signinBtn.addEventListener("click", async (e) => {
   }
 
   try {
-    const res = await fetch(`/api/check-user/${phone}`);
+    const res = await fetch("/api/check-user", {
+      method: "POST", // Ensure the correct HTTP method
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ phone }), // Send phone in request body
+    });
+
+    // Check if the response was successful
+    if (!res.ok) {
+      throw new Error("Network response was not ok");
+    }
+
     const data = await res.json();
 
+    // Check if userId exists in the response
     if (data.userId) {
       // Store user details in localStorage
       localStorage.setItem("userId", data.userId);
@@ -133,6 +151,7 @@ signinBtn.addEventListener("click", async (e) => {
     alert("Failed to sign in. Try again.");
   }
 });
+
 // ---------------------- Handle web chat messages ----------------------
 form.addEventListener("submit", async (e) => {
   e.preventDefault();

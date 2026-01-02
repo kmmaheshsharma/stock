@@ -195,7 +195,6 @@ header button {
 .typing span:nth-child(2) { animation-delay: .2s }
 .typing span:nth-child(3) { animation-delay: .4s }
 
-/* Animations */
 @keyframes blink {
   0% { opacity: .2 }
   20% { opacity: 1 }
@@ -224,7 +223,6 @@ header button {
   transition: all 0.3s ease;
 }
 
-/* Highlight code elements inside bot messages */
 .message.bot code.code {
   background-color: rgba(255, 255, 255, 0.1);
   color: #ffd700;
@@ -234,7 +232,7 @@ header button {
   font-size: 13px;
 }
 
-/* Emoji styling to make it pop */
+/* Emoji styling */
 .message.bot span.emoji {
   font-size: 18px;
 }
@@ -292,15 +290,20 @@ header button {
   </section>
 </div>
 
-
-<script src="app.js?v=32"></script>
+<script src="app.js?v=33"></script>
 <script>
   // Ensure chat scrolls to bottom when new messages appear
   const messages = document.getElementById('messages');
+  
+  // MutationObserver for monitoring changes to the message list
   const observer = new MutationObserver(() => {
-    messages.scrollTop = messages.scrollHeight;
+    messages.scrollTop = messages.scrollHeight; // Scroll to the bottom
   });
-  observer.observe(messages, { childList: true });
+
+  observer.observe(messages, { childList: true }); // Observe the message container for changes
+
+  // Optionally: Handle smooth scroll behavior on input
+  messages.style.scrollBehavior = "smooth";
 </script>
 </body>
 </html>
