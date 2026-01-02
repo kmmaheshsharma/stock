@@ -15,10 +15,42 @@ messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
 
 // ---------------------- Signup Flow ----------------------
+// ---------------------- Check Local Storage for User ----------------------
 if (localStorage.getItem("userId")) {
-  signupScreen.style.display = "none";
-  chatScreen.style.display = "flex";
-  initChatBot(localStorage.getItem("userId"));
+  signupScreen.style.display = "none";  // Hide sign-up screen
+  chatScreen.style.display = "flex";    // Show chat screen
+  initChatBot(localStorage.getItem("userId"));  // Initialize the chatbot with the stored userId
+} else {
+  // Check if user exists in the backend (e.g., by phone or email)
+  const phone = localStorage.getItem("userPhone");
+  if (phone) {
+    // If phone exists, try to fetch user data from the backend
+    fetch(`/api/check-user/${phone}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.userId) {
+          // User found in the backend, log them in
+          localStorage.setItem("userId", data.userId);
+          localStorage.setItem("userPhone", phone);
+          signupScreen.style.display = "none";
+          chatScreen.style.display = "flex";
+          initChatBot(data.userId);
+        } else {
+          // User not found in the backend, show sign-up screen
+          signupScreen.style.display = "flex";
+          chatScreen.style.display = "none";
+        }
+      })
+      .catch((err) => {
+        console.error("Error checking user", err);
+        signupScreen.style.display = "flex";
+        chatScreen.style.display = "none";
+      });
+  } else {
+    // No phone, show sign-up screen
+    signupScreen.style.display = "flex";
+    chatScreen.style.display = "none";
+  }
 }
 // ---------------------- Subscribe / Unsubscribe ----------------------
 subscribeBtn.addEventListener("click", async () => {
