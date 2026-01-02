@@ -255,21 +255,40 @@
 <script src="app.js?v=49"></script>
 <script>
   const messages = document.getElementById('messages');
-  
   let isScrolledToBottom = true;
 
   messages.addEventListener('scroll', () => {
-    const threshold = 50;
-    isScrolledToBottom = messages.scrollHeight - messages.scrollTop <= messages.clientHeight + threshold;
+      const threshold = 50;
+      isScrolledToBottom = messages.scrollHeight - messages.scrollTop <= messages.clientHeight + threshold;
   });
 
+  // Automatically scroll to the bottom if the user is already at the bottom of the chat
   const observer = new MutationObserver(() => {
-    if (isScrolledToBottom) {
-      messages.scrollTop = messages.scrollHeight;
-    }
+      if (isScrolledToBottom) {
+          messages.scrollTop = messages.scrollHeight;
+      }
   });
 
+  // Start observing the messages container for any new messages
   observer.observe(messages, { childList: true });
+
+  // Function to add a new message (for demo purposes)
+  function addMessage(message, isUser = true) {
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add(isUser ? 'user-msg' : 'bot-msg');
+
+      const msgContentDiv = document.createElement('div');
+      msgContentDiv.classList.add('msg-content');
+      msgContentDiv.textContent = message;
+
+      messageDiv.appendChild(msgContentDiv);
+      messages.appendChild(messageDiv);
+  }
+
+  // Example usage (replace with your actual message logic):
+  setTimeout(() => addMessage("Hello, this is a message from the bot!"), 1000);
+  setTimeout(() => addMessage("Hey! This is a response from the user.", false), 2000);
+
 </script>
 
 </body>
