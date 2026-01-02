@@ -36,7 +36,7 @@ body {
 
 /* 📱 Mobile shell */
 .app {
-  width: 480px; /* Increased width */
+  width: 700px; /* Increased width */
   height: 780px;
   background: var(--bg);
   border-radius: 28px;
@@ -76,8 +76,21 @@ header button {
   gap: 10px;
   padding: 10px;
   overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) #1f2937;
+}
+#sentiment-cards::-webkit-scrollbar {
+  height: 6px;
 }
 
+#sentiment-cards::-webkit-scrollbar-thumb {
+  background-color: var(--primary);
+  border-radius: 3px;
+}
+
+#sentiment-cards::-webkit-scrollbar-track {
+  background: #1f2937;
+}
 .card {
   min-width: 150px;
   background: #020617;
@@ -275,7 +288,7 @@ header button {
   </section>
 </div>
 
-<script src="app.js?v=12"></script>
+<script src="app.js?v=13"></script>
 <script>
   // Ensure chat scrolls to bottom when new messages appear
   const messages = document.getElementById('messages');
