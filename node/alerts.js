@@ -109,16 +109,18 @@ async function processMessage(message) {
     alertsHTML += `</p>`;
   }
 
-  const msgHTML = `
-<div class="stock-update">
-  <h3>📊 ${result.symbol} Update</h3>
-  <p>💰 <strong>Price:</strong> ₹${result.price ?? "N/A"}</p>
-  <p>📉 Low / 📈 High: ₹${result.low ?? "N/A"} / ₹${result.high ?? "N/A"}</p>
-  <p>📊 Volume: ${result.volume ?? "N/A"} | Avg: ${result.avg_volume?.toFixed(0) ?? "N/A"}</p>
-  <p>🔻 Change: ${result.change_percent?.toFixed(2) ?? "0"}%</p>
-  <p>🧠 Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "NEUTRAL"} (${result.sentiment ?? 0})</p>
-  <p>⚡ Recommendation: <strong>${recommendation}</strong></p>
-  ${alertsHTML}
+const msgHTML = `
+<div class="message bot">
+  <div class="stock-update">
+    <h3>📊 ${result.symbol} Update</h3>
+    <p>💰 <strong>Price:</strong> ₹${result.price ?? "N/A"}</p>
+    <p>📉 Low / 📈 High: ₹${result.low ?? "N/A"} / ₹${result.high ?? "N/A"}</p>
+    <p>📊 Volume: ${result.volume ?? "N/A"} | Avg: ${result.avg_volume?.toFixed(0) ?? "N/A"}</p>
+    <p>🔻 Change: ${result.change_percent?.toFixed(2) ?? "0"}%</p>
+    <p>🧠 Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "NEUTRAL"} (${result.sentiment ?? 0})</p>
+    <p>⚡ Recommendation: <strong>${recommendation}</strong></p>
+    ${alertsHTML ?? ""}
+  </div>
 </div>
 `;
 
@@ -173,33 +175,76 @@ async function runAlerts(extraSymbols = [], dryRun = false, userId = null) {
       if (totalQuantity) msgText += ` | Qty: ${totalQuantity}`;
       msgText += `<br>⚡ Recommendation: ${result.recommendation || "Wait / Monitor"}<br>`;
 
-      if (!dryRun) {
-        // Send WhatsApp
-        await sendWhatsApp(user.phone, msgText);
-        if (result.chart) {
-          await sendWhatsAppImage(user.phone, result.chart, `📊 ${result.symbol} Price Chart`);
-        }
-      } else {
         // Collect messages for PWA bot
-        allMessages.push({
-          userId: user.id,
-          phone: user.phone,
-          text: msgText,
-          chart: result.chart || null
-        });
+      allMessages.push({
+        userId: user.id,
+        phone: user.phone,
+        text: msgText,
+        chart: result.chart || null
+      });
 
-        console.log(`[DRY RUN] Message for user ${user.id} (${user.phone}):\n`, msgText);
+      console.log(`[DRY RUN] Message for user ${user.id} (${user.phone}):\n`, msgText);
 
-        // Optionally send to PWA bot in real-time
-        sendToBot(user.id, msgText, result.chart || null);
-      }
+      // Optionally send to PWA bot in real-time
+      sendToBot(user.id, msgText, result.chart || null);
     }
   }
 
   // Return messages if dryRun (for API)
   if (dryRun) return allMessages;
 }
+async function getUserSymbols(userId) {
+  // 1️⃣ Get watchlist symbols
+  const watchlistRes = await pool.query(
+    "SELECT symbol FROM watchlist WHERE user_id = $1",
+    [userId]
+  );
+  const watchlist = watchlistRes.rows.map(r => r.symbol.toUpperCase());
+
+  // 2️⃣ Get portfolio symbols (only open positions)
+  const portfolioRes = await pool.query(
+    "SELECT symbol FROM portfolio WHERE user_id = $1 AND status = 'open'",
+    [userId]
+  );
+  const portfolio = portfolioRes.rows.map(r => r.symbol.toUpperCase());
+
+  // 3️⃣ Combine and remove duplicates
+  const allSymbols = [...new Set([...watchlist, ...portfolio])];
+
+  return allSymbols;
+}
+
+async function generateUserAlerts(user) {
+  const symbols = await getUserSymbols(user.id);
+  const messages = [];
+
+  for (const symbol of symbols) {
+    // Get portfolio info
+    const portfolioRes = await pool.query(
+      "SELECT id, entry_price, exit_price, stoploss_alert_sent, profit_alert_sent, quantity FROM portfolio WHERE user_id=$1 AND symbol=$2 AND status='open'",
+      [user.id, symbol]
+    );
+    const { totalQuantity, avgEntryPrice } = calculateAggregatedPosition(portfolioRes.rows);
+
+    // Run Python engine or sentiment logic
+    const args = ["../python/engine.py", symbol];
+    if (avgEntryPrice) args.push("--entry", avgEntryPrice);
+    const result = await runPythonEngine(args);
+    if (!result) continue;
+
+    // Construct message
+    let msgText = `📊 <b>${result.symbol}</b> Update<br>`;
+    msgText += `💰 Price: ₹${result.price}`;
+    if (avgEntryPrice) msgText += ` (Avg Entry: ₹${avgEntryPrice.toFixed(2)})`;
+    if (totalQuantity) msgText += ` | Qty: ${totalQuantity}`;
+    msgText += `<br>⚡ Recommendation: ${result.recommendation || "Wait / Monitor"}<br>`;
+
+    messages.push({ text: msgText, chart: result.chart || null });
+  }
+
+  return messages;
+}
 
 
 
-module.exports = { runAlerts, processMessage };
+module.exports = { generateUserAlerts, processMessage };

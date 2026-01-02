@@ -12,13 +12,14 @@ if (!fs.existsSync(chartDir)) {
 
 // --- Helper to get or create user by phone ---
 async function getOrCreateUser(phone) {
-  const res = await pool.query("SELECT id FROM users WHERE phone=$1", [phone]);
-  if (res.rows.length) return res.rows[0].id;
+  const res = await pool.query("SELECT id, subscribed FROM users WHERE phone=$1", [phone]);
+  if (res.rows.length) return res.rows[0]; // return id & subscribed
+
   const insert = await pool.query(
-    "INSERT INTO users (phone) VALUES ($1) RETURNING id",
+    "INSERT INTO users (phone, subscribed) VALUES ($1, FALSE) RETURNING id, subscribed",
     [phone]
   );
-  return insert.rows[0].id;
+  return insert.rows[0];
 }
 
 // --- Detect natural language intent ---
@@ -62,29 +63,36 @@ exports.handleChat = async (req, res) => {
     if (!text) return res.json({ text: "❌ Empty message" });
 
     // For PWA use a fixed user or session-based user
-    const userId = await getOrCreateUser("PWA_USER");
+    const user = await getOrCreateUser(phone);
+
+    if (!user.subscribed) {
+      // send subscribe message with button
+      await sendWhatsApp(phone, {
+        text: "👋 Welcome! To use StockBot, you must subscribe first.",
+        buttons: [
+          { type: "reply", title: "Subscribe ✅", payload: "SUBSCRIBE" }
+        ]
+      });
+      return res.send("OK");
+  }
 
     // ---------- GREETING ----------
     const greetings = ["hi", "hello", "hey", "hii"];
 
     if (greetings.includes(text.toLowerCase())) {
-      const welcomeMsg = `
-    🌟👋 <b>Welcome to StockBot!</b> 👋🌟<br><br>
-    💹 Track your stocks, manage your portfolio, and get smart recommendations in real-time.<br><br>
-    📚 <b>Commands you can use:</b><br>
-    • 📌 Show my <b>watchlist</b><br>
-      (example: type <code>Show my watchlist</code>)<br>
-    • 📊 Show my <b>portfolio</b><br>
-      (example: type <code>Show my portfolio</code>)<br>
-    • ➕ Track a stock: <b>TRACK SYMBOL</b><br>
-      (example: <code>TRACK IFL</code>)<br>
-    • 💰 Buy: <b>BUY SYMBOL ENTRY_PRICE QUANTITY</b><br>
-      (example: <code>BUY IFL 1574 10</code>)<br>
-    • 📉 Sell: <b>SELL SYMBOL EXIT_PRICE</b><br>
-      (example: <code>SELL IFL 1600</code>)<br>
-    • 🔎 Or just send a stock symbol like <b>IFL</b> or <b>KPIGREEN</b><br>
-      to get instant updates
-      `;
+    const welcomeMsg = `
+    <div class="message bot">
+      🌟👋 <strong>Welcome to StockBot!</strong> 👋🌟<br><br>
+      💹 Track your stocks, manage your portfolio, and get smart recommendations in real-time.<br><br>
+      📚 <strong>Commands you can use:</strong><br>
+      • 📌 Show my <strong>watchlist</strong> <code class="code">Show my watchlist</code><br>
+      • 📊 Show my <strong>portfolio</strong> <code class="code">Show my portfolio</code><br>
+      • ➕ Track a stock <strong>TRACK SYMBOL</strong> <code class="code">TRACK IFL</code><br>
+      • 💰 Buy: <strong>BUY SYMBOL ENTRY_PRICE QUANTITY</strong> <code class="code">BUY IFL 1574 10</code><br>
+      • 📉 Sell: <strong>SELL SYMBOL EXIT_PRICE</strong> <code class="code">SELL IFL 1600</code><br>
+      • 🔎 Or send a stock symbol like <strong>IFL</strong> or <strong>KPIGREEN</strong> to get instant updates
+    </div>
+    `;
 
       return res.json({
         text: welcomeMsg,
@@ -133,8 +141,22 @@ exports.handleChat = async (req, res) => {
         if (!symbol)
           return res.json({ text: "❌ Usage: TRACK SYMBOL", chart: null });
 
+        // First, check if the stock is already in the watchlist
+        const check = await pool.query(
+          "SELECT * FROM watchlist WHERE user_id = $1 AND symbol = $2",
+          [userId, symbol.toUpperCase()]
+        );
+
+        if (check.rows.length > 0) {
+          return res.json({
+            text: `📌 ${symbol.toUpperCase()} is already in your watchlist`,
+            chart: null
+          });
+        }
+
+        // Insert new symbol
         await pool.query(
-          "INSERT INTO watchlist(user_id, symbol) VALUES($1,$2) ON CONFLICT DO NOTHING",
+          "INSERT INTO watchlist(user_id, symbol) VALUES($1,$2)",
           [userId, symbol.toUpperCase()]
         );
 
