@@ -14,7 +14,7 @@ cardsEl.innerHTML = "";
 window.onload = function() {
   // ---------------------- Check Local Storage for User ----------------------
   const phone = localStorage.getItem("userPhone");
-  
+  console.log("Fetched phone:", phone);
   if (phone) {
     // If phone exists, try to fetch user data from the backend
     fetch(`/api/check-user/${phone}`)
@@ -143,13 +143,13 @@ form.addEventListener("submit", async (e) => {
   input.value = "";
 
   const typingDiv = botTypingIndicator();
-
+  const phone = localStorage.getItem("userPhone");
   try {
     // Send message to backend that uses processMessage (like handleMessage)
     const res = await fetch("/api/webchat", { // <-- create this endpoint
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: msg })
+      body: JSON.stringify({ message: msg, phone: phone })
     });
     const data = await res.json();
 
