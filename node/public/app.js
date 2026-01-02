@@ -133,5 +133,11 @@ setInterval(loadSentiments, 30000);
 
 // ---------------------- Service Worker ----------------------
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js").then(() => console.log("Service Worker registered"));
+  navigator.serviceWorker.register("/sw.js").then((reg) => {
+    reg.update();
+
+    if (reg.waiting) {
+      reg.waiting.postMessage({ type: "SKIP_WAITING" });
+    }
+  });
 }
