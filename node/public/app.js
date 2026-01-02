@@ -20,7 +20,7 @@ cardsEl.innerHTML = "";
 // ---------------------- Check Local Storage for User ----------------------
 if (localStorage.getItem("userId")) {
   signupScreen.style.display = "none";  // Hide sign-up screen
-  chatScreen.style.display = "flex";    // Show chat screen
+  chatScreen.style.display = "";    // Show chat screen
   initChatBot(localStorage.getItem("userId"));  // Initialize the chatbot with the stored userId
 } else {
   // Check if user exists in the backend (e.g., by phone or email)
@@ -35,22 +35,22 @@ if (localStorage.getItem("userId")) {
           localStorage.setItem("userId", data.userId);
           localStorage.setItem("userPhone", phone);
           signupScreen.style.display = "none";
-          chatScreen.style.display = "flex";
+          chatScreen.style.display = "";
           initChatBot(data.userId);
         } else {
           // User not found in the backend, show sign-up screen
-          signupScreen.style.display = "flex";
+          signupScreen.style.display = "";
           chatScreen.style.display = "none";
         }
       })
       .catch((err) => {
         console.error("Error checking user", err);
-        signupScreen.style.display = "flex";
+        signupScreen.style.display = "";
         chatScreen.style.display = "none";
       });
   } else {
     // No phone, show sign-up screen
-    signupScreen.style.display = "flex";
+    signupScreen.style.display = "";
     chatScreen.style.display = "none";
   }
 }
@@ -77,7 +77,7 @@ signupBtn.addEventListener("click", async (e) => {
 
     // Switch to chat screen
     signupScreen.style.display = "none";
-    chatScreen.style.display = "flex";
+    chatScreen.style.display = "";
     initChatBot(data.userId);
   } catch (err) {
     console.error("Signup failed", err);
@@ -107,7 +107,7 @@ signinBtn.addEventListener("click", async (e) => {
 
       // Switch to chat screen
       signupScreen.style.display = "none";
-      chatScreen.style.display = "flex";
+      chatScreen.style.display = "";
       initChatBot(data.userId);
     } else {
       alert("User not found. Please sign up.");
@@ -186,7 +186,7 @@ signupForm.addEventListener("submit", async (e) => {
     localStorage.setItem("userPhone", phone); // <-- store phone for later subscribe/unsubscribe
 
     signupScreen.style.display = "none";
-    chatScreen.style.display = "flex";
+    chatScreen.style.display = "";
     initChatBot(data.userId);
 
   } catch (err) {
