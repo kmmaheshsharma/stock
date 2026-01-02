@@ -11,205 +11,205 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   
-<style>
-  :root {
-    --bg: #020617;
-    --surface: #020617;
-    --header: #1f2937;
-    --primary: #22c55e;
-    --bot: #1f2937;
-    --user: #22c55e;
-    --text: #e5e7eb;
-    --muted: #9ca3af;
-  }
+  <style>
+    :root {
+      --bg: #020617;
+      --surface: #020617;
+      --header: #1f2937;
+      --primary: #22c55e;
+      --bot: #1f2937;
+      --user: #22c55e;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+    }
 
-  * { 
-    box-sizing: border-box; 
-    margin: 0;
-  }
+    * { 
+      box-sizing: border-box; 
+      margin: 0;
+    }
 
-  body {
-    margin: 0;
-    height: 100vh;
-    background: #000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: Inter, system-ui, Arial, sans-serif;
-    color: var(--text);
-  }
-
-  .app {
-    width: 800px;
-    height: 780px;
-    background: var(--bg);
-    border-radius: 28px;
-    box-shadow: 0 30px 80px rgba(0,0,0,.8);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  header {
-    padding: 14px 16px;
-    background: var(--header);
-    color: var(--text);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #1f2937;
-  }
-
-  header h1 {
-    font-size: 18px;
-    margin: 0;
-  }
-
-  header button {
-    background: none;
-    border: none;
-    color: var(--text);
-    font-size: 18px;
-    margin-left: 12px;
-    cursor: pointer;
-  }
-
-  #sentiment-cards {
-    display: flex;
-    gap: 10px;
-    padding: 10px;
-    overflow-x: auto;
-  }
-
-  .card {
-    min-width: 150px;
-    background: #020617;
-    border: 1px solid #1f2937;
-    border-radius: 14px;
-    padding: 10px;
-    color: white;
-    font-size: 13px;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-  }
-
-  #chat-container {
+    body {
+      margin: 0;
+      height: 100vh;
+      background: #000;
       display: flex;
-      flex-direction: column;
-      justify-content: flex-end;  /* Ensure messages are aligned at the bottom */
-      overflow: hidden;
-      position: relative;
-      height: 100%;  /* Ensure the container takes up the full height */
-  }
+      justify-content: center;
+      align-items: center;
+      font-family: Inter, system-ui, Arial, sans-serif;
+      color: var(--text);
+    }
 
-  #messages {
-      flex: 1;
-      padding: 12px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      scroll-behavior: smooth;
-  }
-
-  .user-msg, .bot-msg {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .user-msg { align-items: flex-end; }
-  .bot-msg { align-items: flex-start; }
-
-  .msg-content {
-    max-width: 85%;
-    padding: 12px 16px;
-    border-radius: 18px;
-    font-size: 14px;
-    animation: slideUp .25s ease;
-    word-wrap: break-word;
-  }
-
-  .user-msg .msg-content {
-    background: var(--user);
-    color: #022c22;
-    border-bottom-right-radius: 4px;
-  }
-
-  .bot-msg .msg-content {
-    background: var(--bot);
-    color: var(--text);
-    border-bottom-left-radius: 4px;
-  }
-
-  #chat-form {
-      display: flex;
-      gap: 8px;
-      padding: 12px;
-      border-top: 1px solid #1f2937;
-      background: var(--bg);
-      position: sticky;
-      bottom: 0;
-      z-index: 10;
-      width: 100%;
-      box-sizing: border-box;
-  }
-
-  #message-input {
-    flex: 1;
-    padding: 12px 16px;
-    border-radius: 24px;
-    border: 1px solid #1f2937;
-    background: #020617;
-    color: var(--text);
-  }
-
-  #chat-form button {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: none;
-    background: var(--primary);
-    font-size: 16px;
-    cursor: pointer;
-  }
-
-  .typing {
-    display: flex;
-    gap: 4px;
-  }
-
-  .typing span {
-    width: 6px;
-    height: 6px;
-    background: #9ca3af;
-    border-radius: 50%;
-    animation: blink 1.4s infinite both;
-  }
-
-  .typing span:nth-child(2) { animation-delay: .2s }
-  .typing span:nth-child(3) { animation-delay: .4s }
-
-  @keyframes blink {
-    0% { opacity: .2 }
-    20% { opacity: 1 }
-    100% { opacity: .2 }
-  }
-
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @media screen and (max-width: 1000px) {
     .app {
-      width: 95%;
+      width: 800px;
+      height: 780px;
+      background: var(--bg);
+      border-radius: 28px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.8);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
-    .message.bot {
+
+    header {
+      padding: 14px 16px;
+      background: var(--header);
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1f2937;
+    }
+
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    header button {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 18px;
+      margin-left: 12px;
+      cursor: pointer;
+    }
+
+    #sentiment-cards {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      overflow-x: auto;
+    }
+
+    .card {
+      min-width: 150px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      border-radius: 14px;
+      padding: 10px;
+      color: white;
+      font-size: 13px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    #chat-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;  /* Ensure messages are aligned at the bottom */
+        overflow: hidden;
+        position: relative;
+        height: 100%;  /* Ensure the container takes up the full height */
+    }
+
+    #messages {
+        flex-grow: 1;
+        padding: 12px;
+        overflow-y: auto;  /* Scrollable messages */
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        scroll-behavior: smooth;
+    }
+
+    .user-msg, .bot-msg {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-msg { align-items: flex-end; }
+    .bot-msg { align-items: flex-start; }
+
+    .msg-content {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 18px;
       font-size: 14px;
-      padding: 15px 20px;
-      max-width: 95%;
+      animation: slideUp .25s ease;
+      word-wrap: break-word;
     }
-  }
-</style>
+
+    .user-msg .msg-content {
+      background: var(--user);
+      color: #022c22;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bot-msg .msg-content {
+      background: var(--bot);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+    }
+
+    #chat-form {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        border-top: 1px solid #1f2937;
+        background: var(--bg);
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    #message-input {
+        flex: 1;
+        padding: 12px 16px;
+        border-radius: 24px;
+        border: 1px solid #1f2937;
+        background: #020617;
+        color: var(--text);
+    }
+
+    #chat-form button {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: none;
+        background: var(--primary);
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .typing {
+        display: flex;
+        gap: 4px;
+    }
+
+    .typing span {
+        width: 6px;
+        height: 6px;
+        background: #9ca3af;
+        border-radius: 50%;
+        animation: blink 1.4s infinite both;
+    }
+
+    .typing span:nth-child(2) { animation-delay: .2s }
+    .typing span:nth-child(3) { animation-delay: .4s }
+
+    @keyframes blink {
+        0% { opacity: .2 }
+        20% { opacity: 1 }
+        100% { opacity: .2 }
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media screen and (max-width: 1000px) {
+        .app {
+            width: 95%;
+        }
+        .message.bot {
+            font-size: 14px;
+            padding: 15px 20px;
+            max-width: 95%;
+        }
+    }
+  </style>
 </head>
 
 <body>
