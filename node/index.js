@@ -8,7 +8,7 @@ const { Server } = require("socket.io");
 
 const { pool } = require("./db");
 const { handleMessage, handleChat } = require("./routes");
-const { runAlerts } = require("./alerts");
+const { generateUserAlerts } = require("./alerts");
 
 const app = express();
 app.use(bodyParser.json());
@@ -94,6 +94,57 @@ app.post("/api/subscribe", async (req, res) => {
     res.status(500).json({ error: "Failed to subscribe user" });
   }
 });
+app.post("/api/users", async (req, res) => {
+  const { name, phone, email, subscribed } = req.body;
+
+  if (!name || !phone) {
+    return res.status(400).json({ error: "Name and phone are required" });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO users (name, phone, email, subscribed)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (phone) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, subscribed = EXCLUDED.subscribed
+       RETURNING id`,
+      [name, phone, email || null, subscribed ?? true]
+    );
+
+    res.json({ userId: result.rows[0].id });
+  } catch (err) {
+    console.error("Error inserting user:", err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+// Subscribe user
+app.post("/api/subscribe", async (req, res) => {
+  const { phone } = req.body;
+  try {
+    await pool.query(
+      "UPDATE users SET subscribed = true WHERE phone = $1 RETURNING id, phone, subscribed",
+      [phone]
+    );
+    res.json({ success: true, message: "User subscribed successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to subscribe user" });
+  }
+});
+
+// Unsubscribe user
+app.post("/api/unsubscribe", async (req, res) => {
+  const { phone } = req.body;
+  try {
+    await pool.query(
+      "UPDATE users SET subscribed = false WHERE phone = $1 RETURNING id, phone, subscribed",
+      [phone]
+    );
+    res.json({ success: true, message: "User unsubscribed successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to unsubscribe user" });
+  }
+});
 
 // ================= HEALTH CHECK =================
 app.get("/health", (req, res) => {
@@ -152,6 +203,19 @@ async function runSentimentCron() {
     console.error("[SENTIMENT]", e.message);
   }
 }
+async function runAlertsForAllUsers() {
+  // Get all subscribed users
+  const usersRes = await pool.query("SELECT id, phone FROM users WHERE subscribed=true");
+
+  for (const user of usersRes.rows) {
+    const messages = await generateUserAlerts(user);
+
+    for (const msg of messages) {
+      // Push to PWA bot
+      sendToBot(user.id, msg.text, msg.chart);
+    }
+  }
+}
 
 // Start background jobs
 async function startBackgroundJobs() {
@@ -161,12 +225,12 @@ async function startBackgroundJobs() {
   runSentimentCron();
 
   // 2️⃣ Run PWA/bot alerts (dryRun = true)
-  const dryRunMessages = await runAlerts([], true);
+  await runAlertsForAllUsers();
   console.log("✅ DryRun alerts sent to bot:", dryRunMessages.length);
 
   // 3️⃣ Schedule WhatsApp alerts for subscribed users
   setInterval(async () => {
-    await runAlerts([], true); // dryRun = false → WhatsApp
+    await runAlertsForAllUsers();
     console.log("📨 Background WhatsApp alerts sent to subscribed users");
   }, 1 * 60 * 1000); // every 1 minute
 }
