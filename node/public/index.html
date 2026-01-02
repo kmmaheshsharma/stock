@@ -1,158 +1,237 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NoBroko WhatsApp Bot</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="manifest" href="manifest.json">
-  <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      margin: 0; 
-      background: #f5f5f5; 
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NoBroko Bot</title>
 
-    header { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      padding: 10px 20px; 
-      background: #222; 
-      color: white; 
-    }
-    header h1 { margin: 0; font-size: 1.2em; }
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#020617">
 
-    main { padding: 20px; }
+<style>
+:root {
+  --bg: #020617;
+  --surface: #020617;
+  --header: #020617;
+  --primary: #22c55e;
+  --bot: #1f2937;
+  --user: #22c55e;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+}
 
-    /* Sentiment cards */
-    #sentiment-cards { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
-      gap: 10px; 
-      margin-bottom: 20px; 
-    }
-    .card { 
-      background: white; 
-      padding: 10px; 
-      border-radius: 8px; 
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-    }
-    .progress-bar { 
-      width: 100%; 
-      height: 6px; 
-      background: #ddd; 
-      border-radius: 3px; 
-      margin: 5px 0; 
-      position: relative; 
-    }
-    .indicator { 
-      position: absolute; 
-      top: 0; 
-      width: 6px; 
-      height: 6px; 
-      border-radius: 50%; 
-      background: #000; 
-    }
+* { box-sizing: border-box; }
 
-    /* Chat container */
-    #chat-container { 
-      background: white; 
-      border-radius: 10px; 
-      padding: 10px; 
-      max-height: 60vh; 
-      display: flex; 
-      flex-direction: column; 
-    }
-    #messages { 
-      flex: 1; 
-      overflow-y: auto; 
-      margin-bottom: 10px; 
-      padding-bottom: 10px; 
-    }
+body {
+  margin: 0;
+  height: 100vh;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Inter, system-ui, Arial, sans-serif;
+}
 
-    /* WhatsApp-style chat bubbles */
-    .user-msg {
-      text-align: right;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      margin: 5px 0;
-    }
-    .bot-msg {
-      text-align: left;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      margin: 5px 0;
-    }
-    .msg-content {
-      max-width: 75%;
-      padding: 8px 12px;
-      border-radius: 18px;
-      display: inline-block;
-      overflow-wrap: break-word;
-    }
-    .user-msg .msg-content {
-      background-color: #dcf8c6;
-      color: #000;
-      border-bottom-right-radius: 2px;
-    }
-    .bot-msg .msg-content {
-      background-color: #f1f0f0;
-      color: #000;
-      border-bottom-left-radius: 2px;
-    }
-    .msg-time {
-      font-size: 0.7em;
-      color: gray;
-      margin-top: 2px;
-    }
+/* 📱 Mobile shell */
+.app {
+  width: 390px;
+  height: 780px;
+  background: var(--bg);
+  border-radius: 28px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.8);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
-    /* Chat form */
-    #chat-form { 
-      display: flex; 
-      gap: 5px; 
-    }
-    #chat-form input { 
-      flex: 1; 
-      padding: 5px 10px; 
-      border-radius: 5px; 
-      border: 1px solid #ccc; 
-    }
-    #chat-form button { 
-      padding: 5px 10px; 
-      border: none; 
-      border-radius: 5px; 
-      background: #222; 
-      color: white; 
-      cursor: pointer; 
-    }
-  </style>
+/* 🔝 Header */
+header {
+  padding: 14px 16px;
+  background: var(--header);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #1f2937;
+}
+
+header h1 {
+  font-size: 15px;
+  margin: 0;
+}
+
+header button {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 18px;
+  margin-left: 12px;
+}
+
+/* 📊 Cards */
+#sentiment-cards {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.card {
+  min-width: 150px;
+  background: #020617;
+  border: 1px solid #1f2937;
+  border-radius: 14px;
+  padding: 10px;
+  color: white;
+  font-size: 13px;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #111827;
+  border-radius: 3px;
+  margin: 6px 0;
+  position: relative;
+}
+
+.indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+}
+
+/* 💬 Chat */
+#chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+#messages {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Messages */
+.user-msg, .bot-msg {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-msg { align-items: flex-end; }
+.bot-msg { align-items: flex-start; }
+
+.msg-content {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  animation: slideUp .25s ease;
+}
+
+.user-msg .msg-content {
+  background: var(--user);
+  color: #022c22;
+  border-bottom-right-radius: 4px;
+}
+
+.bot-msg .msg-content {
+  background: var(--bot);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+
+.msg-time {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ⌨️ Input */
+#chat-form {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #1f2937;
+}
+
+#message-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 20px;
+  border: 1px solid #1f2937;
+  background: #020617;
+  color: white;
+}
+
+#chat-form button {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  font-size: 16px;
+}
+
+/* ⌛ Typing indicator */
+.typing {
+  display: flex;
+  gap: 4px;
+}
+
+.typing span {
+  width: 6px;
+  height: 6px;
+  background: #9ca3af;
+  border-radius: 50%;
+  animation: blink 1.4s infinite both;
+}
+
+.typing span:nth-child(2) { animation-delay: .2s }
+.typing span:nth-child(3) { animation-delay: .4s }
+
+/* Animations */
+@keyframes blink {
+  0% { opacity: .2 }
+  20% { opacity: 1 }
+  100% { opacity: .2 }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
 </head>
+
 <body>
+
+<div class="app">
   <header>
     <h1>📈 NoBroko Bot</h1>
     <div>
-      <button id="alerts-btn">🔔 Alerts</button>
-      <button id="menu-btn">☰</button>
+      <button id="alerts-btn">🔔</button>
+      <button>☰</button>
     </div>
   </header>
 
-  <main>
-    <!-- Sentiment cards -->
-    <section id="sentiment-cards"></section>
+  <section id="sentiment-cards"></section>
 
-    <!-- Chat container -->
-    <section id="chat-container">
-      <div id="messages"></div>
-      <form id="chat-form">
-        <input type="text" id="message-input" placeholder="Ask about a stock..." />
-        <button type="submit">Send</button>
-      </form>
-    </section>
-  </main>
+  <section id="chat-container">
+    <div id="messages"></div>
+    <form id="chat-form">
+      <input id="message-input" placeholder="Ask about a stock…" />
+      <button>➤</button>
+    </form>
+  </section>
+</div>
 
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

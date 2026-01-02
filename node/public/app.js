@@ -24,11 +24,18 @@ function appendMessage(sender, html) {
 function botTypingIndicator() {
   const div = document.createElement("div");
   div.className = "bot-msg";
-  div.innerHTML = `<div class="msg-content">Bot is typing...</div><div class="msg-time">...</div>`;
+  div.innerHTML = `
+    <div class="msg-content">
+      <div class="typing">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  `;
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
   return div;
 }
+
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
