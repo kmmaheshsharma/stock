@@ -54,6 +54,7 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #1f2937;
+      height: 50px; /* Height of the top bar */
     }
 
     header h1 {
@@ -68,10 +69,8 @@
       padding-bottom: 70px;
     }
 
-    /* Adding the ScrollStyle class here */
     .ScrollStyle {
-      max-height: calc(100% - 120px);  /* Adjust the height to fit your needs */
-      overflow-y: scroll; /* Enable vertical scroll */
+      overflow-y: scroll;
       padding: 12px;
       display: flex;
       flex-direction: column;
@@ -186,42 +185,20 @@
 
 <script src="app.js?v=49"></script>
 <script>
-const messages = document.getElementById('messages');
-const chatContainer = document.getElementById('chat-container');
-let isScrolledToBottom = true;
+  function adjustChatHeight() {
+    const headerHeight = document.querySelector('header').offsetHeight; // Get header height
+    const windowHeight = window.innerHeight; // Get the total window height
+    const availableHeight = windowHeight - headerHeight - 70; // Subtracting any other fixed padding/space
 
-// Detect if the user has scrolled to the bottom
-messages.addEventListener('scroll', () => {
-    const threshold = 50;
-    isScrolledToBottom = messages.scrollHeight - messages.scrollTop <= messages.clientHeight + threshold;
-});
+    // Set max-height of chat area
+    document.querySelector('.ScrollStyle').style.maxHeight = `${availableHeight}px`;
+  }
 
-// Observe changes in the #messages container
-const observer = new MutationObserver(() => {
-    if (isScrolledToBottom) {
-        window.scrollTo(0, document.body.scrollHeight);  // Scroll to the bottom of the page
-    }
-});
+  // Adjust the height on page load and when the window is resized
+  window.addEventListener('load', adjustChatHeight);
+  window.addEventListener('resize', adjustChatHeight);
 
-// Start observing the #messages container for new message additions
-observer.observe(messages, { childList: true });
-
-// Function to add a new message (for demo purposes)
-function addMessage(message, isUser = true) {
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add(isUser ? 'user-msg' : 'bot-msg');
-
-    const msgContentDiv = document.createElement('div');
-    msgContentDiv.classList.add('msg-content');
-    msgContentDiv.textContent = message;
-
-    messageDiv.appendChild(msgContentDiv);
-    messages.appendChild(messageDiv);
-}
-
-// Example usage (replace with your actual message logic):
-setTimeout(() => addMessage("Hello, this is a message from the bot!"), 1000);
-
+  // Scroll behavior and other logic here...
 </script>
 
 </body>
