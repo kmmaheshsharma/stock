@@ -225,8 +225,7 @@ async function startBackgroundJobs() {
   runSentimentCron();
 
   // 2️⃣ Run PWA/bot alerts (dryRun = true)
-  await runAlertsForAllUsers();
-  console.log("✅ DryRun alerts sent to bot:", dryRunMessages.length);
+  await runAlertsForAllUsers(); 
 
   // 3️⃣ Schedule WhatsApp alerts for subscribed users
   setInterval(async () => {

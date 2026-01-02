@@ -221,14 +221,20 @@ async function generateUserAlerts(user) {
   for (const symbol of symbols) {
     // Get portfolio info
     const portfolioRes = await pool.query(
-      "SELECT id, entry_price, exit_price, stoploss_alert_sent, profit_alert_sent, quantity FROM portfolio WHERE user_id=$1 AND symbol=$2 AND status='open'",
+      `SELECT id, entry_price, exit_price, quantity
+       FROM portfolio
+       WHERE user_id = $1 AND symbol = $2 AND status = 'open'`,
       [user.id, symbol]
     );
+
     const { totalQuantity, avgEntryPrice } = calculateAggregatedPosition(portfolioRes.rows);
+
+    if (!totalQuantity) continue; // skip if no open positions
 
     // Run Python engine or sentiment logic
     const args = ["../python/engine.py", symbol];
     if (avgEntryPrice) args.push("--entry", avgEntryPrice);
+
     const result = await runPythonEngine(args);
     if (!result) continue;
 
@@ -236,7 +242,12 @@ async function generateUserAlerts(user) {
     let msgText = `📊 <b>${result.symbol}</b> Update<br>`;
     msgText += `💰 Price: ₹${result.price}`;
     if (avgEntryPrice) msgText += ` (Avg Entry: ₹${avgEntryPrice.toFixed(2)})`;
-    if (totalQuantity) msgText += ` | Qty: ${totalQuantity}`;
+    
+    // Include exit price if available
+    const exitPrice = portfolioRes.rows[0]?.exit_price;
+    if (exitPrice) msgText += ` | Exit: ₹${exitPrice.toFixed(2)}`;
+
+    msgText += ` | Qty: ${totalQuantity}`;
     msgText += `<br>⚡ Recommendation: ${result.recommendation || "Wait / Monitor"}<br>`;
 
     messages.push({ text: msgText, chart: result.chart || null });
@@ -245,6 +256,22 @@ async function generateUserAlerts(user) {
   return messages;
 }
 
+// ---------------------- Helper ----------------------
+function calculateAggregatedPosition(rows) {
+  if (!rows || rows.length === 0) return { totalQuantity: 0, avgEntryPrice: 0 };
+
+  let totalQuantity = 0;
+  let totalCost = 0;
+
+  for (const row of rows) {
+    totalQuantity += row.quantity;
+    totalCost += row.entry_price * row.quantity;
+  }
+
+  const avgEntryPrice = totalQuantity > 0 ? totalCost / totalQuantity : 0;
+
+  return { totalQuantity, avgEntryPrice };
+}
 
 
 module.exports = { generateUserAlerts, processMessage };
