@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NoBroko Bot</title>
 
-  <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#020617">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-
+  
   <style>
     :root {
       --bg: #020617;
@@ -256,20 +256,20 @@
 
 <div class="app">
   <!-- Signup Screen -->
-  <section id="signup-screen">
+  <section id="signup-screen" style="display: none;">
     <h2 style="color:white; text-align:center;">Welcome to NoBroko Bot</h2>
     <form id="signup-form" style="display:flex; flex-direction:column; gap:12px; padding:20px;">
-      <input type="text" id="name" placeholder="Name" required style="padding:10px; border-radius:8px; border:none;">
-      <input type="text" id="phone" placeholder="Phone (+91xxxxxxx)" required style="padding:10px; border-radius:8px; border:none;">
-      <input type="email" id="email" placeholder="Email" required style="padding:10px; border-radius:8px; border:none;">
-      <label style="color:white;"><input type="checkbox" id="subscribe" checked> Subscribe to alerts</label>
+      <input type="text" id="name" placeholder="Name" required="" style="padding:10px; border-radius:8px; border:none;">
+      <input type="text" id="phone" placeholder="Phone (+91xxxxxxx)" required="" style="padding:10px; border-radius:8px; border:none;">
+      <input type="email" id="email" placeholder="Email" required="" style="padding:10px; border-radius:8px; border:none;">
+      <label style="color:white;"><input type="checkbox" id="subscribe" checked=""> Subscribe to alerts</label>
       <button type="button" id="signin-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%; box-sizing: border-box;">Sign In</button>
       <button type="button" id="signup-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%; box-sizing: border-box;">Sign Up</button>
     </form>
   </section>
 
   <!-- Chat Bot Screen (hidden initially) -->
-  <section id="chat-screen" style="display:none;">
+  <section id="chat-screen" style="display:block;">
     <header>
       <h1>📈 NoBroko Bot</h1>
       <div>
@@ -283,30 +283,35 @@
     <section id="chat-container">
       <div id="messages"></div>
       <form id="chat-form">
-        <input id="message-input" placeholder="Ask about a stock…" />
+        <input id="message-input" placeholder="Ask about a stock…">
         <button>➤</button>
       </form>
     </section>
   </section>
 </div>
 
-<script src="app.js?v=35"></script>
+<script src="app.js?v=48"></script>
 <script>
   // Ensure chat scrolls to bottom when new messages appear
   const messages = document.getElementById('messages');
+  
+  // Add an event listener for the scroll event to check if the user is at the bottom
+  let isScrolledToBottom = true;
 
-  // MutationObserver for monitoring changes to the message list
+  messages.addEventListener('scroll', () => {
+    const threshold = 50; // 50px threshold for detecting when the user is near the bottom
+    isScrolledToBottom = messages.scrollHeight - messages.scrollTop <= messages.clientHeight + threshold;
+  });
+
+  // MutationObserver to detect changes to the message container
   const observer = new MutationObserver(() => {
-    // Only scroll to bottom if not already at the bottom
-    if (messages.scrollHeight - messages.scrollTop === messages.clientHeight) {
+    if (isScrolledToBottom) {
       messages.scrollTop = messages.scrollHeight;
     }
   });
 
-  observer.observe(messages, { childList: true }); // Observe the message container for changes
-
-  // Optionally: Handle smooth scroll behavior on input
-  messages.style.scrollBehavior = "smooth";
+  observer.observe(messages, { childList: true });
 </script>
+
 </body>
 </html>
