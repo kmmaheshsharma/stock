@@ -35,9 +35,8 @@
       font-family: Inter, system-ui, Arial, sans-serif;
     }
 
-    /* 📱 Mobile shell */
     .app {
-      width: 800px; /* Increased width */
+      width: 800px;
       height: 780px;
       background: var(--bg);
       border-radius: 28px;
@@ -47,7 +46,6 @@
       overflow: hidden;
     }
 
-    /* 🔝 Header */
     header {
       padding: 14px 16px;
       background: var(--header);
@@ -71,7 +69,6 @@
       margin-left: 12px;
     }
 
-    /* 📊 Cards */
     #sentiment-cards {
       display: flex;
       gap: 10px;
@@ -89,23 +86,6 @@
       font-size: 13px;
     }
 
-    .progress-bar {
-      height: 6px;
-      background: #111827;
-      border-radius: 3px;
-      margin: 6px 0;
-      position: relative;
-    }
-
-    .indicator {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      position: absolute;
-      top: 0;
-    }
-
-    /* 💬 Chat */
     #chat-container {
       flex: 1;
       display: flex;
@@ -123,7 +103,6 @@
       scroll-behavior: smooth;
     }
 
-    /* Messages */
     .user-msg, .bot-msg {
       display: flex;
       flex-direction: column;
@@ -153,7 +132,6 @@
       border-bottom-left-radius: 4px;
     }
 
-    /* ⌨️ Input */
     #chat-form {
       display: flex;
       gap: 8px;
@@ -179,7 +157,6 @@
       font-size: 16px;
     }
 
-    /* ⌛ Typing indicator */
     .typing {
       display: flex;
       gap: 4px;
@@ -207,7 +184,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* ✅ Professional bot message style */
     .message.bot {
       background: linear-gradient(135deg, #1e3c72, #2a5298);
       color: #f0f0f0;
@@ -237,7 +213,6 @@
       font-size: 18px;
     }
 
-    /* Responsive adjustments */
     @media screen and (max-width: 1000px) {
       .app {
         width: 95%;
@@ -255,7 +230,6 @@
 <body>
 
 <div class="app">
-  <!-- Signup Screen -->
   <section id="signup-screen" style="display: none;">
     <h2 style="color:white; text-align:center;">Welcome to NoBroko Bot</h2>
     <form id="signup-form" style="display:flex; flex-direction:column; gap:12px; padding:20px;">
@@ -268,7 +242,6 @@
     </form>
   </section>
 
-  <!-- Chat Bot Screen (hidden initially) -->
   <section id="chat-screen" style="display:block;">
     <header>
       <h1>📈 NoBroko Bot</h1>
@@ -290,20 +263,17 @@
   </section>
 </div>
 
-<script src="app.js?v=48"></script>
+<script src="app.js?v=49"></script>
 <script>
-  // Ensure chat scrolls to bottom when new messages appear
   const messages = document.getElementById('messages');
   
-  // Add an event listener for the scroll event to check if the user is at the bottom
   let isScrolledToBottom = true;
 
   messages.addEventListener('scroll', () => {
-    const threshold = 50; // 50px threshold for detecting when the user is near the bottom
+    const threshold = 50;
     isScrolledToBottom = messages.scrollHeight - messages.scrollTop <= messages.clientHeight + threshold;
   });
 
-  // MutationObserver to detect changes to the message container
   const observer = new MutationObserver(() => {
     if (isScrolledToBottom) {
       messages.scrollTop = messages.scrollHeight;
