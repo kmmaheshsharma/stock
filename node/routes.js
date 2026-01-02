@@ -12,15 +12,31 @@ if (!fs.existsSync(chartDir)) {
 
 // --- Helper to get or create user by phone ---
 async function getOrCreateUser(phone) {
-  const res = await pool.query("SELECT id, subscribed FROM users WHERE phone=$1", [phone]);
-  if (res.rows.length) return res.rows[0]; // return id & subscribed
+  try {
+    // Check if the user already exists
+    const res = await pool.query("SELECT id, subscribed FROM users WHERE phone=$1", [phone]);
+    
+    if (res.rows.length) {
+      // If user exists, return the user's id and subscription status
+      return res.rows[0];
+    }
 
-  const insert = await pool.query(
-    "INSERT INTO users (phone, subscribed) VALUES ($1, FALSE) RETURNING id, subscribed",
-    [phone]
-  );
-  return insert.rows[0];
+    // If the user doesn't exist, create a new user
+    const insert = await pool.query(
+      "INSERT INTO users (phone, subscribed) VALUES ($1, FALSE) RETURNING id, subscribed",
+      [phone]
+    );
+
+    // Return the newly created user's id and subscription status
+    return insert.rows[0];
+    
+  } catch (err) {
+    // Log and throw an error if there is a problem with the database query
+    console.error("Error in getOrCreateUser:", err);
+    throw new Error("Unable to get or create user.");
+  }
 }
+
 
 // --- Detect natural language intent ---
 function detectIntent(text) {
@@ -67,14 +83,11 @@ exports.handleChat = async (req, res) => {
 
     if (!user.subscribed) {
       // send subscribe message with button
-      await sendWhatsApp(phone, {
-        text: "👋 Welcome! To use StockBot, you must subscribe first.",
-        buttons: [
-          { type: "reply", title: "Subscribe ✅", payload: "SUBSCRIBE" }
-        ]
-      });
-      return res.send("OK");
-  }
+      return res.json({
+        text: `👋 Welcome! To use StockBot, you must subscribe first."`,
+        chart: null
+      });      
+    }
 
     // ---------- GREETING ----------
     const greetings = ["hi", "hello", "hey", "hii"];
