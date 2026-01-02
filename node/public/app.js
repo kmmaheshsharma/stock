@@ -3,7 +3,8 @@ const form = document.getElementById("chat-form");
 const input = document.getElementById("message-input");
 const cardsEl = document.getElementById("sentiment-cards");
 const alertsBtn = document.getElementById("alerts-btn");
-
+const signinBtn = document.getElementById("signin-btn");
+const signupBtn = document.getElementById("signup-btn");
 // Clear previous content on load
 messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
@@ -33,7 +34,69 @@ function botTypingIndicator() {
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+// ---------------------- Handle Sign Up ----------------------
+signupBtn.addEventListener("click", async (e) => {
+  e.preventDefault();
 
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const subscribed = document.getElementById("subscribe").checked;
+
+  try {
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone, email, subscribed })
+    });
+    const data = await res.json();
+
+    // Store user details in localStorage
+    localStorage.setItem("userId", data.userId);
+    localStorage.setItem("userPhone", phone);
+
+    // Switch to chat screen
+    signupScreen.style.display = "none";
+    chatScreen.style.display = "";
+    initChatBot(data.userId);
+  } catch (err) {
+    console.error("Signup failed", err);
+    alert("Failed to sign up. Try again.");
+  }
+});
+
+// ---------------------- Handle Sign In ----------------------
+signinBtn.addEventListener("click", async (e) => {
+  e.preventDefault();
+
+  const phone = document.getElementById("phone").value.trim();
+
+  if (!phone) {
+    alert("Please enter your phone number.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/check-user/${phone}`);
+    const data = await res.json();
+
+    if (data.userId) {
+      // Store user details in localStorage
+      localStorage.setItem("userId", data.userId);
+      localStorage.setItem("userPhone", phone);
+
+      // Switch to chat screen
+      signupScreen.style.display = "none";
+      chatScreen.style.display = "";
+      initChatBot(data.userId);
+    } else {
+      alert("User not found. Please sign up.");
+    }
+  } catch (err) {
+    console.error("Sign in failed", err);
+    alert("Failed to sign in. Try again.");
+  }
+});
 // ---------------------- Handle web chat messages ----------------------
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
