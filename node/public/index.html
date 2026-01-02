@@ -33,6 +33,7 @@ body {
   align-items: center;
   font-family: Inter, system-ui, Arial, sans-serif;
 }
+
 /* Header buttons layout */
 .header-buttons {
   display: flex;
@@ -82,6 +83,12 @@ header {
 header h1 {
   font-size: 15px;
   margin: 0;
+}
+
+header .header-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 header button {
@@ -306,7 +313,7 @@ header button {
   <section id="chat-screen" style="display:none;">
     <header>
       <h1>📈 NoBroko Bot</h1>
-      <div>
+      <div class="header-buttons">
         <button id="alerts-btn">🔔</button>
         <button id="subscribe-btn">Subscribe</button>
         <button id="unsubscribe-btn">Unsubscribe</button>
@@ -335,5 +342,6 @@ header button {
   });
   observer.observe(messages, { childList: true });
 </script>
+
 </body>
 </html>
