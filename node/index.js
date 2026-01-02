@@ -168,7 +168,7 @@ async function startBackgroundJobs() {
   setInterval(async () => {
     await runAlerts([], true); // dryRun = false → WhatsApp
     console.log("📨 Background WhatsApp alerts sent to subscribed users");
-  }, 1 * 60 * 60 * 1000); // every 4 hours
+  }, 1 * 60 * 1000); // every 1 minute
 }
 
 // ================= START SERVER =================
