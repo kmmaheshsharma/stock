@@ -65,18 +65,18 @@
       display: flex;
       flex-direction: column;
       flex-grow: 1;
-      overflow-y: auto;
-      padding-bottom: 70px;  /* Keep space for the fixed input field */
+      padding-bottom: 70px;
     }
 
-    #messages {
+    /* Adding the ScrollStyle class here */
+    .ScrollStyle {
+      max-height: 150px; /* Adjust the height to fit your needs */
+      overflow-y: scroll; /* Enable vertical scroll */
       padding: 12px;
       display: flex;
       flex-direction: column;
       gap: 10px;
       flex-grow: 1;
-      max-height: calc(100% - 120px); /* Adjust to allow scrolling space for input */
-      overflow-y: auto;
       scroll-behavior: smooth;
     }
 
@@ -117,7 +117,7 @@
       padding: 12px;
       border-top: 1px solid #1f2937;
       background: var(--bg);
-      position: fixed;  /* Fix position at the bottom */
+      position: fixed;
       bottom: 0;
       width: 100%;
       z-index: 10;
@@ -143,7 +143,6 @@
       font-size: 1.25rem;
       cursor: pointer;
     }
-
   </style>
 </head>
 
@@ -176,7 +175,7 @@
     <section id="sentiment-cards"></section>
 
     <section id="chat-container">
-      <div id="messages"></div>
+      <div id="messages" class="ScrollStyle"></div> <!-- Applying ScrollStyle here -->
       <form id="chat-form">
         <input id="message-input" placeholder="Ask about a stock…">
         <button>➤</button>
