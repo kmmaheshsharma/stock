@@ -78,7 +78,7 @@ app.get("/api/sentiments", async (req, res) => {
 });
 
 // POST /api/chat
-app.post("/api/chat", handleChat);
+app.post("/api/webchat", handleChat);
 
 // ================= SUBSCRIBE USER =================
 // Mark user as subscribed in DB
