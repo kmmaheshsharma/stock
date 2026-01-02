@@ -11,6 +11,39 @@ const signupForm = document.getElementById("signup-form");
 // Clear previous content on load
 messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
+window.onload = function() {
+  // ---------------------- Check Local Storage for User ----------------------
+  const phone = localStorage.getItem("userPhone");
+  
+  if (phone) {
+    // If phone exists, try to fetch user data from the backend
+    fetch(`/api/check-user/${phone}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.userId) {
+          // User found in the backend, log them in
+          localStorage.setItem("userId", data.userId);
+          localStorage.setItem("userPhone", phone);
+          signupScreen.style.display = "none"; // Hide sign-up screen
+          chatScreen.style.display = ""; // Show chat screen
+          initChatBot(data.userId); // Initialize chat bot with userId
+        } else {
+          // User not found in the backend, show sign-up screen
+          signupScreen.style.display = ""; // Show sign-up screen
+          chatScreen.style.display = "none"; // Hide chat screen
+        }
+      })
+      .catch((err) => {
+        console.error("Error checking user", err);
+        signupScreen.style.display = ""; // Show sign-up screen in case of error
+        chatScreen.style.display = "none"; // Hide chat screen
+      });
+  } else {
+    // No phone, show sign-up screen
+    signupScreen.style.display = ""; // Show sign-up screen
+    chatScreen.style.display = "none"; // Hide chat screen
+  }
+};
 
 // ---------------------- Append chat messages ----------------------
 function appendMessage(sender, html) {
@@ -178,7 +211,11 @@ async function loadSentiments() {
     console.error("Failed to load sentiments", err);
   }
 }
-
+function initChatBot(userId) {
+  console.log("Chat initialized for user", userId);
+  loadSentiments();
+  setInterval(loadSentiments, 30000);
+}
 // ---------------------- Sentiment color ----------------------
 function getColor(sentiment) {
   if (sentiment === "Bullish") return "green";
