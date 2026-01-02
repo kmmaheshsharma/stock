@@ -250,6 +250,7 @@ header button {
     max-width: 95%;
   }
 }
+
 </style>
 </head>
 
@@ -265,18 +266,20 @@ header button {
   </header>
   <section id="signup-screen">
     <h2 style="color:white; text-align:center;">Welcome to NoBroko Bot</h2>
-    <form id="signup-form" style="display:flex; flex-direction:column; gap:12px; padding:20px;">
-      <input type="text" id="name" placeholder="Name" required style="padding:10px; border-radius:8px; border:none;">
-      <input type="text" id="phone" placeholder="Phone (+91xxxxxxx)" required style="padding:10px; border-radius:8px; border:none;">
-      <input type="email" id="email" placeholder="Email" required style="padding:10px; border-radius:8px; border:none;">
-      <label style="color:white;"><input type="checkbox" id="subscribe" checked> Subscribe to alerts</label>
-      <button type="submit" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000;">Sign In</button>
-      <button type="submit" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000;">Sign Up</button>
+    <form id="signup-form" style="display:flex; flex-direction:column; gap:12px; padding:20px; width:100%; max-width: 450px; margin: 0 auto;">
+      <input type="text" id="name" placeholder="Name" required style="padding:12px; border-radius:8px; border:none; width:100%; box-sizing: border-box;">
+      <input type="text" id="phone" placeholder="Phone (+91xxxxxxx)" required style="padding:12px; border-radius:8px; border:none; width:100%; box-sizing: border-box;">
+      <input type="email" id="email" placeholder="Email" required style="padding:12px; border-radius:8px; border:none; width:100%; box-sizing: border-box;">
+      <label style="color:white; font-size:14px; display:block; margin-top:10px;">
+        <input type="checkbox" id="subscribe" checked style="margin-right:8px;"> Subscribe to alerts
+      </label>
+      <button type="button" id="signin-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%; box-sizing: border-box;">Sign In</button>
+      <button type="button" id="signup-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%; box-sizing: border-box;">Sign Up</button>
     </form>
   </section>
   <section id="sentiment-cards"></section>
 
-  <section id="chat-container">
+  <section id="chat-container" style="display:none;">
     <div id="messages"></div>
     <form id="chat-form">
       <input id="message-input" placeholder="Ask about a stock…" />
@@ -285,7 +288,7 @@ header button {
   </section>
 </div>
 
-<script src="app.js?v=20"></script>
+<script src="app.js?v=21"></script>
 <script>
   // Ensure chat scrolls to bottom when new messages appear
   const messages = document.getElementById('messages');

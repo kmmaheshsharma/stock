@@ -10,6 +10,8 @@ const chatScreen = document.getElementById("chat-screen");
 const signupForm = document.getElementById("signup-form");
 const subscribeBtn = document.getElementById("subscribe-btn");
 const unsubscribeBtn = document.getElementById("unsubscribe-btn");
+const signinBtn = document.getElementById("signin-btn");
+const signupBtn = document.getElementById("signup-btn");
 // Clear previous content
 messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
@@ -52,6 +54,69 @@ if (localStorage.getItem("userId")) {
     chatScreen.style.display = "none";
   }
 }
+// ---------------------- Handle Sign Up ----------------------
+signupBtn.addEventListener("click", async (e) => {
+  e.preventDefault();
+
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const subscribed = document.getElementById("subscribe").checked;
+
+  try {
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone, email, subscribed })
+    });
+    const data = await res.json();
+
+    // Store user details in localStorage
+    localStorage.setItem("userId", data.userId);
+    localStorage.setItem("userPhone", phone);
+
+    // Switch to chat screen
+    signupScreen.style.display = "none";
+    chatScreen.style.display = "flex";
+    initChatBot(data.userId);
+  } catch (err) {
+    console.error("Signup failed", err);
+    alert("Failed to sign up. Try again.");
+  }
+});
+
+// ---------------------- Handle Sign In ----------------------
+signinBtn.addEventListener("click", async (e) => {
+  e.preventDefault();
+
+  const phone = document.getElementById("phone").value.trim();
+
+  if (!phone) {
+    alert("Please enter your phone number.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/check-user/${phone}`);
+    const data = await res.json();
+
+    if (data.userId) {
+      // Store user details in localStorage
+      localStorage.setItem("userId", data.userId);
+      localStorage.setItem("userPhone", phone);
+
+      // Switch to chat screen
+      signupScreen.style.display = "none";
+      chatScreen.style.display = "flex";
+      initChatBot(data.userId);
+    } else {
+      alert("User not found. Please sign up.");
+    }
+  } catch (err) {
+    console.error("Sign in failed", err);
+    alert("Failed to sign in. Try again.");
+  }
+});
 // ---------------------- Subscribe / Unsubscribe ----------------------
 subscribeBtn.addEventListener("click", async () => {
   const phone = localStorage.getItem("userPhone"); // store phone on signup
