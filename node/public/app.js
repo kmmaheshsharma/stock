@@ -11,43 +11,48 @@ const signupForm = document.getElementById("signup-form");
 // Clear previous content on load
 messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
-window.onload = function() {
-  // ---------------------- Check Local Storage for User ----------------------
+window.onload = async function() {
+  // Check Local Storage for User's Phone
   const phone = localStorage.getItem("userPhone");
   console.log("Fetched phone:", phone);
-  if (phone) {    
-    fetch(`/api/check-user/${phone}`, { method: 'POST' })  // Ensure POST method is used
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return res.json();  // Try parsing the response as JSON
-      })
-      .then((data) => {
-        if (data.status === 'existing' && data.userId) {
-          // User found in the backend, log them in
-          localStorage.setItem("userId", data.userId);
-          localStorage.setItem("userPhone", phone);
-          signupScreen.style.display = "none"; // Hide sign-up screen
-          chatScreen.style.display = ""; // Show chat screen
-          initChatBot(data.userId); // Initialize chat bot with userId
-        } else {
-          // User not found in the backend, show sign-up screen
-          signupScreen.style.display = ""; // Show sign-up screen
-          chatScreen.style.display = "none"; // Hide chat screen
-        }
-      })
-      .catch((err) => {
-        console.error("Error checking user", err);
-        signupScreen.style.display = ""; // Show sign-up screen in case of error
-        chatScreen.style.display = "none"; // Hide chat screen
+
+  if (phone) {
+    try {
+      // Send a POST request to check if the user exists
+      const res = await fetch('/api/check-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone }),  // Sending phone as part of the request body
       });
+
+      const data = await res.json();  // Parsing the response as JSON
+
+      if (data.status === 'existing') {
+        // User exists, log them in
+        localStorage.setItem("userId", data.userId);  // Store userId in localStorage
+        signupScreen.style.display = "none";  // Hide sign-up screen
+        chatScreen.style.display = "";  // Show chat screen
+        initChatBot(data.userId);  // Initialize the chatbot with userId
+      } else {
+        // User not found, show sign-up screen
+        signupScreen.style.display = "";  // Show sign-up screen
+        chatScreen.style.display = "none";  // Hide chat screen
+      }
+    } catch (err) {
+      console.error("Error checking user:", err);
+      // Handle error if any
+      signupScreen.style.display = "";  // Show sign-up screen
+      chatScreen.style.display = "none";  // Hide chat screen
+    }
   } else {
-    // No phone, show sign-up screen
-    signupScreen.style.display = ""; // Show sign-up screen
-    chatScreen.style.display = "none"; // Hide chat screen
+    // No phone in localStorage, show sign-up screen
+    signupScreen.style.display = "";  // Show sign-up screen
+    chatScreen.style.display = "none";  // Hide chat screen
   }
 };
+
 
 
 // ---------------------- Append chat messages ----------------------
