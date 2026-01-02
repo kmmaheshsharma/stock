@@ -11,225 +11,140 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   
-<style>
-  :root {
-    --bg: #020617;
-    --surface: #020617;
-    --header: #020617;
-    --primary: #22c55e;
-    --bot: #1f2937;
-    --user: #22c55e;
-    --text: #e5e7eb;
-    --muted: #9ca3af;
-  }
+  <style>
+    :root {
+      --bg: #020617;
+      --header: #1f2937;
+      --primary: #22c55e;
+      --bot: #1f2937;
+      --user: #22c55e;
+      --text: #e5e7eb;
+    }
 
-  * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+    }
 
-  body {
-    margin: 0;
-    height: 100vh;
-    background: #000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: Inter, system-ui, Arial, sans-serif;
-  }
+    body {
+      margin: 0;
+      height: 100vh;
+      background: #000;
+      font-family: Inter, system-ui, Arial, sans-serif;
+      color: var(--text);
+    }
 
-  .app {
-    width: 800px;
-    height: 780px;
-    background: var(--bg);
-    border-radius: 28px;
-    box-shadow: 0 30px 80px rgba(0,0,0,.8);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  header {
-    padding: 14px 16px;
-    background: var(--header);
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #1f2937;
-  }
-
-  header h1 {
-    font-size: 15px;
-    margin: 0;
-  }
-
-  header button {
-    background: none;
-    border: none;
-    color: var(--text);
-    font-size: 18px;
-    margin-left: 12px;
-  }
-
-  #sentiment-cards {
-    display: flex;
-    gap: 10px;
-    padding: 10px;
-    overflow-x: auto;
-  }
-
-  .card {
-    min-width: 150px;
-    background: #020617;
-    border: 1px solid #1f2937;
-    border-radius: 14px;
-    padding: 10px;
-    color: white;
-    font-size: 13px;
-  }
-
-  #chat-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between; /* This ensures the input section stays at the bottom */
-    overflow: hidden;
-  }
-
-  #messages {
-    flex: 1;
-    padding: 12px;
-    overflow-y: scroll; /* Ensure scrolling */
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    scroll-behavior: smooth;
-  }
-
-  .user-msg, .bot-msg {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .user-msg { align-items: flex-end; }
-  .bot-msg { align-items: flex-start; }
-
-  .msg-content {
-    max-width: 85%;
-    padding: 12px 16px;
-    border-radius: 18px;
-    font-size: 14px;
-    animation: slideUp .25s ease;
-    word-wrap: break-word;
-  }
-
-  .user-msg .msg-content {
-    background: var(--user);
-    color: #022c22;
-    border-bottom-right-radius: 4px;
-  }
-
-  .bot-msg .msg-content {
-    background: var(--bot);
-    color: var(--text);
-    border-bottom-left-radius: 4px;
-  }
-
-  #chat-form {
-    display: flex;
-    gap: 8px;
-    padding: 10px;
-    border-top: 1px solid #1f2937;
-    position: sticky;
-    bottom: 0;
-    background: var(--bg); /* Ensure the input section has a consistent background */
-  }
-
-  #message-input {
-    flex: 1;
-    padding: 12px 16px;
-    border-radius: 24px;
-    border: 1px solid #1f2937;
-    background: #020617;
-    color: white;
-  }
-
-  #chat-form button {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: none;
-    background: var(--primary);
-    font-size: 16px;
-  }
-
-  .typing {
-    display: flex;
-    gap: 4px;
-  }
-
-  .typing span {
-    width: 6px;
-    height: 6px;
-    background: #9ca3af;
-    border-radius: 50%;
-    animation: blink 1.4s infinite both;
-  }
-
-  .typing span:nth-child(2) { animation-delay: .2s }
-  .typing span:nth-child(3) { animation-delay: .4s }
-
-  @keyframes blink {
-    0% { opacity: .2 }
-    20% { opacity: 1 }
-    100% { opacity: .2 }
-  }
-
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .message.bot {
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    color: #f0f0f0;
-    padding: 20px 25px;
-    border-radius: 15px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 15px;
-    line-height: 1.6;
-    max-width: 500px;
-    margin: 15px auto;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-    border-left: 5px solid #ffd700;
-    word-wrap: break-word;
-    transition: all 0.3s ease;
-  }
-
-  .message.bot code.code {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #ffd700;
-    padding: 3px 6px;
-    border-radius: 5px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 13px;
-  }
-
-  .message.bot span.emoji {
-    font-size: 18px;
-  }
-
-  @media screen and (max-width: 1000px) {
     .app {
-      width: 95%;
+      width: 100%;
+      max-width: 800px;
+      height: 100%;
+      background: var(--bg);
+      border-radius: 28px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.8);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
-    .message.bot {
-      font-size: 14px;
-      padding: 15px 20px;
-      max-width: 95%;
+
+    header {
+      padding: 14px 16px;
+      background: var(--header);
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1f2937;
     }
-  }
-</style>
 
+    header h1 {
+      font-size: 1.25rem;
+      margin: 0;
+    }
 
+    #chat-container {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      overflow-y: auto;
+      padding-bottom: 70px;
+    }
+
+    #messages {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-grow: 1;
+      max-height: calc(100% - 120px);  /* Ensure this works with available height */
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+
+    .user-msg, .bot-msg {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-msg {
+      align-items: flex-end;
+    }
+
+    .bot-msg {
+      align-items: flex-start;
+    }
+
+    .msg-content {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 1rem;
+      word-wrap: break-word;
+    }
+
+    .user-msg .msg-content {
+      background: var(--user);
+      color: #022c22;
+    }
+
+    .bot-msg .msg-content {
+      background: var(--bot);
+      color: var(--text);
+    }
+
+    #chat-form {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-top: 1px solid #1f2937;
+      background: var(--bg);
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      z-index: 10;
+      box-sizing: border-box;
+    }
+
+    #message-input {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 24px;
+      border: 1px solid #1f2937;
+      background: #020617;
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    #chat-form button {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: none;
+      background: var(--primary);
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+
+  </style>
 </head>
 
 <body>
@@ -238,12 +153,14 @@
   <section id="signup-screen" style="display: none;">
     <h2 style="color:white; text-align:center;">Welcome to NoBroko Bot</h2>
     <form id="signup-form" style="display:flex; flex-direction:column; gap:12px; padding:20px;">
-      <input type="text" id="name" placeholder="Name" required="" style="padding:10px; border-radius:8px; border:none;">
-      <input type="text" id="phone" placeholder="Phone (+91xxxxxxx)" required="" style="padding:10px; border-radius:8px; border:none;">
-      <input type="email" id="email" placeholder="Email" required="" style="padding:10px; border-radius:8px; border:none;">
-      <label style="color:white;"><input type="checkbox" id="subscribe" checked=""> Subscribe to alerts</label>
-      <button type="button" id="signin-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%; box-sizing: border-box;">Sign In</button>
-      <button type="button" id="signup-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%; box-sizing: border-box;">Sign Up</button>
+      <input type="text" id="name" placeholder="Name" required style="padding:10px; border-radius:8px; border:none;">
+      <input type="text" id="phone" placeholder="Phone (+91xxxxxxx)" required style="padding:10px; border-radius:8px; border:none;">
+      <input type="email" id="email" placeholder="Email" required style="padding:10px; border-radius:8px; border:none;">
+      <label style="color:white;">
+        <input type="checkbox" id="subscribe" checked> Subscribe to alerts
+      </label>
+      <button type="button" id="signin-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%;">Sign In</button>
+      <button type="button" id="signup-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%;">Sign Up</button>
     </form>
   </section>
 
@@ -270,22 +187,42 @@
 
 <script src="app.js?v=49"></script>
 <script>
-  const messages = document.getElementById('messages');
-  
-  let isScrolledToBottom = true;
+const messages = document.getElementById('messages');
+const chatContainer = document.getElementById('chat-container');
+let isScrolledToBottom = true;
 
-  messages.addEventListener('scroll', () => {
+// Detect if the user has scrolled to the bottom
+messages.addEventListener('scroll', () => {
     const threshold = 50;
     isScrolledToBottom = messages.scrollHeight - messages.scrollTop <= messages.clientHeight + threshold;
-  });
+});
 
-  const observer = new MutationObserver(() => {
+// Observe changes in the #messages container
+const observer = new MutationObserver(() => {
     if (isScrolledToBottom) {
-      messages.scrollTop = messages.scrollHeight;
+        window.scrollTo(0, document.body.scrollHeight);  // Scroll to the bottom of the page
     }
-  });
+});
 
-  observer.observe(messages, { childList: true });
+// Start observing the #messages container for new message additions
+observer.observe(messages, { childList: true });
+
+// Function to add a new message (for demo purposes)
+function addMessage(message, isUser = true) {
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add(isUser ? 'user-msg' : 'bot-msg');
+
+    const msgContentDiv = document.createElement('div');
+    msgContentDiv.classList.add('msg-content');
+    msgContentDiv.textContent = message;
+
+    messageDiv.appendChild(msgContentDiv);
+    messages.appendChild(messageDiv);
+}
+
+// Example usage (replace with your actual message logic):
+setTimeout(() => addMessage("Hello, this is a message from the bot!"), 1000);
+
 </script>
 
 </body>
