@@ -1,12 +1,34 @@
 import sys
 import json
-from market import get_price
-from sentiment import sentiment_for_symbol
-from chart import generate_chart  # we will fix this to return base64
 import argparse
 
+from market import get_price
+from sentiment import sentiment_for_symbol
+from chart import generate_chart
+
+
+# ---------- Helpers ----------
+def normalize_symbol(symbol: str) -> str:
+    """
+    Ensure clean NSE symbol (no flags, no commas)
+    """
+    symbol = symbol.upper().strip()
+
+    # Safety: remove anything except letters/numbers
+    symbol = "".join(c for c in symbol if c.isalnum())
+
+    # Append .NS if missing
+    if not symbol.endswith(".NS"):
+        symbol = symbol + ".NS"
+
+    return symbol
+
+
+# ---------- Core Engine ----------
 def run_engine(symbol, entry_price=None):
     try:
+        symbol = normalize_symbol(symbol)
+
         # Fetch price and stats
         price, low, high, volume, avg_volume, change_percent = get_price(symbol)
 
@@ -21,27 +43,28 @@ def run_engine(symbol, entry_price=None):
             }
 
         # Price-based alerts
-        if entry_price:
+        if entry_price is not None:
             if price > entry_price * 1.05:
                 alerts.append("profit")
-            if price < entry_price * 0.95:
+            elif price < entry_price * 0.95:
                 alerts.append("loss")
 
         # Sentiment
         sentiment_score, s_type = sentiment_for_symbol(symbol)
         if s_type == "accumulation":
             alerts.append("buy_signal")
-        if s_type == "hype":
+        elif s_type == "hype":
             alerts.append("trap_warning")
 
         # Suggested entry zone
         suggested_entry = None
         if low and high:
-            lower = round(low * 0.99, 2)
-            upper = round(low * 1.02, 2)
-            suggested_entry = {"lower": lower, "upper": upper}
+            suggested_entry = {
+                "lower": round(low * 0.99, 2),
+                "upper": round(low * 1.02, 2)
+            }
 
-        # Generate chart as base64 (no disk file)
+        # Generate chart as base64
         chart_base64 = generate_chart(symbol)
 
         return {
@@ -66,11 +89,16 @@ def run_engine(symbol, entry_price=None):
             "alerts": ["error"]
         }
 
+
+# ---------- Entry Point ----------
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("symbol", type=str)
+    parser = argparse.ArgumentParser(description="Stock analysis engine")
+    parser.add_argument("symbol", help="Stock symbol (e.g. KPIGREEN)")
     parser.add_argument("--entry", type=float, default=None)
+
     args = parser.parse_args()
 
-    output = run_engine(args.symbol.upper(), args.entry)
-    print(json.dumps(output))  # Always valid JSON
+    result = run_engine(args.symbol, args.entry)
+
+    # Always output valid JSON
+    print(json.dumps(result, ensure_ascii=False))
