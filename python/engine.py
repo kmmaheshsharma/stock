@@ -8,23 +8,20 @@ from sentiment import sentiment_for_symbol
 from chart import generate_chart
 
 
-# ---------- Helpers ----------
 def normalize_symbol(raw: str) -> str:
     """
-    Extract clean NSE symbol from polluted input like:
-    'KPIGREEN,--entry,1600'
+    Extract clean NSE symbol and ensure SINGLE .NS suffix
     """
-    raw = raw.upper()
+    raw = raw.upper().strip()
 
-    # Extract FIRST valid symbol token
-    match = re.match(r"([A-Z]{2,15})", raw)
+    # Extract base symbol (letters only, before any junk)
+    match = re.match(r"([A-Z]{2,15})(?:\.NS)?", raw)
     if not match:
         raise ValueError(f"Invalid symbol received: {raw}")
 
     symbol = match.group(1)
 
     return symbol + ".NS"
-
 
 # ---------- Core Engine ----------
 def run_engine(symbol, entry_price=None):
