@@ -64,7 +64,7 @@ async function enablePushNotifications() {
   await fetch("/api/push/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(subscription)
+    body: JSON.stringify({ userId, ...subscription }),
   });
 
   console.log("✅ Push notifications enabled!");
@@ -356,5 +356,11 @@ setInterval(loadSentiments, 30000);
 
 // ---------------------- Service Worker ----------------------
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js").then(() => console.log("Service Worker registered"));
+  navigator.serviceWorker
+    .register("/sw.js")
+    .then(() => {
+      console.log("Service Worker registered");
+      enablePushNotifications(); // call here after registration
+    })
+    .catch(console.error);
 }
