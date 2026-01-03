@@ -36,7 +36,8 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
-async function enablePushNotifications(userId) {
+async function enablePushNotifications() {
+  const userId = await getAndCheckUser();
   console.log("enablePushNotifications called"); // debug line
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
 
@@ -104,51 +105,46 @@ function initSocket(userId) {
     messagesEl.scrollTop = messagesEl.scrollHeight;
   });
 }
-window.onload = async function() {
-  // Check Local Storage for User's Phone
+async function getAndCheckUser() {
   const phone = localStorage.getItem("userPhone");
   console.log("Fetched phone:", phone);
 
-  if (phone) {
-    try {
-      // Send a POST request to check if the user exists
-      const res = await fetch('/api/check-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phone }),  // Sending phone as part of the request body
-      });
+  if (!phone) return null; // no phone stored
 
-      const data = await res.json();  // Parsing the response as JSON
+  try {
+    const res = await fetch('/api/check-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
 
-      if (data.status === 'existing') {
-        // User exists, log them in
-        localStorage.setItem("userId", data.userId);  // Store userId in localStorage
-        const userId = localStorage.getItem("userId"); // must exist        
-        signupScreen.style.display = "none";  // Hide sign-up screen
-        chatScreen.style.display = "";  // Show chat screen
-        initChatBot(userId);
-        initSocket(userId); // <-- connect socket        
-      } else {
-        // User not found, show sign-up screen
-        signupScreen.style.display = "";  // Show sign-up screen
-        chatScreen.style.display = "none";  // Hide chat screen
-        enablePushNotifications().catch(err => console.error("Push enable failed:", err));
-      }
-    } catch (err) {
-      console.error("Error checking user:", err);
-      // Handle error if any
-      signupScreen.style.display = "";  // Show sign-up screen
-      chatScreen.style.display = "none";  // Hide chat screen
+    const data = await res.json();
+    if (data.status === 'existing') {
+      localStorage.setItem("userId", data.userId);
+      return data.userId;
     }
+    return null; // user not found
+  } catch (err) {
+    console.error("Error checking user:", err);
+    return null;
+  }
+}
+
+window.onload = async function() {
+  const userId = await getAndCheckUser();
+
+  if (userId) {
+    // Existing user: show chat
+    signupScreen.style.display = "none";
+    chatScreen.style.display = "";
+    initChatBot(userId);
+    initSocket(userId);    
   } else {
-    // No phone in localStorage, show sign-up screen
-    signupScreen.style.display = "";  // Show sign-up screen
-    chatScreen.style.display = "none";  // Hide chat screen
+    // New user: show signup
+    signupScreen.style.display = "";
+    chatScreen.style.display = "none";    
   }
 };
-
 
 
 // ---------------------- Append chat messages ----------------------
