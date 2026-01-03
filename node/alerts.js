@@ -237,6 +237,7 @@ async function generateUserAlerts(user) {
       args.push("--entry", avgEntryPrice.toString());
     }
     const result = await runPythonEngine(args);
+    console.log(`[DRY RUN] Message for user ${user.id}:\n`, result);
     if (!result) continue;
 
     // Construct message
