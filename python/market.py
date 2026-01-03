@@ -2,32 +2,24 @@ import yfinance as yf
 
 def get_price(symbol):
     """
-    Returns:
-        price (float): Latest close price
-        low (float): Low of the day
-        high (float): High of the day
-        volume (int): Latest volume
-        avg_volume (float): Average volume of the day
-        change_percent (float): % change from previous close
+    symbol is ALREADY normalized (e.g. KPIGREEN.NS)
     """
-    ticker = yf.Ticker(symbol + ".NS")
-    hist = ticker.history(period="1d", interval="5m")
 
-    if hist.empty:
+    ticker = yf.Ticker(symbol)
+    data = ticker.history(period="1d")
+
+    if data.empty:
         return None, None, None, None, None, None
 
-    # Latest row
-    latest = hist.iloc[-1]
-    price = latest["Close"]
-    volume = latest["Volume"]
+    price = float(data["Close"].iloc[-1])
+    low = float(data["Low"].iloc[-1])
+    high = float(data["High"].iloc[-1])
+    volume = int(data["Volume"].iloc[-1])
 
-    # Day stats
-    day_low = hist["Low"].min()
-    day_high = hist["High"].max()
-    avg_volume = hist["Volume"].mean()
+    avg_volume = int(data["Volume"].tail(10).mean())
+    change_percent = round(
+        ((price - data["Open"].iloc[-1]) / data["Open"].iloc[-1]) * 100,
+        2
+    )
 
-    # Previous close to calculate % change
-    prev_close = hist["Close"].iloc[0]  # first value of the day
-    change_percent = ((price - prev_close) / prev_close) * 100 if prev_close else 0
-
-    return price, day_low, day_high, volume, avg_volume, change_percent
+    return price, low, high, volume, avg_volume, change_percent
