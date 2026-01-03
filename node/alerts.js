@@ -179,7 +179,7 @@ async function generateUserAlerts(user) {
   const messages = [];
 
   for (const symbol of allSymbols) {
-    const portfolioInfo = portfolioMap[symbol] || null;
+    const portfolioInfo = portfolioMap[symbol] || null;    
     const totalQuantity = portfolioInfo?.quantity ? Number(portfolioInfo.quantity) : 0;
     const avgEntryPrice = portfolioInfo?.entryPrice ? Number(portfolioInfo.entryPrice) : 0;
 
@@ -214,11 +214,6 @@ async function generateUserAlerts(user) {
       ? "Cut Loss"
       : "Wait / Monitor";
 
-    // Retrieve the technical indicators
-    const movingAverage50 = result.moving_average_50 != null ? result.moving_average_50 : "N/A";
-    const movingAverage200 = result.moving_average_200 != null ? result.moving_average_200 : "N/A";
-    const rsi = result.rsi != null ? result.rsi : "N/A";
-
     // Build message
     let msgText = `📊 <b>${symbol}</b> Update<br>`;
     msgText += `💰 Price: ₹${price}`;
@@ -238,16 +233,12 @@ async function generateUserAlerts(user) {
       msgText += `<br>💡 Suggested Entry: ₹${result.suggested_entry.lower} - ₹${result.suggested_entry.upper}`;
     }
 
-    // Add technical indicators to the message
-    msgText += `<br>📈 MA50: ₹${movingAverage50}`;
-    msgText += `<br>📉 MA200: ₹${movingAverage200}`;
-    msgText += `<br>📊 RSI: ${rsi}`;
-
     messages.push({ text: msgText, chart: result.chart || null });
   }
 
   return messages;
 }
+
 
 // ---------------------- Helper ----------------------
 function calculateAggregatedPosition(rows) {
