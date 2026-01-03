@@ -99,17 +99,23 @@ app.get("/api/push/public-key", (req, res) => {
   res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
 });
 app.post("/api/push/subscribe", async (req, res) => {
+  console.log("[/api/push/subscribe] Received subscription:", req.body);
   const { userId, endpoint, keys } = req.body;
   if (!userId || !endpoint) return res.status(400).json({ error: "Missing info" });
 
   try {
-    await pool.query(
+    const result = await pool.query(
       `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
        VALUES ($1,$2,$3,$4)
        ON CONFLICT (endpoint) DO NOTHING`,
       [userId, endpoint, keys.p256dh, keys.auth]
     );
-    res.sendStatus(201);
+    console.log("[/api/push/subscribe] DB insert result:", result);
+    if (result.rowCount > 0) {
+      res.sendStatus(201); // actually created
+    } else {
+      res.sendStatus(200); // already exists
+    }
   } catch (err) {
     console.error("[/api/push/subscribe]", err);
     res.status(500).json({ error: "Failed to save subscription" });
