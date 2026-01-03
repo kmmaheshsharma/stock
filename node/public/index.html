@@ -143,11 +143,28 @@
       font-size: 1.25rem;
       cursor: pointer;
     }
+    .install-btn {
+      background: #16a34a;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+
+    .install-btn:hover {
+      background: #15803d;
+    }    
   </style>
+  
 </head>
 
 <body>
-
+<button id="install-btn" style="display:none">
+  📲 Install App
+</button>
 <div class="app">
   <section id="signup-screen" style="display: none;">
     <h2 style="color:white; text-align:center;">Welcome to NoBroko Bot</h2>
@@ -184,7 +201,7 @@
   </section>
 </div>
 
-<script src="app.js?v=61"></script>
+<script src="app.js?v=64"></script>
 <script>
   function adjustChatHeight() {
     const headerHeight = document.querySelector('header').offsetHeight; // Get header height

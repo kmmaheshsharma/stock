@@ -12,6 +12,22 @@ const signupForm = document.getElementById("signup-form");
 messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
 let socket;
+let deferredPrompt;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  const btn = document.getElementById("install-btn");
+  if (btn) btn.style.display = "block";
+});
+
+document.getElementById("install-btn")?.addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  console.log("Install outcome:", outcome);
+  deferredPrompt = null;
+});
 function initSocket(userId) {
   if (!userId) return;
 
