@@ -28,6 +28,26 @@ document.getElementById("install-btn")?.addEventListener("click", async () => {
   console.log("Install outcome:", outcome);
   deferredPrompt = null;
 });
+async function enablePushNotifications() {
+  if (!("serviceWorker" in navigator)) return;
+  if (!("PushManager" in window)) return;
+
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") return;
+
+  const reg = await navigator.serviceWorker.ready;
+
+  const subscription = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: VAPID_PUBLIC_KEY
+  });
+
+  await fetch("/api/push/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(subscription)
+  });
+}
 function initSocket(userId) {
   if (!userId) return;
 
