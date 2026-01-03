@@ -34,14 +34,19 @@ function initSocket(userId) {
     msgEl.innerHTML = text;
 
     if (chart) {
+      const br = document.createElement("br"); // create a line break
+      msgEl.appendChild(br);                   // add it before the image
+
       const img = document.createElement("img");
       img.src = chart;
-      img.style.maxWidth = "400px";  // max width
-      img.style.maxHeight = "250px"; // max height
-      img.style.display = "block";
-      img.style.margin = "10px 0";   // space above/below
+      img.style.maxWidth = "400px";   // max width
+      img.style.maxHeight = "250px";  // max height
+      img.style.display = "block";    // ensures it stays on its own line
+      img.style.margin = "10px 0";    // space above/below
+
       msgEl.appendChild(img);
     }
+
 
     messagesEl.appendChild(msgEl);
     messagesEl.scrollTop = messagesEl.scrollHeight;
