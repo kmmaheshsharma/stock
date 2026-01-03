@@ -189,10 +189,11 @@
   function adjustChatHeight() {
     const headerHeight = document.querySelector('header').offsetHeight; // Get header height
     const windowHeight = window.innerHeight; // Get the total window height
-    const availableHeight = windowHeight - headerHeight - 70; // Subtracting any other fixed padding/space
-
+    const availableHeight = windowHeight - headerHeight; // Subtracting any other fixed padding/space
+    const cardsEl = document.getElementById('sentiment-cards');
+    const cardsHeight = cardsEl ? cardsEl.offsetHeight : 0; // Height of sentiment cards
     // Set max-height of chat area
-    document.querySelector('.ScrollStyle').style.maxHeight = `${availableHeight}px`;
+    document.querySelector('.ScrollStyle').style.maxHeight = `${availableHeight - cardsHeight - 30}px`;
   }
 
   // Adjust the height on page load and when the window is resized
