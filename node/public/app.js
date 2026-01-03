@@ -135,11 +135,12 @@ window.onload = async function() {
         signupScreen.style.display = "none";  // Hide sign-up screen
         chatScreen.style.display = "";  // Show chat screen
         initChatBot(userId);
-        initSocket(userId); // <-- connect socket
+        initSocket(userId); // <-- connect socket        
       } else {
         // User not found, show sign-up screen
         signupScreen.style.display = "";  // Show sign-up screen
         chatScreen.style.display = "none";  // Hide chat screen
+        enablePushNotifications().catch(err => console.error("Push enable failed:", err));
       }
     } catch (err) {
       console.error("Error checking user:", err);
