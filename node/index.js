@@ -99,16 +99,21 @@ app.get("/api/push/public-key", (req, res) => {
   res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
 });
 app.post("/api/push/subscribe", async (req, res) => {
-  const { endpoint, keys } = req.body;
+  const { userId, endpoint, keys } = req.body;
+  if (!userId || !endpoint) return res.status(400).json({ error: "Missing info" });
 
-  await pool.query(
-    `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
-     VALUES ($1,$2,$3,$4)
-     ON CONFLICT (endpoint) DO NOTHING`,
-    [req.user.id, endpoint, keys.p256dh, keys.auth]
-  );
-
-  res.sendStatus(201);
+  try {
+    await pool.query(
+      `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+       VALUES ($1,$2,$3,$4)
+       ON CONFLICT (endpoint) DO NOTHING`,
+      [userId, endpoint, keys.p256dh, keys.auth]
+    );
+    res.sendStatus(201);
+  } catch (err) {
+    console.error("[/api/push/subscribe]", err);
+    res.status(500).json({ error: "Failed to save subscription" });
+  }
 });
 // POST /api/chat
 app.post("/api/webchat", handleChat);
