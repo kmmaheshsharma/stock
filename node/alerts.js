@@ -179,9 +179,9 @@ async function generateUserAlerts(user) {
   const messages = [];
 
   for (const symbol of allSymbols) {
-    const portfolioInfo = portfolioMap[symbol] || null;
-    const totalQuantity = portfolioInfo?.quantity || 0;
-    const avgEntryPrice = portfolioInfo?.entryPrice || 0;
+    const portfolioInfo = portfolioMap[symbol] || null;    
+    const totalQuantity = portfolioInfo?.quantity ? Number(portfolioInfo.quantity) : 0;
+    const avgEntryPrice = portfolioInfo?.entryPrice ? Number(portfolioInfo.entryPrice) : 0;
 
     // Prepare Python engine args
     const args = [symbol];
