@@ -209,9 +209,15 @@ io.on("connection", (socket) => {
 // Helper to send alerts to PWA bot
 function sendToBot(userId, text, chart) {
   const socket = userSockets[userId];
-  if (!socket) return false;
-  socket.emit("alertMessage", { text, chart });
-  return true;
+
+  if (socket && socket.connected) {
+    console.log(`💬 Sending socket alert to user ${userId}: ${text}`);
+    socket.emit("alertMessage", { text, chart });
+    return true; // delivered via socket
+  } else {
+    console.log(`⚠️ User ${userId} not connected, will send push instead`);
+    return false; // will need push
+  }
 }
 
 // ================= BACKGROUND JOBS =================
@@ -240,23 +246,44 @@ async function runSentimentCron() {
   }
 }
 async function runAlertsForAllUsers() {
-  // Get all subscribed users
-  const usersRes = await pool.query("SELECT id, phone FROM users WHERE subscribed=true");
+  console.log("⏱️ Running alerts for all subscribed users...");
 
-  for (const user of usersRes.rows) {
-    const messages = await generateUserAlerts(user);
+  try {
+    const usersRes = await pool.query("SELECT id, phone FROM users WHERE subscribed=true");
+    console.log(`🔔 Found ${usersRes.rows.length} subscribed users`);
 
-    for (const msg of messages) {
-      // Push to PWA bot
-      const delivered = sendToBot(user.id, msg.text, msg.chart);
-      if (!delivered) {
-        await sendPushToUser(user.id, {
-          title: "Stock Alert 📊",
-          body: msg.text,
-          data: { url: "/" }
-        });
-      }      
+    for (const user of usersRes.rows) {
+      console.log(`➡️ Generating alerts for user ${user.id} (${user.phone})`);
+      const messages = await generateUserAlerts(user);
+      console.log(`   📝 ${messages.length} alerts generated`);
+
+      for (const msg of messages) {
+        console.log(`   ✉️ Processing alert: ${msg.text}`);
+
+        // Try socket delivery first
+        const delivered = sendToBot(user.id, msg.text, msg.chart);
+
+        if (!delivered) {
+          console.log(`   📤 Sending web push to user ${user.id}`);
+          try {
+            await sendPushToUser(user.id, {
+              title: "Stock Alert 📊",
+              body: msg.text,
+              data: { url: "/" }
+            });
+            console.log(`   ✅ Push sent successfully`);
+          } catch (pushErr) {
+            console.error(`   ❌ Push failed for user ${user.id}:`, pushErr.message);
+          }
+        } else {
+          console.log(`   ✅ Delivered via socket`);
+        }
+      }
     }
+
+    console.log("✅ All alerts processed");
+  } catch (err) {
+    console.error("❌ Error running alerts for users:", err.message);
   }
 }
 
