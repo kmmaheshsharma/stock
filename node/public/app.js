@@ -32,22 +32,44 @@ async function enablePushNotifications() {
   if (!("serviceWorker" in navigator)) return;
   if (!("PushManager" in window)) return;
 
+  // 1️⃣ Ask user permission
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return;
 
+  // 2️⃣ Wait for service worker to be ready
   const reg = await navigator.serviceWorker.ready;
 
+  // 3️⃣ Fetch public key from backend
+  const response = await fetch("/api/push/public-key");
+  const data = await response.json();
+  const VAPID_PUBLIC_KEY = data.publicKey;
+
+  // 4️⃣ Convert Base64 to Uint8Array
+  function urlBase64ToUint8Array(base64String) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+  }
+
+  // 5️⃣ Subscribe to push
   const subscription = await reg.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: VAPID_PUBLIC_KEY
+    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
   });
 
+  // 6️⃣ Send subscription to server
   await fetch("/api/push/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(subscription)
   });
+
+  console.log("✅ Push notifications enabled!");
 }
+
 function initSocket(userId) {
   if (!userId) return;
 
