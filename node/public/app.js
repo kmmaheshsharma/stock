@@ -11,6 +11,39 @@ const signupForm = document.getElementById("signup-form");
 // Clear previous content on load
 messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
+let socket;
+function initSocket(userId) {
+  if (!userId) return;
+
+  // Disconnect existing socket if any
+  if (socket) socket.disconnect();
+
+  // Connect with userId in query
+  socket = io("https://aiwhatupaccountant-production.up.railway.app", {
+    query: { userId }
+  });
+
+  socket.on("connect", () => {
+    console.log("Connected to server with socket ID:", socket.id);
+  });
+
+  socket.on("alertMessage", (data) => {
+    const { text, chart } = data;
+    const msgEl = document.createElement("div");
+    msgEl.className = "message bot-message";
+    msgEl.innerHTML = text;
+
+    if (chart) {
+      const img = document.createElement("img");
+      img.src = chart;
+      img.style.maxWidth = "100%";
+      msgEl.appendChild(img);
+    }
+
+    messagesEl.appendChild(msgEl);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  });
+}
 window.onload = async function() {
   // Check Local Storage for User's Phone
   const phone = localStorage.getItem("userPhone");
@@ -35,7 +68,8 @@ window.onload = async function() {
         const userId = localStorage.getItem("userId"); // must exist        
         signupScreen.style.display = "none";  // Hide sign-up screen
         chatScreen.style.display = "";  // Show chat screen
-        initChatBot(data.userId);  // Initialize the chatbot with userId
+        initChatBot(userId);
+        initSocket(userId); // <-- connect socket
       } else {
         // User not found, show sign-up screen
         signupScreen.style.display = "";  // Show sign-up screen
