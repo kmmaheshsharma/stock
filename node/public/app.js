@@ -54,7 +54,11 @@ async function enablePushNotifications() {
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
   });
-  console.log("Push subscription:", subscription);
+  console.log("🟡 Push subscribe payload:", {
+    userId,
+    endpoint: subscription.endpoint,
+    keys: subscription.keys
+  });
   // Send subscription + userId to backend
   await fetch("/api/push/subscribe", {
     method: "POST",
