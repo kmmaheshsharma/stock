@@ -1,35 +1,37 @@
-require("dotenv").config(); // load env once at the top
+require("dotenv").config(); // Load environment variables
 
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const { pool } = require("./db"); // your PostgreSQL pool
+const path = require("path");
+const { pool } = require("./db");
 const { generateUserAlerts } = require("./alerts");
 const { runSentimentCron } = require("./sentiment-cron"); // optional
 
 const app = express();
 app.use(express.json());
 
+// Serve static chart files if needed
+app.use("/chart", express.static(path.join(__dirname, "chart")));
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // adjust to your PWA domain in production
+    origin: "*", // adjust to PWA domain in production
   },
 });
 
-// ================== SOCKET.IO ==================
+// --------------------- SOCKET.IO ---------------------
 const userSockets = {}; // userId -> socket
 
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
 
-  // Register userId
   socket.on("registerUser", ({ userId }) => {
     userSockets[userId] = socket;
     console.log(`User ${userId} registered for live alerts`);
   });
 
-  // Cleanup on disconnect
   socket.on("disconnect", () => {
     for (const [id, s] of Object.entries(userSockets)) {
       if (s.id === socket.id) {
@@ -41,14 +43,14 @@ io.on("connection", (socket) => {
   });
 });
 
-// ================== SEND MESSAGE ==================
+// --------------------- SEND MESSAGE ---------------------
 function sendToBot(userId, text, chart = null) {
   const socket = userSockets[userId];
   if (!socket || socket.disconnected) return;
   socket.emit("alertMessage", { text, chart });
 }
 
-// ================== BACKGROUND ALERTS ==================
+// --------------------- BACKGROUND ALERTS ---------------------
 async function runAlertsForAllUsers() {
   try {
     const usersRes = await pool.query(
@@ -58,7 +60,6 @@ async function runAlertsForAllUsers() {
     for (const user of usersRes.rows) {
       try {
         const messages = await generateUserAlerts(user);
-
         for (const msg of messages) {
           sendToBot(user.id, msg.text, msg.chart);
         }
@@ -71,11 +72,21 @@ async function runAlertsForAllUsers() {
   }
 }
 
-// ================== START BACKGROUND JOBS ==================
+// Optional: timeout wrapper for Python calls inside generateUserAlerts
+function withTimeout(promise, ms = 15000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Operation timed out")), ms)
+    ),
+  ]);
+}
+
+// --------------------- START BACKGROUND JOBS ---------------------
 async function startBackgroundJobs() {
   console.log("⏱️ Starting background jobs");
 
-  // 1️⃣ Optional: sentiment cron
+  // 1️⃣ Run sentiment cron safely
   try {
     runSentimentCron();
   } catch (err) {
@@ -87,10 +98,10 @@ async function startBackgroundJobs() {
     await runAlertsForAllUsers();
     console.log("📨 Initial background alerts sent");
   } catch (err) {
-    console.error("Initial runAlertsForAllUsers failed:", err);
+    console.error("Initial alerts failed:", err);
   }
 
-  // 3️⃣ Scheduled run every minute
+  // 3️⃣ Schedule periodic run every minute
   setInterval(async () => {
     try {
       await runAlertsForAllUsers();
@@ -98,23 +109,23 @@ async function startBackgroundJobs() {
     } catch (err) {
       console.error("Background alerts job failed:", err);
     }
-  }, 60 * 1000);
+  }, 60 * 1000); // every 1 minute
 }
 
-// ================== EXPRESS ROUTES (example) ==================
-app.get("/", (req, res) => {
-  res.send("🚀 Server is up and running");
-});
+// --------------------- EXPRESS ROUTES ---------------------
+app.get("/", (req, res) => res.send("🚀 Server is up and running"));
 
-// ================== START SERVER ==================
+// Add other API routes: /api/webchat, /api/alerts, /api/sentiments, /api/check-user, /api/users
+
+// --------------------- START SERVER ---------------------
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, async () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 
-  // Start background jobs after server is listening
+  // Start background jobs AFTER server starts
   setTimeout(() => {
     startBackgroundJobs().catch((err) =>
       console.error("Background jobs failed:", err)
     );
-  }, 3000);
+  }, 2000);
 });
