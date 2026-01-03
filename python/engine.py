@@ -1,6 +1,7 @@
 import sys
 import json
 import argparse
+import re
 
 from market import get_price
 from sentiment import sentiment_for_symbol
@@ -8,19 +9,19 @@ from chart import generate_chart
 
 
 # ---------- Helpers ----------
-def normalize_symbol(symbol: str) -> str:
-    symbol = symbol.upper().strip()
+def normalize_symbol(raw: str) -> str:
+    """
+    Extract clean NSE symbol from polluted input like:
+    'KPIGREEN,--entry,1600'
+    """
+    raw = raw.upper()
 
-    # ❌ If symbol accidentally contains ENTRY / numbers → reject
-    if "ENTRY" in symbol:
-        raise ValueError(f"Invalid symbol received: {symbol}")
+    # Extract FIRST valid symbol token
+    match = re.match(r"([A-Z]{2,15})", raw)
+    if not match:
+        raise ValueError(f"Invalid symbol received: {raw}")
 
-    # Remove .NS if already present
-    if symbol.endswith(".NS"):
-        symbol = symbol[:-3]
-
-    # Allow only letters (NSE symbols are letters)
-    symbol = "".join(c for c in symbol if c.isalpha())
+    symbol = match.group(1)
 
     return symbol + ".NS"
 
@@ -95,8 +96,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # 🔍 DEBUG (keep this ON until confirmed)
-    # print("ARGV:", sys.argv)
-
     result = run_engine(args.symbol, args.entry)
+
+    # Always valid JSON
     print(json.dumps(result, ensure_ascii=False))
