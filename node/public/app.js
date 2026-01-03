@@ -36,7 +36,10 @@ function initSocket(userId) {
     if (chart) {
       const img = document.createElement("img");
       img.src = chart;
-      img.style.maxWidth = "100%";
+      img.style.maxWidth = "400px";  // max width
+      img.style.maxHeight = "250px"; // max height
+      img.style.display = "block";
+      img.style.margin = "10px 0";   // space above/below
       msgEl.appendChild(img);
     }
 
