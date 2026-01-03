@@ -9,8 +9,8 @@ const signupScreen = document.getElementById("signup-screen");
 const chatScreen = document.getElementById("chat-screen");
 const signupForm = document.getElementById("signup-form");
 // Clear previous content on load
-messagesEl.innerHTML = "<html>Loading chat...</html>";
-cardsEl.innerHTML = "<html>Loading...</html>";
+messagesEl.innerHTML = "Loading...";
+cardsEl.innerHTML = "Loading...";
 
 // ---------------------- Append chat messages ----------------------
 function appendMessage(sender, html) {
