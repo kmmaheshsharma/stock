@@ -9,19 +9,20 @@ from chart import generate_chart
 
 # ---------- Helpers ----------
 def normalize_symbol(symbol: str) -> str:
-    """
-    Ensure clean NSE symbol (no flags, no commas)
-    """
     symbol = symbol.upper().strip()
 
-    # Safety: remove anything except letters/numbers
-    symbol = "".join(c for c in symbol if c.isalnum())
+    # ❌ If symbol accidentally contains ENTRY / numbers → reject
+    if "ENTRY" in symbol:
+        raise ValueError(f"Invalid symbol received: {symbol}")
 
-    # Append .NS if missing
-    if not symbol.endswith(".NS"):
-        symbol = symbol + ".NS"
+    # Remove .NS if already present
+    if symbol.endswith(".NS"):
+        symbol = symbol[:-3]
 
-    return symbol
+    # Allow only letters (NSE symbols are letters)
+    symbol = "".join(c for c in symbol if c.isalpha())
+
+    return symbol + ".NS"
 
 
 # ---------- Core Engine ----------
@@ -29,17 +30,15 @@ def run_engine(symbol, entry_price=None):
     try:
         symbol = normalize_symbol(symbol)
 
-        # Fetch price and stats
         price, low, high, volume, avg_volume, change_percent = get_price(symbol)
 
         alerts = []
 
         if price is None:
-            alerts.append("invalid_symbol")
             return {
                 "symbol": symbol,
                 "error": f"No price data found for {symbol}",
-                "alerts": alerts
+                "alerts": ["invalid_symbol"]
             }
 
         # Price-based alerts
@@ -56,7 +55,6 @@ def run_engine(symbol, entry_price=None):
         elif s_type == "hype":
             alerts.append("trap_warning")
 
-        # Suggested entry zone
         suggested_entry = None
         if low and high:
             suggested_entry = {
@@ -64,7 +62,6 @@ def run_engine(symbol, entry_price=None):
                 "upper": round(low * 1.02, 2)
             }
 
-        # Generate chart as base64
         chart_base64 = generate_chart(symbol)
 
         return {
@@ -92,13 +89,14 @@ def run_engine(symbol, entry_price=None):
 
 # ---------- Entry Point ----------
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Stock analysis engine")
-    parser.add_argument("symbol", help="Stock symbol (e.g. KPIGREEN)")
-    parser.add_argument("--entry", type=float, default=None)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("symbol")
+    parser.add_argument("--entry", type=float)
 
     args = parser.parse_args()
 
-    result = run_engine(args.symbol, args.entry)
+    # 🔍 DEBUG (keep this ON until confirmed)
+    # print("ARGV:", sys.argv)
 
-    # Always output valid JSON
+    result = run_engine(args.symbol, args.entry)
     print(json.dumps(result, ensure_ascii=False))
