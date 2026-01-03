@@ -215,55 +215,48 @@ async function getUserSymbols(userId) {
 }
 
 async function generateUserAlerts(user) {
-  const symbols = await getUserSymbols(user.id); // fetch user symbols
-  if (!symbols || symbols.length === 0) return [];
+  const symbols = await getUserSymbols(user.id);
+  const messages = [];
 
-  const allAlerts = await Promise.all(
-    symbols.map(async (symbol) => {
-      try {
-        // Fetch all portfolio rows for symbol
-        const portfolioRes = await pool.query(
-          `SELECT id, entry_price, exit_price, quantity
-           FROM portfolio
-           WHERE user_id=$1 AND symbol=$2 AND status='open'`,
-          [user.id, symbol]
-        );
+  for (const symbol of symbols) {
+    // Get portfolio info
+    const portfolioRes = await pool.query(
+      `SELECT id, entry_price, exit_price, quantity
+       FROM portfolio
+       WHERE user_id = $1 AND symbol = $2 AND status = 'open'`,
+      [user.id, symbol]
+    );
 
-        const { totalQuantity, avgEntryPrice } = calculateAggregatedPosition(portfolioRes.rows);
-        if (!totalQuantity) return null;
+    const { totalQuantity, avgEntryPrice } = calculateAggregatedPosition(portfolioRes.rows);
 
-        // Python engine with timeout
-        const args = [symbol];
-        if (avgEntryPrice) args.push("--entry", avgEntryPrice.toString());
+    if (!totalQuantity) continue; // skip if no open positions
 
-        const result = await Promise.race([
-          runPythonEngine(args),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Python timeout")), 10000))
-        ]);
+    // Run Python engine or sentiment logic
+    const args = [symbol];
+    if (avgEntryPrice) {
+      args.push("--entry", avgEntryPrice.toString());
+    }
+    const result = await runPythonEngine(args);
+    console.log(`[DRY RUN] Message for user ${user.id}:\n`, result);
+    if (!result) continue;
 
-        if (!result) return null;
+    // Construct message
+    let msgText = `📊 <b>${result.symbol}</b> Update<br>`;
+    msgText += `💰 Price: ₹${result.price}`;
+    if (avgEntryPrice) msgText += ` (Avg Entry: ₹${avgEntryPrice.toFixed(2)})`;
+    
+    // Include exit price if available
+    const exitPrice = portfolioRes.rows[0]?.exit_price;
+    if (exitPrice) msgText += ` | Exit: ₹${exitPrice.toFixed(2)}`;
 
-        let msgText = `📊 <b>${result.symbol}</b> Update<br>`;
-        msgText += `💰 Price: ₹${result.price}`;
-        if (avgEntryPrice) msgText += ` (Avg Entry: ₹${avgEntryPrice.toFixed(2)})`;
+    msgText += ` | Qty: ${totalQuantity}`;
+    msgText += `<br>⚡ Recommendation: ${result.recommendation || "Wait / Monitor"}<br>`;
 
-        const exitPrice = portfolioRes.rows[0]?.exit_price;
-        if (exitPrice) msgText += ` | Exit: ₹${exitPrice.toFixed(2)}`;
+    messages.push({ text: msgText, chart: result.chart || null });
+  }
 
-        msgText += ` | Qty: ${totalQuantity}`;
-        msgText += `<br>⚡ Recommendation: ${result.recommendation || "Wait / Monitor"}<br>`;
-
-        return { text: msgText, chart: result.chart || null };
-      } catch (err) {
-        console.error(`Alert failed for ${symbol}:`, err.message);
-        return null;
-      }
-    })
-  );
-
-  return allAlerts.filter(Boolean);
+  return messages;
 }
-
 
 // ---------------------- Helper ----------------------
 function calculateAggregatedPosition(rows) {
