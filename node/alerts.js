@@ -232,9 +232,10 @@ async function generateUserAlerts(user) {
     if (!totalQuantity) continue; // skip if no open positions
 
     // Run Python engine or sentiment logic
-    const args = ["../python/engine.py", symbol];
-    if (avgEntryPrice) args.push("--entry", avgEntryPrice);
-
+    const args = [symbol];
+    if (avgEntryPrice) {
+      args.push("--entry", avgEntryPrice.toString());
+    }
     const result = await runPythonEngine(args);
     if (!result) continue;
 
