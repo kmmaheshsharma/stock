@@ -48,6 +48,12 @@ async function getVapidKey() {
   const data = await res.json();
   return data.publicKey;
 }
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary);
+}
 async function enablePushNotifications() {
   const userId = await getAndCheckUser();
   console.log("enablePushNotifications called"); // debug line
@@ -64,11 +70,8 @@ async function enablePushNotifications() {
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(vapidKey)
   });
-  console.log("🟡 Push subscribe payload:", {
-    userId,
-    endpoint: subscription.endpoint,
-    keys: subscription.keys
-  });
+  const p256dh = arrayBufferToBase64(subscription.getKey("p256dh"));
+  const auth = arrayBufferToBase64(subscription.getKey("auth"));
   // Send subscription + userId to backend
   await fetch("/api/push/subscribe", {
     method: "POST",
@@ -76,7 +79,7 @@ async function enablePushNotifications() {
     body: JSON.stringify({
       userId,
       endpoint: subscription.endpoint,
-      keys: subscription.keys
+      keys: { p256dh, auth }
     })
   });
   console.log("✅ Push notifications enabled!");
