@@ -175,19 +175,6 @@ app.use((req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
-// ================= SOCKET.IO =================
-const server = http.createServer(app);
-const io = new Server(server);
 
-const userSockets = {};
-
-io.on("connection", (socket) => {
-  const userId = socket.handshake.query.userId;
-  if (userId) userSockets[userId] = socket;
-
-  socket.on("disconnect", () => {
-    delete userSockets[userId];
-  });
-});
 
 
