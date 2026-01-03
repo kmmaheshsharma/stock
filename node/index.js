@@ -95,6 +95,9 @@ app.post('/api/check-user', async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+app.get("/api/push/public-key", (req, res) => {
+  res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
+});
 app.post("/api/push/subscribe", async (req, res) => {
   const { endpoint, keys } = req.body;
 
