@@ -12,20 +12,14 @@ const signupForm = document.getElementById("signup-form");
 messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
 const socket = io("https://aiwhatupaccountant-production.up.railway.app");
-// Register userId (from localStorage or generated UUID)
-socket.on("connect", () => {
-  const userId = localStorage.getItem("userId");
-  socket.emit("registerUser", { userId });
-});
-
+const userId = localStorage.getItem("userId"); // must exist
+socket.emit("registerUser", { userId });
 // Listen for background alerts
 socket.on("alertMessage", (data) => {
-  // Display in UI
-  displayMessage(data.text, data.chart);
-});
+  console.log("alertMessage received:", data);
 
-// Example displayMessage function
-function displayMessage(text, chart) {
+  const { text, chart } = data; // <-- destructure from data
+
   const messagesEl = document.getElementById("messages");
   const msgEl = document.createElement("div");
   msgEl.className = "message bot-message";
@@ -40,7 +34,8 @@ function displayMessage(text, chart) {
 
   messagesEl.appendChild(msgEl);
   messagesEl.scrollTop = messagesEl.scrollHeight;
-}
+});
+
 window.onload = async function() {
   // Check Local Storage for User's Phone
   const phone = localStorage.getItem("userPhone");
