@@ -63,9 +63,12 @@ async function enablePushNotifications() {
   await fetch("/api/push/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, ...subscription })
+    body: JSON.stringify({
+      userId,
+      endpoint: subscription.endpoint,
+      keys: subscription.keys
+    })
   });
-
   console.log("✅ Push notifications enabled!");
 }
 
