@@ -175,6 +175,87 @@ app.use((req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
+// ================= SOCKET.IO =================
+const server = http.createServer(app);
+const io = new Server(server);
 
+const userSockets = {};
 
+io.on("connection", (socket) => {
+  const userId = socket.handshake.query.userId;
+  if (userId) userSockets[userId] = socket;
 
+  socket.on("disconnect", () => {
+    delete userSockets[userId];
+  });
+});
+
+// Helper to send alerts to PWA bot
+function sendToBot(userId, text, chart) {
+  const socket = userSockets[userId];
+  if (!socket) return;
+  socket.emit("alertMessage", { text, chart });
+}
+
+// ================= BACKGROUND JOBS =================
+
+// Sentiment update
+function updateSentiment(symbol) {
+  try {
+    const scriptPath = path.join(__dirname, "../python/update_sentiment.py");
+    spawn("python3", [scriptPath, symbol], { env: process.env });
+  } catch (err) {
+    console.error("[updateSentiment]", err.message);
+  }
+}
+
+async function fetchSentimentSymbols() {
+  const res = await pool.query(`SELECT DISTINCT symbol FROM watchlist`);
+  return res.rows.map(r => r.symbol.toUpperCase());
+}
+
+async function runSentimentCron() {
+  try {
+    const symbols = await fetchSentimentSymbols();
+    for (const s of symbols) updateSentiment(s);
+  } catch (e) {
+    console.error("[SENTIMENT]", e.message);
+  }
+}
+async function runAlertsForAllUsers() {
+  // Get all subscribed users
+  const usersRes = await pool.query("SELECT id, phone FROM users WHERE subscribed=true");
+
+  for (const user of usersRes.rows) {
+    const messages = await generateUserAlerts(user);
+
+    for (const msg of messages) {
+      // Push to PWA bot
+      sendToBot(user.id, msg.text, msg.chart);
+    }
+  }
+}
+
+// Start background jobs
+async function startBackgroundJobs() {
+  console.log("⏱️ Starting background jobs");
+
+  // 1️⃣ Run sentiment cron
+  runSentimentCron();
+
+  // 2️⃣ Run PWA/bot alerts (dryRun = true)
+  await runAlertsForAllUsers(); 
+
+  // 3️⃣ Schedule WhatsApp alerts for subscribed users
+  setInterval(async () => {
+    await runAlertsForAllUsers();
+    console.log("📨 Background WhatsApp alerts sent to subscribed users");
+  }, 1 * 60 * 1000); // every 1 minute
+}
+
+// ================= START SERVER =================
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  setTimeout(startBackgroundJobs, 3000);
+});
