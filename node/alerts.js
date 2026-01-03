@@ -131,57 +131,65 @@ const msgHTML = `
   };
 }
 
+// 1️⃣ Get unique symbols with portfolio info
 async function getUserSymbols(userId) {
   try {
-    // 1️⃣ Get watchlist symbols
+    // Fetch watchlist
     const watchlistRes = await pool.query(
       "SELECT symbol FROM watchlist WHERE user_id = $1",
       [userId]
     );
     const watchlist = watchlistRes.rows
-      .map(r => r.symbol?.trim().toUpperCase()) // remove whitespace and normalize
-      .filter(Boolean); // remove null or empty symbols
-
-    // 2️⃣ Get portfolio symbols (only open positions)
-    const portfolioRes = await pool.query(
-      "SELECT symbol FROM portfolio WHERE user_id = $1 AND status = 'open'",
-      [userId]
-    );
-    const portfolio = portfolioRes.rows
       .map(r => r.symbol?.trim().toUpperCase())
       .filter(Boolean);
 
-    // 3️⃣ Combine and remove duplicates
-    const allSymbols = Array.from(new Set([...watchlist, ...portfolio]));
+    // Fetch portfolio (open positions)
+    const portfolioRes = await pool.query(
+      "SELECT symbol, quantity, entry_price FROM portfolio WHERE user_id = $1 AND status = 'open'",
+      [userId]
+    );
+    const portfolio = portfolioRes.rows
+      .map(r => ({
+        symbol: r.symbol?.trim().toUpperCase(),
+        quantity: r.quantity,
+        entryPrice: r.entry_price
+      }))
+      .filter(r => r.symbol);
 
-    return allSymbols;
+    // Combine symbols uniquely
+    const allSymbolsSet = new Set([...watchlist, ...portfolio.map(p => p.symbol)]);
+    const allSymbols = Array.from(allSymbolsSet);
+
+    // Build map for quick lookup of portfolio info
+    const portfolioMap = {};
+    for (const p of portfolio) {
+      portfolioMap[p.symbol] = { quantity: p.quantity, entryPrice: p.entryPrice };
+    }
+
+    return { allSymbols, portfolioMap }; // return both
   } catch (err) {
     console.error("Error fetching user symbols:", err);
-    return [];
+    return { allSymbols: [], portfolioMap: {} };
   }
 }
 
+// 2️⃣ Generate alerts using the combined data
 async function generateUserAlerts(user) {
-  const symbols = await getUserSymbols(user.id); // portfolio + watchlist symbols
-  const messages = [];  
-  for (const symbol of symbols) {
-    // Get portfolio info
-    const portfolioRes = await pool.query(
-      `SELECT id, entry_price, exit_price, quantity
-       FROM portfolio
-       WHERE user_id = $1 AND symbol = $2 AND status = 'open'`,
-      [user.id, symbol]
-    );
+  const { allSymbols, portfolioMap } = await getUserSymbols(user.id);
+  const messages = [];
 
-    const { totalQuantity, avgEntryPrice } = calculateAggregatedPosition(portfolioRes.rows);
+  for (const symbol of allSymbols) {
+    const portfolioInfo = portfolioMap[symbol] || null;
+    const totalQuantity = portfolioInfo?.quantity || 0;
+    const avgEntryPrice = portfolioInfo?.entryPrice || 0;
 
-    // Run Python engine
+    // Prepare Python engine args
     const args = [symbol];
     if (avgEntryPrice) args.push("--entry", avgEntryPrice.toString());
 
     let result;
     try {
-      result = await runPythonEngine(args); // returns full JSON from your Python script
+      result = await runPythonEngine(args); // returns JSON from your Python script
     } catch (err) {
       console.error(`Python engine failed for ${symbol}:`, err);
       continue; // skip this symbol if Python fails
@@ -206,17 +214,15 @@ async function generateUserAlerts(user) {
       ? "Cut Loss"
       : "Wait / Monitor";
 
-    // Construct message
+    // Build message
     let msgText = `📊 <b>${symbol}</b> Update<br>`;
     msgText += `💰 Price: ₹${price}`;
-
-    if (totalQuantity) {
+    if (totalQuantity > 0) {
       msgText += ` (Avg Entry: ₹${avgEntryPrice.toFixed(2)}) | Qty: ${totalQuantity}`;
       msgText += `<br>📌 Stock is in portfolio`;
     } else {
       msgText += `<br>📌 Stock is in watch mode`;
     }
-
     msgText += `<br>📉 Low / 📈 High: ₹${low} / ₹${high}`;
     msgText += `<br>📊 Volume: ${volume} | Avg: ${avgVolume}`;
     msgText += `<br>🔻 Change: ${change}%`;
@@ -227,12 +233,12 @@ async function generateUserAlerts(user) {
       msgText += `<br>💡 Suggested Entry: ₹${result.suggested_entry.lower} - ₹${result.suggested_entry.upper}`;
     }
 
-    // Include chart if available
     messages.push({ text: msgText, chart: result.chart || null });
   }
 
   return messages;
 }
+
 
 // ---------------------- Helper ----------------------
 function calculateAggregatedPosition(rows) {
