@@ -9,7 +9,7 @@ const { Server } = require("socket.io");
 const { pool } = require("./db");
 const { handleMessage, handleChat } = require("./routes");
 const { generateUserAlerts } = require("./alerts");
-
+const { sendPushToUser } = require("./push/sendPush");
 const app = express();
 app.use(bodyParser.json());
 
@@ -95,7 +95,18 @@ app.post('/api/check-user', async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+app.post("/api/push/subscribe", async (req, res) => {
+  const { endpoint, keys } = req.body;
 
+  await pool.query(
+    `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+     VALUES ($1,$2,$3,$4)
+     ON CONFLICT (endpoint) DO NOTHING`,
+    [req.user.id, endpoint, keys.p256dh, keys.auth]
+  );
+
+  res.sendStatus(201);
+});
 // POST /api/chat
 app.post("/api/webchat", handleChat);
 
@@ -183,18 +194,21 @@ const userSockets = {};
 
 io.on("connection", (socket) => {
   const userId = socket.handshake.query.userId;
-  if (userId) userSockets[userId] = socket;
-
+  if (userId) {
+    userSockets[userId] = socket;    
+  }
+  
   socket.on("disconnect", () => {
-    delete userSockets[userId];
+     delete userSockets[userId];     
   });
 });
 
 // Helper to send alerts to PWA bot
 function sendToBot(userId, text, chart) {
   const socket = userSockets[userId];
-  if (!socket) return;
+  if (!socket) return false;
   socket.emit("alertMessage", { text, chart });
+  return true;
 }
 
 // ================= BACKGROUND JOBS =================
@@ -231,7 +245,14 @@ async function runAlertsForAllUsers() {
 
     for (const msg of messages) {
       // Push to PWA bot
-      sendToBot(user.id, msg.text, msg.chart);
+      const delivered = sendToBot(user.id, msg.text, msg.chart);
+      if (!delivered) {
+        await sendPushToUser(user.id, {
+          title: "Stock Alert 📊",
+          body: msg.text,
+          data: { url: "/" }
+        });
+      }      
     }
   }
 }
