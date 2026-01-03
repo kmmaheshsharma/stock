@@ -131,68 +131,6 @@ const msgHTML = `
   };
 }
 
-// --- Main alert runner for users ---
-async function runAlerts(extraSymbols = [], dryRun = false, userId = null) {
-  // Fetch only subscribed users or a specific subscribed user
-  const userQuery = userId
-    ? "SELECT id, phone FROM users WHERE id=$1 AND subscribed=true"
-    : "SELECT id, phone FROM users WHERE subscribed=true";
-  const userParams = userId ? [userId] : [];
-
-  const usersRes = await pool.query(userQuery, userParams);
-
-  const allMessages = []; // for PWA/dryRun
-
-  for (const user of usersRes.rows) {
-    // Get user's watchlist
-    const watchlistRes = await pool.query(
-      "SELECT symbol FROM watchlist WHERE user_id=$1",
-      [user.id]
-    );
-    const watchlist = watchlistRes.rows.map(w => w.symbol.toUpperCase());
-    const allSymbols = [...new Set([...watchlist, ...extraSymbols])];
-
-    for (const symbol of allSymbols) {
-      // Get portfolio info
-      const portfolioRes = await pool.query(
-        "SELECT id, entry_price, exit_price, stoploss_alert_sent, profit_alert_sent, quantity FROM portfolio WHERE user_id=$1 AND symbol=$2 AND status='open'",
-        [user.id, symbol]
-      );
-
-      const { totalQuantity, avgEntryPrice } = calculateAggregatedPosition(portfolioRes.rows);
-
-      // Run Python engine
-      const args = ["../python/engine.py", symbol];
-      if (avgEntryPrice) args.push("--entry", avgEntryPrice);
-
-      const result = await runPythonEngine(args);
-      if (!result) continue;
-
-      // Construct HTML message for PWA/bot
-      let msgText = `📊 <b>${result.symbol}</b> Update<br>`;
-      msgText += `💰 Price: ₹${result.price}`;
-      if (avgEntryPrice) msgText += ` (Avg Entry: ₹${avgEntryPrice.toFixed(2)})`;
-      if (totalQuantity) msgText += ` | Qty: ${totalQuantity}`;
-      msgText += `<br>⚡ Recommendation: ${result.recommendation || "Wait / Monitor"}<br>`;
-
-        // Collect messages for PWA bot
-      allMessages.push({
-        userId: user.id,
-        phone: user.phone,
-        text: msgText,
-        chart: result.chart || null
-      });
-
-      console.log(`[DRY RUN] Message for user ${user.id} (${user.phone}):\n`, msgText);
-
-      // Optionally send to PWA bot in real-time
-      sendToBot(user.id, msgText, result.chart || null);
-    }
-  }
-
-  // Return messages if dryRun (for API)
-  if (dryRun) return allMessages;
-}
 async function getUserSymbols(userId) {
   // 1️⃣ Get watchlist symbols
   const watchlistRes = await pool.query(
@@ -217,8 +155,8 @@ async function getUserSymbols(userId) {
 async function generateUserAlerts(user) {
   const symbols = await getUserSymbols(user.id); // portfolio + watchlist symbols
   const messages = [];
-
-  for (const symbol of symbols) {
+  const uniqueSymbols = [...new Set(symbols)];  // remove duplicates
+  for (const symbol of uniqueSymbols) {
     // Get portfolio info
     const portfolioRes = await pool.query(
       `SELECT id, entry_price, exit_price, quantity
