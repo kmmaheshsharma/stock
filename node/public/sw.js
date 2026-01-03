@@ -1,4 +1,4 @@
-const CACHE_NAME = "nobroko-cache-v53";
+const CACHE_NAME = "nobroko-cache-v54";
 const urlsToCache = ["/", "/index.html", "/app.js", "/styles.css", "/manifest.json"];
 
 self.addEventListener("install", (e) => {
