@@ -132,31 +132,39 @@ const msgHTML = `
 }
 
 async function getUserSymbols(userId) {
-  // 1️⃣ Get watchlist symbols
-  const watchlistRes = await pool.query(
-    "SELECT symbol FROM watchlist WHERE user_id = $1",
-    [userId]
-  );
-  const watchlist = watchlistRes.rows.map(r => r.symbol.toUpperCase());
+  try {
+    // 1️⃣ Get watchlist symbols
+    const watchlistRes = await pool.query(
+      "SELECT symbol FROM watchlist WHERE user_id = $1",
+      [userId]
+    );
+    const watchlist = watchlistRes.rows
+      .map(r => r.symbol?.trim().toUpperCase()) // remove whitespace and normalize
+      .filter(Boolean); // remove null or empty symbols
 
-  // 2️⃣ Get portfolio symbols (only open positions)
-  const portfolioRes = await pool.query(
-    "SELECT symbol FROM portfolio WHERE user_id = $1 AND status = 'open'",
-    [userId]
-  );
-  const portfolio = portfolioRes.rows.map(r => r.symbol.toUpperCase());
+    // 2️⃣ Get portfolio symbols (only open positions)
+    const portfolioRes = await pool.query(
+      "SELECT symbol FROM portfolio WHERE user_id = $1 AND status = 'open'",
+      [userId]
+    );
+    const portfolio = portfolioRes.rows
+      .map(r => r.symbol?.trim().toUpperCase())
+      .filter(Boolean);
 
-  // 3️⃣ Combine and remove duplicates
-  const allSymbols = [...new Set([...watchlist, ...portfolio])];
+    // 3️⃣ Combine and remove duplicates
+    const allSymbols = Array.from(new Set([...watchlist, ...portfolio]));
 
-  return allSymbols;
+    return allSymbols;
+  } catch (err) {
+    console.error("Error fetching user symbols:", err);
+    return [];
+  }
 }
 
 async function generateUserAlerts(user) {
   const symbols = await getUserSymbols(user.id); // portfolio + watchlist symbols
-  const messages = [];
-  const uniqueSymbols = [...new Set(symbols)];  // remove duplicates
-  for (const symbol of uniqueSymbols) {
+  const messages = [];  
+  for (const symbol of symbols) {
     // Get portfolio info
     const portfolioRes = await pool.query(
       `SELECT id, entry_price, exit_price, quantity
