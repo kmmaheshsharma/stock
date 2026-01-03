@@ -215,48 +215,83 @@ async function getUserSymbols(userId) {
 }
 
 async function generateUserAlerts(user) {
-  const symbols = await getUserSymbols(user.id);
   const messages = [];
 
-  for (const symbol of symbols) {
-    // Get portfolio info
-    const portfolioRes = await pool.query(
-      `SELECT id, entry_price, exit_price, quantity
-       FROM portfolio
-       WHERE user_id = $1 AND symbol = $2 AND status = 'open'`,
-      [user.id, symbol]
-    );
+  // 1️⃣ Get symbols from watchlist
+  const watchlistRes = await pool.query(
+    `SELECT symbol FROM watchlist WHERE user_id = $1`,
+    [user.id]
+  );
+  const watchlistSymbols = watchlistRes.rows.map(r => r.symbol);
 
-    const { totalQuantity, avgEntryPrice } = calculateAggregatedPosition(portfolioRes.rows);
+  // 2️⃣ Get portfolio symbols
+  const portfolioRes = await pool.query(
+    `SELECT symbol, quantity, entry_price, exit_price
+     FROM portfolio
+     WHERE user_id = $1 AND status='open'`,
+    [user.id]
+  );
+  const portfolioSymbols = portfolioRes.rows.map(r => r.symbol);
 
-    if (!totalQuantity) continue; // skip if no open positions
+  // Merge symbols (unique)
+  const allSymbols = [...new Set([...watchlistSymbols, ...portfolioSymbols])];
+
+  // 3️⃣ Loop through each symbol
+  for (const symbol of allSymbols) {
+    // Portfolio info
+    const positions = portfolioRes.rows.filter(p => p.symbol === symbol);
+    const totalQuantity = positions.reduce((acc, p) => acc + p.quantity, 0);
+    const avgEntryPrice = positions.length
+      ? positions.reduce((acc, p) => acc + p.entry_price * p.quantity, 0) / totalQuantity
+      : null;
 
     // Run Python engine or sentiment logic
     const args = [symbol];
-    if (avgEntryPrice) {
-      args.push("--entry", avgEntryPrice.toString());
-    }
+    if (avgEntryPrice) args.push("--entry", avgEntryPrice.toString());
     const result = await runPythonEngine(args);
-    console.log(`[DRY RUN] Message for user ${user.id}:\n`, result);
     if (!result) continue;
 
     // Construct message
     let msgText = `📊 <b>${result.symbol}</b> Update<br>`;
     msgText += `💰 Price: ₹${result.price}`;
+
     if (avgEntryPrice) msgText += ` (Avg Entry: ₹${avgEntryPrice.toFixed(2)})`;
-    
-    // Include exit price if available
-    const exitPrice = portfolioRes.rows[0]?.exit_price;
+
+    const exitPrice = positions[0]?.exit_price;
     if (exitPrice) msgText += ` | Exit: ₹${exitPrice.toFixed(2)}`;
 
-    msgText += ` | Qty: ${totalQuantity}`;
-    msgText += `<br>⚡ Recommendation: ${result.recommendation || "Wait / Monitor"}<br>`;
+    if (totalQuantity) {
+      msgText += ` | Qty: ${totalQuantity}`;
+      msgText += `<br>📌 Stock is in portfolio`;
+    } else {
+      msgText += `<br>📌 Stock is in watch mode`;
+    }
+
+    // Include additional details if available
+    if (result.low && result.high) {
+      msgText += `<br>📉 Low / 📈 High: ₹${result.low} / ₹${result.high}`;
+    }
+    if (result.volume && result.avgVolume) {
+      msgText += `<br>📊 Volume: ${result.volume} | Avg: ${result.avgVolume}`;
+    }
+    if (result.changePercent != null) {
+      msgText += `<br>🔻 Change: ${result.changePercent.toFixed(2)}%`;
+    }
+    if (result.sentiment) {
+      msgText += `<br>🧠 Twitter Sentiment: ${result.sentiment.status} (${result.sentiment.count})`;
+    }
+
+    msgText += `<br>⚡ Recommendation: ${result.recommendation || "Wait / Monitor"}`;
+    if (result.entryMin && result.entryMax) {
+      msgText += ` | Suggested entry: ₹${result.entryMin} - ₹${result.entryMax}`;
+    }
 
     messages.push({ text: msgText, chart: result.chart || null });
   }
 
   return messages;
 }
+
 
 // ---------------------- Helper ----------------------
 function calculateAggregatedPosition(rows) {
