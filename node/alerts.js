@@ -236,7 +236,7 @@ async function getLastKnownState(userId, symbol) {
     WHERE user_id = $1 AND symbol = $2
     LIMIT 1
   `, [userId, symbol]);
-
+  console.log(`[STATE] Last known state for ${symbol}:`, row.rows[0] || null);
   return row.rows[0] || null;
 }
 function detectMeaningfulChange(result, lastState) {

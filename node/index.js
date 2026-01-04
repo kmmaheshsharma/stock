@@ -344,7 +344,8 @@ async function runAlertsForAllUsers() {
         const symbol = extractSymbolFromMessage(msg.text); 
         const result = msg.__raw_result; 
         const lastState = await getLastKnownState(user.id, symbol);
-        const isNewStock = !lastState;
+        const isNewStock = !lastState || Object.keys(lastState).length === 0;
+        console.log("isNewStock:", isNewStock);  // Debug line
         let changes = [];
         if (!isNewStock) {
           changes = detectMeaningfulChange(result, lastState);
