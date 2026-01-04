@@ -26,7 +26,7 @@ groq_client = Groq(api_key=api_key)
 
 def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
     """
-    Calls Groq AI and parses JSON output with logging.
+    Calls Groq AI and extracts JSON safely.
     """
     logging.info("Starting Groq AI call...")
     try:
@@ -43,18 +43,19 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
         raw_text = response.choices[0].message.content
         logging.info("Groq AI response received.")
 
-        # Try to parse JSON from AI
-        ai_json = json.loads(raw_text)
-        logging.info("Groq AI JSON parsed successfully.")
-        return ai_json
+        # Try to extract JSON object from response
+        match = re.search(r"\{.*\}", raw_text, re.DOTALL)
+        if match:
+            ai_json = json.loads(match.group(0))
+            logging.info("Groq AI JSON parsed successfully.")
+            return ai_json
 
-    except json.JSONDecodeError:
-        logging.error("Groq AI returned invalid JSON.")
+        logging.warning("No JSON found in Groq AI response, returning raw text.")
         return {"error": "Invalid JSON from Groq AI", "raw_text": raw_text}
 
     except Exception as e:
         logging.error(f"Groq AI call failed: {str(e)}")
-        return {"error": str(e)}
+        return {"error": str(e), "raw_text": raw_text}
 
 def build_groq_prompt(symbol, price_data, sentiment_score):
     """
