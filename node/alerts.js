@@ -60,14 +60,18 @@ async function processMessage(message) {
   const result = await runPythonEngine(message);
 
   // --- Early check for invalid symbol ---
-  if (!result || !result.symbol || (Array.isArray(result.alerts) && result.alerts.includes("invalid_symbol"))) {
+  if (
+    !result ||
+    !result.symbol ||
+    (Array.isArray(result.alerts) && result.alerts.includes("invalid_symbol"))
+  ) {
     console.warn(`[SYMBOL] Invalid or unknown symbol: ${message}`);
     return null; // Node handler will catch this and respond
   }
 
   console.log(`[SYMBOL] Valid symbol received: ${result.symbol}`);
 
-  // --- Build HTML message ---
+  // --- Build recommendation string ---
   let recommendation = result.recommendation || "Wait / Monitor";
   if (result.suggested_entry) {
     const lower = result.suggested_entry.lower ?? "N/A";
@@ -75,6 +79,7 @@ async function processMessage(message) {
     recommendation += ` | Suggested entry: ₹${lower} - ₹${upper}`;
   }
 
+  // --- Build alerts HTML ---
   let alertsHTML = "";
   if (!Array.isArray(result.alerts) || result.alerts.length === 0) {
     alertsHTML = `<p>⚠️ No strong signal yet<br>📌 Stock is in watch mode</p>`;
@@ -90,7 +95,23 @@ async function processMessage(message) {
     alertsHTML += `</p>`;
   }
 
-const msgHTML = `
+  // --- Include Groq AI analysis if available ---
+  let groqHTML = "";
+  if (result.ai_analysis) {
+    const ai = result.ai_analysis;
+    groqHTML = `<div class="groq-analysis">
+      <h4>🤖 AI Analysis</h4>
+      <p>Predicted Move: ${ai.predicted_move?.toUpperCase() ?? "N/A"}</p>
+      <p>Confidence: ${(ai.confidence != null ? (ai.confidence * 100).toFixed(2) : "N/A")}%</p>
+      <p>Support Level: ₹${ai.support_level ?? "N/A"}</p>
+      <p>Resistance Level: ₹${ai.resistance_level ?? "N/A"}</p>
+      <p>Risk: ${ai.risk?.toUpperCase() ?? "N/A"}</p>
+      <p>Recommendation: ${ai.recommendation ?? "N/A"}</p>
+    </div>`;
+  }
+
+  // --- Build final HTML message ---
+  const msgHTML = `
 <div class="message bot">
   <div class="stock-update">
     <h3>📊 ${result.symbol} Update</h3>
@@ -100,7 +121,8 @@ const msgHTML = `
     <p>🔻 Change: ${result.change_percent?.toFixed(2) ?? "0"}%</p>
     <p>🧠 Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "NEUTRAL"} (${result.sentiment ?? 0})</p>
     <p>⚡ Recommendation: <strong>${recommendation}</strong></p>
-    ${alertsHTML ?? ""}
+    ${alertsHTML}
+    ${groqHTML}
   </div>
 </div>
 `;
