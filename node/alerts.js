@@ -237,8 +237,8 @@ async function generateUserAlerts(user) {
     }
 
     // ================= Grok (AI) Analysis =================
-    if (result.ai) {
-      const ai = result.ai;
+    if (result.ai_analysis) {
+      const ai = result.ai_analysis;
       msgText += `<br><br>🤖 AI Analysis:`;
       msgText += `<br>📈 Predicted Move: ${ai.predicted_move?.toUpperCase() || "N/A"}`;
       msgText += `<br>⚡ Confidence: ${ai.confidence != null ? (ai.confidence * 100).toFixed(2) + "%" : "N/A"}`;
