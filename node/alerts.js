@@ -101,12 +101,12 @@ async function processMessage(message) {
     const ai = result.ai_analysis;
     groqHTML = `<div class="groq-analysis">
       <h4>🤖 AI Analysis</h4>
-      <p>Predicted Move: ${ai.predicted_move?.toUpperCase() ?? "N/A"}</p>
-      <p>Confidence: ${(ai.confidence != null ? (ai.confidence * 100).toFixed(2) : "N/A")}%</p>
-      <p>Support Level: ₹${ai.support_level ?? "N/A"}</p>
-      <p>Resistance Level: ₹${ai.resistance_level ?? "N/A"}</p>
-      <p>Risk: ${ai.risk?.toUpperCase() ?? "N/A"}</p>
-      <p>Recommendation: ${ai.recommendation ?? "N/A"}</p>
+      <p>📈 Predicted Move: ${ai.predicted_move?.toUpperCase() || "N/A"}</p>
+      <p>⚡ Confidence: ${ai.confidence != null ? (ai.confidence * 100).toFixed(2) + "%" : "N/A"}</p>
+      <p>🛡️ Support Level: ₹${ai.support_level ?? "N/A"}</p>
+      <p>⛰️ Resistance Level: ₹${ai.resistance_level ?? "N/A"}</p>
+      <p>⚠️ Risk: ${ai.risk?.toUpperCase() || "N/A"}</p>
+      <p>💡 Recommendation: ${ai.recommendation || "N/A"}</p>
     </div>`;
   }
 
