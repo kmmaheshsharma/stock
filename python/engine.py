@@ -37,28 +37,34 @@ def normalize_symbol(raw: str):
 # ---------- Core Engine ----------
 def run_engine(symbol, entry_price=None):
     try:
-        symbol = normalize_symbol(symbol)
+        symbols = normalize_symbol(symbol)
 
-        price, low, high, volume, avg_volume, change_percent = get_price(symbol)
+        price_data = get_price(symbols)
+
+        if not price_data:
+            return {
+                "symbol": symbols,
+                "error": "No price data found",
+                "alerts": ["error"]
+            }
+
+        price = price_data["price"]
+        low = price_data["low"]
+        high = price_data["high"]
+        volume = price_data["volume"]
+        avg_volume = price_data["avg_volume"]
+        change_percent = price_data["change_percent"]
 
         alerts = []
 
-        if price is None:
-            return {
-                "symbol": symbol,
-                "error": f"No price data found for {symbol}",
-                "alerts": ["invalid_symbol"]
-            }
-
-        # Price-based alerts
-        if entry_price is not None:
+        if entry_price:
             if price > entry_price * 1.05:
                 alerts.append("profit")
             elif price < entry_price * 0.95:
                 alerts.append("loss")
 
-        # Sentiment
-        sentiment_score, s_type = sentiment_for_symbol(symbol)
+        sentiment_score, s_type = sentiment_for_symbol(price_data["symbol"])
+
         if s_type == "accumulation":
             alerts.append("buy_signal")
         elif s_type == "hype":
@@ -71,10 +77,10 @@ def run_engine(symbol, entry_price=None):
                 "upper": round(low * 1.02, 2)
             }
 
-        chart_base64 = generate_chart(symbol)
+        chart_base64 = generate_chart(price_data["symbol"])
 
         return {
-            "symbol": symbol,
+            "symbol": price_data["symbol"],
             "price": price,
             "low": low,
             "high": high,
@@ -94,7 +100,6 @@ def run_engine(symbol, entry_price=None):
             "error": str(e),
             "alerts": ["error"]
         }
-
 
 # ---------- Entry Point ----------
 if __name__ == "__main__":
