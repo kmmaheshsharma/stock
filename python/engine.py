@@ -252,7 +252,7 @@ if __name__ == "__main__":
     parser.add_argument("symbol")
     parser.add_argument("--entry", type=float)
     args = parser.parse_args()
-    sanitized_message = sanitize_input(message)
+    sanitized_message = sanitize_input(args.symbol)
     prompt = build_groq_prompt_for_symbol(sanitized_message)
     ai_response = call_groq_ai_symbol(prompt)
     
