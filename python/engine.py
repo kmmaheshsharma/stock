@@ -42,7 +42,7 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
     """
     Calls Groq AI and extracts the stock symbol.
     """
-    logging.info("Starting Groq AI call...")
+    logging.info(f"Starting Groq AI call for symbol extraction...{prompt}")
     try:
         response = groq_client.chat.completions.create(
             messages=[
@@ -55,15 +55,23 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
         )
 
         raw_text = response.choices[0].message.content
-        logging.info("Groq AI response received.{}".format(raw_text))
+        logging.info("Groq AI response received.")
+
+        # Log the full raw response for debugging
+        logging.debug(f"Full raw response from Groq AI: {raw_text}")
 
         # Clean the response to ensure it only contains the symbol
         symbol = raw_text.strip()
-        logging.info("Extracted raw symbol: {}".format(symbol))
+
+        # Handle the case where the symbol is empty
+        if not symbol:
+            logging.error("Empty symbol received from Groq AI.")
+            return {"error": "Empty symbol returned", "raw_text": raw_text}
+
         # Check if the symbol matches expected format (e.g., ABC, XYZ.NS)
         if re.match(r'^[A-Z]{1,5}(\.[A-Z]{2,3})?$', symbol.replace(" ", "").replace("\n", "")):  # Remove spaces/newlines
             logging.info(f"Extracted symbol: {symbol}")
-            return {"symbol": symbol}  # Return as a dictionary with the key 'symbol'
+            
         else:
             logging.warning(f"Invalid symbol format in response: {symbol}")
             return {"error": "Invalid symbol format", "raw_text": raw_text}
