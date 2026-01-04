@@ -180,7 +180,6 @@ window.onload = async function() {
   const userId = await getAndCheckUser();
 
   if (userId) {
-     appendMessage("Bot", "Fetching Updates, Please Wait.... 🔔");
     // Existing user: show chat
     signupScreen.style.display = "none";
     chatScreen.style.display = "";
@@ -211,7 +210,7 @@ async function loadUserUpdates() {
     const data = await res.json();
 
     if (!data.updates || data.updates.length === 0) {
-      appendMessage("Bot", "You don't have any new updates at the moment. Please check back later for the latest stock alerts. 🔔");
+      //appendMessage("Bot", "You don't have any new updates at the moment. Please check back later for the latest stock alerts. 🔔");
       return;
     }
 
@@ -260,16 +259,30 @@ async function markUpdateAsRead(symbol, source) {
   }
 }
 // ---------------------- Append chat messages ----------------------
-function appendMessage(sender, html) {
+function appendMessage(sender, html, chart) {
   const div = document.createElement("div");
   div.className = sender === "You" ? "user-msg" : "bot-msg";
+
+  // Message content
   div.innerHTML = `
     <div class="msg-content">${html}</div>
-    <div class="msg-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+    <div class="msg-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
   `;
+
+  // Append chart if provided
+  if (chart) {
+    const chartImg = document.createElement("img");
+    chartImg.src = chart;
+    chartImg.style.maxWidth = "400px";   // Adjust to layout
+    chartImg.style.maxHeight = "250px";  // Adjust to layout
+    chartImg.style.display = "block";    // Force new line
+    chartImg.style.margin = "10px 0";    // Space above/below image
+    div.appendChild(chartImg);
+  }
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
+
 
 // ---------------------- Typing simulation ----------------------
 function botTypingIndicator() {
@@ -386,7 +399,7 @@ form.addEventListener("submit", async (e) => {
     await delay(Math.random() * 1000 + 1000);
 
     typingDiv.remove();
-    appendMessage("Bot", data.text); // display the bot response
+    appendMessage("Bot", data.text, data.chart); // display the bot response
   } catch (err) {
     typingDiv.remove();
     appendMessage("Bot", "⚠️ Error fetching response");
