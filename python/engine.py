@@ -10,22 +10,28 @@ from chart import generate_chart
 
 def normalize_symbol(raw: str):
     """
-    Normalize user input and return NSE + BSE Yahoo symbols
-    Example:
-      input:  "tata power"
-      output: ["TATAPOWER.NS", "TATAPOWER.BO"]
+    Extract ONLY the base stock symbol from user input
+    Supports NSE & BSE
     """
+
     raw = raw.upper().strip()
 
-    # Keep only valid symbol characters
-    base = re.sub(r"[^A-Z&\-]", "", raw)
+    # Remove common command words
+    raw = re.sub(r"\b(TRACK|ENTRY|BUY|SELL|ADD|SHOW|PRICE)\b", "", raw)
 
-    if not base or len(base) < 2:
+    # Replace separators
+    raw = raw.replace("-", " ").replace("_", " ")
+
+    # Extract first valid symbol token
+    match = re.search(r"\b[A-Z&]{2,15}\b", raw)
+    if not match:
         raise ValueError(f"Invalid symbol received: {raw}")
 
+    base = match.group(0)
+
     return [
-        f"{base}.NS",   # NSE first
-        f"{base}.BO"    # BSE fallback
+        f"{base}.NS",
+        f"{base}.BO"
     ]
 
 # ---------- Core Engine ----------
