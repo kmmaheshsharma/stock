@@ -10,6 +10,7 @@ const { pool } = require("./db");
 const { handleMessage, handleChat } = require("./routes");
 const { generateUserAlerts, getLastKnownState, detectMeaningfulChange, saveLastStatus, extractSymbolFromMessage } = require("./alerts");
 const { sendPushToUser } = require("./push/sendPush");
+let isApp = true;
 const app = express();
 app.use(bodyParser.json());
 
@@ -94,6 +95,12 @@ app.post('/api/check-user', async (req, res) => {
     console.error("Error checking user:", err);
     res.status(500).json({ error: "Server error" });
   }
+});
+app.post('/api/update-visibility', (req, res) => {
+  const { isAppInForeground } = req.body;
+  console.log("Received visibility state from client:", isAppInForeground);
+  isApp = isAppInForeground;
+  res.json({ success: true, message: "Visibility state updated on server" });
 });
 app.post("/api/user/updates", async (req, res) => {
   const userId = req.body.userId;
@@ -379,20 +386,21 @@ async function runAlertsForAllUsers() {
               data: { url: "/" }
             });
             console.log(`✅ Push sent successfully`);     
-            if (msg.source === "portfolio") {
-              await pool.query(`
-                UPDATE portfolio
-                SET has_unread_update = FALSE, last_update_summary = $1, last_update_at = NOW()
-                WHERE user_id = $2 AND symbol = $3 AND has_unread_update = TRUE;
-              `, [msg.text, user.id, symbol]);
-            } else if (source === "watchlist") {
-              await pool.query(`
-                UPDATE watchlist
-                SET has_unread_update = FALSE, last_update_summary = $1, last_update_at = NOW()
-                WHERE user_id = $2 AND symbol = $3 AND has_unread_update = TRUE;
-              `, [msg.text, user.id, symbol]);
+            if(isApp){
+                if (msg.source === "portfolio") {
+                  await pool.query(`
+                    UPDATE portfolio
+                    SET has_unread_update = FALSE, last_update_summary = $1, last_update_at = NOW()
+                    WHERE user_id = $2 AND symbol = $3 AND has_unread_update = TRUE;
+                  `, [msg.text, user.id, symbol]);
+                } else if (source === "watchlist") {
+                  await pool.query(`
+                    UPDATE watchlist
+                    SET has_unread_update = FALSE, last_update_summary = $1, last_update_at = NOW()
+                    WHERE user_id = $2 AND symbol = $3 AND has_unread_update = TRUE;
+                  `, [msg.text, user.id, symbol]);
+                }
             }
-
             console.log(`   ✅ Push sent and marked as delivered for user ${user.id}`);                  
           } catch (pushErr) {
             console.error(`   ❌ Push failed for user ${user.id}:`, pushErr.message);
