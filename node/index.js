@@ -344,15 +344,17 @@ async function runAlertsForAllUsers() {
         const symbol = extractSymbolFromMessage(msg.text); 
         const result = msg.__raw_result; 
         const lastState = await getLastKnownState(user.id, symbol);
-        
-        const changes = detectMeaningfulChange(result, lastState);
-        
-        // If no meaningful changes, skip processing
-        if (changes.length === 0) {
-          console.log(`⚠️ No meaningful changes for ${symbol}, skipping alert for user ${user.id}`);
-          continue;
-        }
-        
+        const isNewStock = !lastState;
+        const changes = [];
+        if (!isNewStock) {
+          changes = detectMeaningfulChange(result, lastState);
+          
+          // If no meaningful changes, skip processing
+          if (changes.length === 0) {
+            console.log(`⚠️ No meaningful changes for ${symbol}, skipping alert for user ${user.id}`);
+            continue;
+          }
+        }        
         // Save the new state for this user and symbol
         await saveLastStatus({
           userId: user.id,
