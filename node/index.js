@@ -110,6 +110,7 @@ app.post("/api/user/updates", async (req, res) => {
       symbol,
       last_update_summary,
       last_update_at,
+      raw_graph_base64,  -- Add the base64 graph image column
       'portfolio' AS source
     FROM portfolio
     WHERE user_id = $1 AND has_unread_update = true
@@ -120,6 +121,7 @@ app.post("/api/user/updates", async (req, res) => {
       symbol,
       last_update_summary,
       last_update_at,
+      raw_graph_base64,  -- Add the base64 graph image column
       'watchlist' AS source
     FROM watchlist
     WHERE user_id = $1 AND has_unread_update = true
@@ -387,19 +389,27 @@ async function runAlertsForAllUsers() {
             });
             console.log(`✅ Push sent successfully`);     
             if(isApp){
-                if (msg.source === "portfolio") {
-                  await pool.query(`
-                    UPDATE portfolio
-                    SET has_unread_update = FALSE, last_update_summary = $1, last_update_at = NOW()
-                    WHERE user_id = $2 AND symbol = $3 AND has_unread_update = TRUE;
-                  `, [msg.text, user.id, symbol]);
-                } else if (source === "watchlist") {
-                  await pool.query(`
-                    UPDATE watchlist
-                    SET has_unread_update = FALSE, last_update_summary = $1, last_update_at = NOW()
-                    WHERE user_id = $2 AND symbol = $3 AND has_unread_update = TRUE;
-                  `, [msg.text, user.id, symbol]);
-                }
+              if (msg.source === "portfolio") {
+                await pool.query(`
+                  UPDATE portfolio
+                  SET 
+                    has_unread_update = FALSE, 
+                    last_update_summary = $1, 
+                    last_update_at = NOW(),
+                    raw_graph_base64 = $2  -- Add the base64 chart here
+                  WHERE user_id = $3 AND symbol = $4 AND has_unread_update = TRUE;
+                `, [msg.text, msg.chart, user.id, symbol]);
+              } else if (source === "watchlist") {
+                await pool.query(`
+                  UPDATE watchlist
+                  SET 
+                    has_unread_update = FALSE, 
+                    last_update_summary = $1, 
+                    last_update_at = NOW(),
+                    raw_graph_base64 = $2  -- Add the base64 chart here
+                  WHERE user_id = $3 AND symbol = $4 AND has_unread_update = TRUE;
+                `, [msg.text, msg.chart, user.id, symbol]);
+              }
             }
             console.log(`   ✅ Push sent and marked as delivered for user ${user.id}`);                  
           } catch (pushErr) {
