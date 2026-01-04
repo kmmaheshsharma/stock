@@ -115,7 +115,7 @@ async function processMessage(message) {
   <div class="message bot">
     <div class="stock-update">
       <h3>📊 ${result.symbol} Update</h3>
-      <p>💰 <strong>Price:</strong> ₹${result.price ?? "N/A"}</p>
+      <p>💰 <strong>Price:</strong> ₹${result.price ?? "Please check the stock symbol, it may be incorrect."}</p>
       <p>📉 Low / 📈 High: ₹${result.low ?? "N/A"} / ₹${result.high ?? "N/A"}</p>
       <p>📊 Volume: ${result.volume ?? "N/A"} | Avg: ${result.avg_volume?.toFixed(0) ?? "N/A"}</p>
       <p>🔻 Change: ${result.change_percent?.toFixed(2) ?? "0"}%</p>
@@ -201,7 +201,7 @@ async function generateUserAlerts(user) {
     if (!result) continue;
 
     // Safe fallback values
-    const price = result.price != null ? result.price : "N/A";
+    const price = result.price != null ? result.price : "Please check the stock symbol, it may be incorrect.";
     const low = result.low != null ? result.low : "N/A";
     const high = result.high != null ? result.high : "N/A";
     const volume = result.volume != null ? result.volume : "N/A";
