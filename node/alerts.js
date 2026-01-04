@@ -220,7 +220,7 @@ async function generateUserAlerts(user) {
   return messages;
 }
 async function getLastKnownState(userId, symbol) {
-  const row = await db.query(`
+  const row = await pool.query(`
     SELECT
       last_known_price AS price,
       last_known_change_percent AS change_percent,
