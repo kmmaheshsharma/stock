@@ -72,7 +72,7 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
         logging.info("Groq AI response received.")
 
         # Log the full raw response for debugging
-        logging.debug(f"Full raw response from Groq AI: {raw_text}")
+        logging.info(f"Full raw response from Groq AI: {raw_text}")
 
         # Clean the response to ensure it only contains the symbol
         symbol = raw_text.strip()
@@ -83,7 +83,7 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
             return {"error": "Empty symbol returned", "raw_text": raw_text}
 
         # Check if the symbol matches expected format (e.g., ABC, XYZ.NS)
-        if re.match(r'^[A-Z]{1,5}(\.[A-Z]{2,3})?$', symbol.replace(" ", "").replace("\n", "")):  # Remove spaces/newlines
+        if re.match(r'^[A-Z]{1,8}(\.[A-Z]{2,3})?$', symbol.replace(" ", "").replace("\n", "")):  # Remove spaces/newlines
             logging.info(f"Extracted symbol: {symbol}")
             return symbol
         else:
