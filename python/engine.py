@@ -55,11 +55,11 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
         )
 
         raw_text = response.choices[0].message.content
-        logging.info("Groq AI response received.")
+        logging.info("Groq AI response received.{}".format(raw_text))
 
         # Clean the response to ensure it only contains the symbol
         symbol = raw_text.strip()
-
+        logging.info("Extracted raw symbol: {}".format(symbol))
         # Check if the symbol matches expected format (e.g., ABC, XYZ.NS)
         if re.match(r'^[A-Z]{1,5}(\.[A-Z]{2,3})?$', symbol):
             logging.info(f"Extracted symbol: {symbol}")
