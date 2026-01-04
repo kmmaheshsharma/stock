@@ -264,9 +264,10 @@ function appendMessage(sender, html, chart) {
   div.className = sender === "You" ? "user-msg" : "bot-msg";
 
   // Message content
-  div.innerHTML = `
-    <div class="msg-content">${html}</div>
-  `;
+  const msgContentDiv = document.createElement("div");
+  msgContentDiv.className = "msg-content";
+  msgContentDiv.innerHTML = html;
+  div.appendChild(msgContentDiv);
 
   // Append chart if provided
   if (chart) {
@@ -280,12 +281,15 @@ function appendMessage(sender, html, chart) {
   }
 
   // Append time after the chart
-  div.innerHTML += `<div class="msg-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`;
+  const msgTimeDiv = document.createElement("div");
+  msgTimeDiv.className = "msg-time";
+  msgTimeDiv.innerHTML = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  div.appendChild(msgTimeDiv);
 
+  // Add the message div to the messages container
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
-
 
 
 // ---------------------- Typing simulation ----------------------
