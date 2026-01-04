@@ -15,29 +15,42 @@ def get_price(symbol):
         try:
             ticker = yf.Ticker(sym)
 
-            # Use 5d to avoid holiday / no-trade issues
+            # 5d avoids holiday / no-trade issues
             data = ticker.history(period="5d", interval="1d")
 
             if data is None or data.empty:
                 continue
 
-            # Pick the last valid trading day
-            data = data.dropna()
+            data = data.dropna(how="all")
             if data.empty:
                 continue
 
             last = data.iloc[-1]
 
-            price = float(last["Close"])
-            low = float(last["Low"])
-            high = float(last["High"])
-            volume = int(last["Volume"])
+            close = last.get("Close")
+            open_ = last.get("Open")
+            low = last.get("Low")
+            high = last.get("High")
+            volume = last.get("Volume")
 
-            avg_volume = int(data["Volume"].tail(10).mean())
-            change_percent = round(
-                ((last["Close"] - last["Open"]) / last["Open"]) * 100,
-                2
-            )
+            # Core validations
+            if pd.isna(close):
+                continue
+
+            price = float(close)
+            low = float(low) if not pd.isna(low) else None
+            high = float(high) if not pd.isna(high) else None
+            volume = int(volume) if not pd.isna(volume) else 0
+
+            # Avg volume (safe)
+            vol_series = data["Volume"].dropna()
+            avg_volume = int(vol_series.mean()) if not vol_series.empty else 0
+
+            # Change % (safe)
+            if open_ and not pd.isna(open_) and open_ > 0:
+                change_percent = round(((price - open_) / open_) * 100, 2)
+            else:
+                change_percent = 0.0
 
             return {
                 "symbol": sym,
@@ -46,11 +59,12 @@ def get_price(symbol):
                 "high": high,
                 "volume": volume,
                 "avg_volume": avg_volume,
-                "change_percent": change_percent
+                "change_percent": change_percent,
+                "source": "yahoo"
             }
 
-        except Exception:
+        except Exception as e:
+            # silently try next exchange
             continue
 
-    # Nothing worked
     return None
