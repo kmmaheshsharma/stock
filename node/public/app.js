@@ -266,7 +266,6 @@ function appendMessage(sender, html, chart) {
   // Message content
   div.innerHTML = `
     <div class="msg-content">${html}</div>
-    <div class="msg-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
   `;
 
   // Append chart if provided
@@ -279,9 +278,14 @@ function appendMessage(sender, html, chart) {
     chartImg.style.margin = "10px 0";    // Space above/below image
     div.appendChild(chartImg);
   }
+
+  // Append time after the chart
+  div.innerHTML += `<div class="msg-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`;
+
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
+
 
 
 // ---------------------- Typing simulation ----------------------
