@@ -23,7 +23,21 @@ api_key = os.environ.get("GROQ_API_KEY")
 if not api_key:
     logging.warning("GROQ_API_KEY not found in environment variables.")
 groq_client = Groq(api_key=api_key)
+def sanitize_input(message):
+    """
+    Removes unwanted characters or extra parameters from the user input
+    to ensure only the company name is passed.
+    """
+    # Remove unwanted segments (like `,--entry,1600`)
+    cleaned_message = re.sub(r'(,--entry,\d+)', '', message)  # Remove any --entry parameters
 
+    # Optionally, remove non-alphanumeric characters or spaces
+    cleaned_message = cleaned_message.strip()
+
+    # Log cleaned message for debugging
+    logging.debug(f"Sanitized input message: {cleaned_message}")
+
+    return cleaned_message
 def build_groq_prompt_for_symbol(message):
     """
     Builds a prompt to ask Groq AI to extract and correct the stock symbol from the input message.
@@ -238,8 +252,8 @@ if __name__ == "__main__":
     parser.add_argument("symbol")
     parser.add_argument("--entry", type=float)
     args = parser.parse_args()
-    
-    prompt = build_groq_prompt_for_symbol(args.symbol)
+    sanitized_message = sanitize_input(message)
+    prompt = build_groq_prompt_for_symbol(sanitized_message)
     ai_response = call_groq_ai_symbol(prompt)
     
     # Fix the symbol extraction and error checking
