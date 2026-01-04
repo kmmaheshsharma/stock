@@ -85,7 +85,7 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
         # Check if the symbol matches expected format (e.g., ABC, XYZ.NS)
         if re.match(r'^[A-Z]{1,5}(\.[A-Z]{2,3})?$', symbol.replace(" ", "").replace("\n", "")):  # Remove spaces/newlines
             logging.info(f"Extracted symbol: {symbol}")
-            
+            return symbol
         else:
             logging.warning(f"Invalid symbol format in response: {symbol}")
             return {"error": "Invalid symbol format", "raw_text": raw_text}
