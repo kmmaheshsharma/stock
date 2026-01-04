@@ -112,20 +112,20 @@ async function processMessage(message) {
 
   // --- Build final HTML message ---
   const msgHTML = `
-<div class="message bot">
-  <div class="stock-update">
-    <h3>📊 ${result.symbol} Update</h3>
-    <p>💰 <strong>Price:</strong> ₹${result.price ?? "N/A"}</p>
-    <p>📉 Low / 📈 High: ₹${result.low ?? "N/A"} / ₹${result.high ?? "N/A"}</p>
-    <p>📊 Volume: ${result.volume ?? "N/A"} | Avg: ${result.avg_volume?.toFixed(0) ?? "N/A"}</p>
-    <p>🔻 Change: ${result.change_percent?.toFixed(2) ?? "0"}%</p>
-    <p>🧠 Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "NEUTRAL"} (${result.sentiment ?? 0})</p>
-    <p>⚡ Recommendation: <strong>${recommendation}</strong></p>
-    ${alertsHTML}
-    ${groqHTML}
+  <div class="message bot">
+    <div class="stock-update">
+      <h3>📊 ${result.symbol} Update</h3>
+      <p>💰 <strong>Price:</strong> ₹${result.price ?? "N/A"}</p>
+      <p>📉 Low / 📈 High: ₹${result.low ?? "N/A"} / ₹${result.high ?? "N/A"}</p>
+      <p>📊 Volume: ${result.volume ?? "N/A"} | Avg: ${result.avg_volume?.toFixed(0) ?? "N/A"}</p>
+      <p>🔻 Change: ${result.change_percent?.toFixed(2) ?? "0"}%</p>
+      <p>🧠 Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "NEUTRAL"} (${result.sentiment ?? 0})</p>
+      <p>⚡ Recommendation: <strong>${recommendation}</strong></p>
+      ${alertsHTML}
+      ${groqHTML}
+    </div>
   </div>
-</div>
-`;
+  `;
 
   console.log(`[SYMBOL] Response ready for symbol: ${result.symbol}`);
   return {
@@ -236,11 +236,24 @@ async function generateUserAlerts(user) {
       msgText += `<br>💡 Suggested Entry: ₹${result.suggested_entry.lower} - ₹${result.suggested_entry.upper}`;
     }
 
-    messages.push({ text: msgText, chart: result.chart,__raw_result: result || null, source: source });
+    // ================= Grok (AI) Analysis =================
+    if (result.ai) {
+      const ai = result.ai;
+      msgText += `<br><br>🤖 AI Analysis:`;
+      msgText += `<br>📈 Predicted Move: ${ai.predicted_move?.toUpperCase() || "N/A"}`;
+      msgText += `<br>⚡ Confidence: ${ai.confidence != null ? (ai.confidence * 100).toFixed(2) + "%" : "N/A"}`;
+      msgText += `<br>🛡️ Support Level: ₹${ai.support_level ?? "N/A"}`;
+      msgText += `<br>⛰️ Resistance Level: ₹${ai.resistance_level ?? "N/A"}`;
+      msgText += `<br>⚠️ Risk: ${ai.risk?.toUpperCase() || "N/A"}`;
+      msgText += `<br>💡 Recommendation: ${ai.recommendation || "N/A"}`;
+    }
+
+    messages.push({ text: msgText, chart: result.chart, __raw_result: result || null, source: source });
   }
 
   return messages;
 }
+
 async function getLastKnownState(userId, symbol) {
   const row = await pool.query(`
     SELECT
