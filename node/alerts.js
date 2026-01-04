@@ -272,7 +272,7 @@ async function saveLastStatus({
   sentiment,
   summary
 }) {
-  const isPortfolio = await db.query(
+  const isPortfolio = await pool.query(
     `SELECT 1 FROM portfolio WHERE user_id=$1 AND symbol=$2`,
     [userId, symbol]
   );
