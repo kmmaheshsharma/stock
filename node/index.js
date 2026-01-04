@@ -10,7 +10,7 @@ const { pool } = require("./db");
 const { handleMessage, handleChat } = require("./routes");
 const { generateUserAlerts, getLastKnownState, detectMeaningfulChange, saveLastStatus, extractSymbolFromMessage } = require("./alerts");
 const { sendPushToUser } = require("./push/sendPush");
-let isApp = true;
+let isApp = false;
 const app = express();
 app.use(bodyParser.json());
 
@@ -388,6 +388,7 @@ async function runAlertsForAllUsers() {
               data: { url: "/" }
             });
             console.log(`✅ Push sent successfully`);     
+            console.log("isApp:", isApp);
             if(isApp){
               if (msg.source === "portfolio") {
                 await pool.query(`
@@ -409,9 +410,9 @@ async function runAlertsForAllUsers() {
                     raw_graph_base64 = $2  -- Add the base64 chart here
                   WHERE user_id = $3 AND symbol = $4 AND has_unread_update = TRUE;
                 `, [msg.text, msg.chart, user.id, symbol]);
-              }
-            }
-            console.log(`   ✅ Push sent and marked as delivered for user ${user.id}`);                  
+              }              
+              console.log(`   ✅ Push sent and marked as delivered for user ${user.id}`);      
+            }                        
           } catch (pushErr) {
             console.error(`   ❌ Push failed for user ${user.id}:`, pushErr.message);
           }
