@@ -180,6 +180,7 @@ window.onload = async function() {
   const userId = await getAndCheckUser();
 
   if (userId) {
+     appendMessage("Bot", "Fetching Updates, Please Wait.... 🔔");
     // Existing user: show chat
     signupScreen.style.display = "none";
     chatScreen.style.display = "";
@@ -199,7 +200,7 @@ async function loadUserUpdates() {
   const userId = localStorage.getItem("userId");
   if (!userId) return;
 
-  try {
+  try {   
     const res = await fetch("/api/user/updates", {
       method: "POST",  // Change to POST
       headers: {
