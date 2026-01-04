@@ -387,6 +387,13 @@ form.addEventListener("submit", async (e) => {
 
     typingDiv.remove();
     appendMessage("Bot", data.text); // display the bot response
+    if (data.chart) {
+      const chartContainer = document.createElement("div");
+      chartContainer.classList.add("bot-chart");
+      chartContainer.innerHTML = `<img src="${data.chart}" alt="Stock Chart" style="max-width:400px;max-height:250px; margin-top:10px;">`;
+      document.getElementById("messages").appendChild(chartContainer);
+      chartContainer.scrollIntoView({ behavior: "smooth" });
+    }    
   } catch (err) {
     typingDiv.remove();
     appendMessage("Bot", "⚠️ Error fetching response");
