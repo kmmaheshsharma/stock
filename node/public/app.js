@@ -8,11 +8,31 @@ const signupBtn = document.getElementById("signup-btn");
 const signupScreen = document.getElementById("signup-screen");
 const chatScreen = document.getElementById("chat-screen");
 const signupForm = document.getElementById("signup-form");
+let isAppInForeground = true;
 // Clear previous content on load
 messagesEl.innerHTML = "";
 cardsEl.innerHTML = "";
 let socket;
 let deferredPrompt;
+document.addEventListener('visibilitychange', function() {
+  isAppInForeground = !document.hidden;
+  console.log("App is in " + (isAppInForeground ? "foreground" : "background"));
+
+  // Store in localStorage for local reference
+  localStorage.setItem('isAppInForeground', isAppInForeground);
+
+  // Send the state to the server (e.g., index.js or backend)
+  fetch('/api/update-visibility', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ isAppInForeground })
+  })
+  .then(response => response.json())
+  .then(data => console.log("Visibility state sent to server:", data))
+  .catch(error => console.error("Error sending visibility state to server:", error));
+});
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredPrompt = e;
@@ -20,7 +40,6 @@ window.addEventListener("beforeinstallprompt", (e) => {
   const btn = document.getElementById("install-btn");
   if (btn) btn.style.display = "block";
 });
-
 document.getElementById("install-btn")?.addEventListener("click", async () => {
   if (!deferredPrompt) return;
   deferredPrompt.prompt();
