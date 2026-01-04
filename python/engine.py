@@ -37,6 +37,39 @@ def build_groq_prompt_for_symbol(message):
     Please provide the full, correct stock symbol (like 'ABC', 'XYZ.NS', or 'XYZ.BO') that matches this company.
     Only return the stock symbol, not additional information.
     """
+def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
+    """
+    Calls Groq AI and extracts the stock symbol.
+    """
+    logging.info("Starting Groq AI call...")
+    try:
+        response = groq_client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": "You are a professional stock market analyst."},
+                {"role": "user", "content": prompt}
+            ],
+            model=model,
+            max_tokens=max_tokens,
+            temperature=0.3
+        )
+
+        raw_text = response.choices[0].message.content
+        logging.info("Groq AI response received.")
+
+        # Clean the response to ensure it only contains the symbol
+        symbol = raw_text.strip()
+
+        # Check if the symbol matches expected format (e.g., ABC, XYZ.NS)
+        if re.match(r'^[A-Z]{1,5}(\.[A-Z]{2,3})?$', symbol):
+            logging.info(f"Extracted symbol: {symbol}")
+            return symbol
+        else:
+            logging.warning(f"Invalid symbol format in response: {symbol}")
+            return {"error": "Invalid symbol format", "raw_text": raw_text}
+
+    except Exception as e:
+        logging.error(f"Groq AI call failed: {str(e)}")
+        return {"error": str(e), "raw_text": raw_text}
 
 def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
     """
@@ -195,7 +228,7 @@ if __name__ == "__main__":
     parser.add_argument("--entry", type=float)
     args = parser.parse_args()
     prompt = build_groq_prompt_for_symbol(args.symbol)
-    ai_response = call_groq_ai(prompt)
+    ai_response = call_groq_ai_symbol(prompt)
     if ai_response and "error" not in ai_response:
         symbol = ai_response.get("symbol", "").strip()
 
