@@ -8,20 +8,25 @@ from sentiment import sentiment_for_symbol
 from chart import generate_chart
 
 
-def normalize_symbol(raw: str) -> str:
+def normalize_symbol(raw: str):
     """
-    Extract clean NSE symbol and ensure SINGLE .NS suffix
+    Normalize user input and return NSE + BSE Yahoo symbols
+    Example:
+      input:  "tata power"
+      output: ["TATAPOWER.NS", "TATAPOWER.BO"]
     """
     raw = raw.upper().strip()
 
-    # Extract base symbol (letters only, before any junk)
-    match = re.match(r"([A-Z]{2,15})(?:\.NS)?", raw)
-    if not match:
+    # Keep only valid symbol characters
+    base = re.sub(r"[^A-Z&\-]", "", raw)
+
+    if not base or len(base) < 2:
         raise ValueError(f"Invalid symbol received: {raw}")
 
-    symbol = match.group(1)
-
-    return symbol + ".NS"
+    return [
+        f"{base}.NS",   # NSE first
+        f"{base}.BO"    # BSE fallback
+    ]
 
 # ---------- Core Engine ----------
 def run_engine(symbol, entry_price=None):
