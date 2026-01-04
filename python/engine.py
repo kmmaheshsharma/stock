@@ -3,20 +3,32 @@ import json
 import argparse
 import re
 import os
+import logging
 from market import get_price
 from sentiment import sentiment_for_symbol
 from chart import generate_chart
+
+# ------------------- Logging Setup -------------------
+logging.basicConfig(
+    level=logging.INFO,  # INFO and above will be printed
+    format='[%(asctime)s] %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 # ------------------- Groq AI -------------------
 from groq import Groq
 
 # Initialize Groq client (make sure GROQ_API_KEY is set in your environment)
-groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+api_key = os.environ.get("GROQ_API_KEY")
+if not api_key:
+    logging.warning("GROQ_API_KEY not found in environment variables.")
+groq_client = Groq(api_key=api_key)
 
 def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
     """
-    Calls Groq AI and parses JSON output.
+    Calls Groq AI and parses JSON output with logging.
     """
+    logging.info("Starting Groq AI call...")
     try:
         response = groq_client.chat.completions.create(
             messages=[
@@ -29,16 +41,19 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
         )
 
         raw_text = response.choices[0].message.content
+        logging.info("Groq AI response received.")
 
         # Try to parse JSON from AI
         ai_json = json.loads(raw_text)
+        logging.info("Groq AI JSON parsed successfully.")
         return ai_json
 
     except json.JSONDecodeError:
-        # fallback if AI returns invalid JSON
+        logging.error("Groq AI returned invalid JSON.")
         return {"error": "Invalid JSON from Groq AI", "raw_text": raw_text}
 
     except Exception as e:
+        logging.error(f"Groq AI call failed: {str(e)}")
         return {"error": str(e)}
 
 def build_groq_prompt(symbol, price_data, sentiment_score):
@@ -89,9 +104,11 @@ def normalize_symbol(raw: str):
 def run_engine(symbol, entry_price=None):
     try:
         symbols = normalize_symbol(symbol)
+        logging.info(f"Normalized symbols: {symbols}")
         price_data = get_price(symbols)
 
         if not price_data:
+            logging.warning("No price data found.")
             return {
                 "symbol": symbols,
                 "error": "No price data found",
@@ -149,6 +166,7 @@ def run_engine(symbol, entry_price=None):
         }
 
     except Exception as e:
+        logging.error(f"Engine failed: {str(e)}")
         return {
             "symbol": symbol,
             "error": str(e),
