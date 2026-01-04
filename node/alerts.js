@@ -279,7 +279,7 @@ async function saveLastStatus({
 
   const table = isPortfolio.rowCount ? "portfolio" : "watchlist";
 
-  await db.query(`
+  await pool.query(`
     UPDATE ${table}
     SET
       last_known_price = $1,
