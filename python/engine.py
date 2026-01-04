@@ -37,6 +37,7 @@ def build_groq_prompt_for_symbol(message):
     Please provide the full, correct stock symbol (like 'ABC', 'XYZ.NS', or 'XYZ.BO') that matches this company.
     Only return the stock symbol, not additional information.
     """
+
 def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
     """
     Calls Groq AI and extracts the stock symbol.
@@ -62,7 +63,7 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
         # Check if the symbol matches expected format (e.g., ABC, XYZ.NS)
         if re.match(r'^[A-Z]{1,5}(\.[A-Z]{2,3})?$', symbol):
             logging.info(f"Extracted symbol: {symbol}")
-            return symbol
+            return {"symbol": symbol}  # Return as a dictionary with the key 'symbol'
         else:
             logging.warning(f"Invalid symbol format in response: {symbol}")
             return {"error": "Invalid symbol format", "raw_text": raw_text}
@@ -153,7 +154,9 @@ def run_engine(symbol, entry_price=None):
     try:
         symbols = normalize_symbol(symbol)
         logging.info(f"Normalized symbols: {symbols}")
-        price_data = get_price(symbols)
+        
+        # Assuming get_price can take a list of symbols, else use symbols[0] or fix accordingly
+        price_data = get_price(symbols[0])  
 
         if not price_data:
             logging.warning("No price data found.")
@@ -227,15 +230,21 @@ if __name__ == "__main__":
     parser.add_argument("symbol")
     parser.add_argument("--entry", type=float)
     args = parser.parse_args()
+    
     prompt = build_groq_prompt_for_symbol(args.symbol)
     ai_response = call_groq_ai_symbol(prompt)
-    if ai_response and "error" not in ai_response:
-        symbol = ai_response.get("symbol", "").strip()
+    
+    # Fix the symbol extraction and error checking
+    if ai_response.get("error"):
+        logging.error(f"Error in symbol extraction: {ai_response['error']}")
+        sys.exit(1)
+
+    symbol = ai_response.get("symbol", "").strip()
 
     if not symbol:
         logging.error("No valid stock symbol found in the message.")
         sys.exit(1)
 
     logging.info(f"Extracted stock symbol: {symbol}")    
-    result = run_engine(args.symbol, args.entry)
+    result = run_engine(symbol, args.entry)
     print(json.dumps(result, ensure_ascii=False, indent=2))
