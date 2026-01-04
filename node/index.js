@@ -8,7 +8,7 @@ const { Server } = require("socket.io");
 
 const { pool } = require("./db");
 const { handleMessage, handleChat } = require("./routes");
-const { generateUserAlerts } = require("./alerts");
+const { generateUserAlerts, getLastKnownState, detectMeaningfulChange, saveLastStatus, extractSymbolFromMessage } = require("./alerts");
 const { sendPushToUser } = require("./push/sendPush");
 const app = express();
 app.use(bodyParser.json());
@@ -95,6 +95,79 @@ app.post('/api/check-user', async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+app.post("/api/user/updates", async (req, res) => {
+  const userId = req.body.userId;
+
+  const portfolioUpdates = await pool.query(`
+    SELECT
+      symbol,
+      last_update_summary,
+      last_update_at,
+      'portfolio' AS source
+    FROM portfolio
+    WHERE user_id = $1 AND has_unread_update = true
+  `, [userId]);
+
+  const watchlistUpdates = await pool.query(`
+    SELECT
+      symbol,
+      last_update_summary,
+      last_update_at,
+      'watchlist' AS source
+    FROM watchlist
+    WHERE user_id = $1 AND has_unread_update = true
+  `, [userId]);
+
+  res.json({
+    updates: [
+      ...portfolioUpdates.rows,
+      ...watchlistUpdates.rows
+    ]
+  });
+});
+app.post("/api/user/updates/read", async (req, res) => {
+  const { symbol, source } = req.body;  // Extract symbol and source from request body
+  
+  // Validate input (basic example)
+  if (!symbol || !source) {
+    return res.status(400).json({ error: "Symbol and source are required" });
+  }
+
+  try {
+    // Based on the source (either 'portfolio' or 'watchlist'), update the respective table
+    let query = '';
+    if (source === 'portfolio') {
+      query = `
+        UPDATE portfolio
+        SET has_unread_update = FALSE
+        WHERE symbol = $1 AND has_unread_update = TRUE;
+      `;
+    } else if (source === 'watchlist') {
+      query = `
+        UPDATE watchlist
+        SET has_unread_update = FALSE
+        WHERE symbol = $1 AND has_unread_update = TRUE;
+      `;
+    } else {
+      return res.status(400).json({ error: "Invalid source provided" });
+    }
+
+    // Execute the query
+    const result = await pool.query(query, [symbol]);
+
+    // Check if any rows were updated
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Update not found or already read" });
+    }
+
+    // Respond with a success message
+    res.status(200).json({ message: `Marked ${symbol} as read from ${source}` });
+  } catch (err) {
+    console.error("Error marking update as read:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 app.get("/api/push/public-key", (req, res) => {
   res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
 });
@@ -257,47 +330,81 @@ async function runSentimentCron() {
   }
 }
 async function runAlertsForAllUsers() {
-  console.log("⏱️ Running alerts for all subscribed users...");
-
   try {
+    // Fetch users who are subscribed to alerts
     const usersRes = await pool.query("SELECT id, phone FROM users WHERE subscribed=true");
-    console.log(`🔔 Found ${usersRes.rows.length} subscribed users`);
-
-    for (const user of usersRes.rows) {
-      console.log(`➡️ Generating alerts for user ${user.id} (${user.phone})`);
-      const messages = await generateUserAlerts(user);
-      console.log(`   📝 ${messages.length} alerts generated`);
-
+    
+    // Iterate over each user
+    for (const user of usersRes.rows) {    
+      // Generate user-specific alert messages
+      const messages = await generateUserAlerts(user);      
+      
+      // Iterate over each alert message
       for (const msg of messages) {
-        console.log(`   ✉️ Processing alert: ${msg.text}`);
+        const symbol = extractSymbolFromMessage(msg.text); 
+        const result = msg.__raw_result; 
+        const lastState = await getLastKnownState(user.id, symbol);
+        
+        const changes = detectMeaningfulChange(result, lastState);
+        
+        // If no meaningful changes, skip processing
+        if (changes.length === 0) {
+          console.log(`⚠️ No meaningful changes for ${symbol}, skipping alert for user ${user.id}`);
+          continue;
+        }
+        
+        // Save the new state for this user and symbol
+        await saveLastStatus({
+          userId: user.id,
+          symbol,
+          price: result.price,
+          changePercent: result.change_percent,
+          sentiment: result.sentiment,
+          summary: changes.join(" | "),
+        });
 
         // Try socket delivery first
         const delivered = sendToBot(user.id, msg.text, msg.chart);
-
+        
+        // If socket delivery fails, fallback to web push
         if (!delivered) {
-          console.log(`   📤 Sending web push to user ${user.id}`);
+          console.log(`📤 Sending web push to user ${user.id}`);
           try {
             await sendPushToUser(user.id, {
               title: "Stock Alert 📊",
               body: msg.text,
               data: { url: "/" }
             });
-            console.log(`   ✅ Push sent successfully`);
+            console.log(`✅ Push sent successfully`);     
+            if (msg.source === "portfolio") {
+              await pool.query(`
+                UPDATE portfolio
+                SET has_unread_update = FALSE, last_update_summary = $1, last_update_at = NOW()
+                WHERE user_id = $2 AND symbol = $3 AND has_unread_update = TRUE;
+              `, [msg.text, user.id, symbol]);
+            } else if (source === "watchlist") {
+              await pool.query(`
+                UPDATE watchlist
+                SET has_unread_update = FALSE, last_update_summary = $1, last_update_at = NOW()
+                WHERE user_id = $2 AND symbol = $3 AND has_unread_update = TRUE;
+              `, [msg.text, user.id, symbol]);
+            }
+
+            console.log(`   ✅ Push sent and marked as delivered for user ${user.id}`);                  
           } catch (pushErr) {
             console.error(`   ❌ Push failed for user ${user.id}:`, pushErr.message);
           }
         } else {
           console.log(`   ✅ Delivered via socket`);
-        }
+        }        
       }
     }
-
+    
     console.log("✅ All alerts processed");
   } catch (err) {
     console.error("❌ Error running alerts for users:", err.message);
   }
 }
-
 // Start background jobs
 async function startBackgroundJobs() {
   console.log("⏱️ Starting background jobs");

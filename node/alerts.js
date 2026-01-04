@@ -11,25 +11,6 @@ if (!fs.existsSync(chartDir)) {
   fs.mkdirSync(chartDir);
 }
 
-// Thresholds for automatic exit suggestion
-const PROFIT_THRESHOLD = 5; // 5% profit
-const LOSS_THRESHOLD = 5;   // 5% loss
-const BUY_DOWN_THRESHOLD = -2; // minor loss to consider adding shares
-
-// --- Helper to calculate aggregated position for multiple purchases ---
-function calculateAggregatedPosition(rows) {
-  let totalQuantity = 0;
-  let weightedEntry = 0;
-
-  for (const row of rows) {
-    totalQuantity += row.quantity;
-    weightedEntry += row.entry_price * row.quantity;
-  }
-
-  const avgEntryPrice = totalQuantity > 0 ? weightedEntry / totalQuantity : 0;
-  return { totalQuantity, avgEntryPrice };
-}
-
 // --- Helper to run Python engine and parse JSON ---
 function runPythonEngine(message) {
   return new Promise((resolve) => {
@@ -228,34 +209,99 @@ async function generateUserAlerts(user) {
     msgText += `<br>🔻 Change: ${change}%`;
     msgText += `<br>🧠 Twitter Sentiment: ${sentiment} (${sType})`;
     msgText += `<br>⚡ Recommendation: ${recommendation}`;
-
+    const source = totalQuantity > 0 ? "portfolio" : "watchlist";
     if (result.suggested_entry) {
       msgText += `<br>💡 Suggested Entry: ₹${result.suggested_entry.lower} - ₹${result.suggested_entry.upper}`;
     }
 
-    messages.push({ text: msgText, chart: result.chart || null });
+    messages.push({ text: msgText, chart: result.chart,__raw_result: result || null, source: source });
   }
 
   return messages;
 }
+async function getLastKnownState(userId, symbol) {
+  const row = await db.query(`
+    SELECT
+      last_known_price AS price,
+      last_known_change_percent AS change_percent,
+      last_known_sentiment AS sentiment
+    FROM portfolio
+    WHERE user_id = $1 AND symbol = $2
+    UNION ALL
+    SELECT
+      last_known_price,
+      last_known_change_percent,
+      last_known_sentiment
+    FROM watchlist
+    WHERE user_id = $1 AND symbol = $2
+    LIMIT 1
+  `, [userId, symbol]);
 
-
-// ---------------------- Helper ----------------------
-function calculateAggregatedPosition(rows) {
-  if (!rows || rows.length === 0) return { totalQuantity: 0, avgEntryPrice: 0 };
-
-  let totalQuantity = 0;
-  let totalCost = 0;
-
-  for (const row of rows) {
-    totalQuantity += row.quantity;
-    totalCost += row.entry_price * row.quantity;
+  return row.rows[0] || null;
+}
+function detectMeaningfulChange(result, lastState) {
+  const changes = [];
+  if (!lastState) {
+    changes.push("Initial tracking started");
+    return changes;
   }
+  if (lastState.change_percent !== null && Math.abs(result.change_percent - lastState.change_percent) >= 1) {
+    changes.push(
+      `Price ${result.change_percent > 0 ? "↑" : "↓"} ${result.change_percent}%`
+    );
+  }
+  if (lastState.sentiment && result.sentiment && lastState.sentiment !== result.sentiment ) {
+    changes.push(`Sentiment → ${result.sentiment}`);
+  }
+  if (result.alerts?.includes("buy_signal")) {
+    changes.push("Buy signal");
+  }
+  if (result.alerts?.includes("profit")) {
+    changes.push("Profit booking zone");
+  }
+  if (result.alerts?.includes("loss")) {
+    changes.push("Stop loss alert");
+  }
+  return changes;
+}
+async function saveLastStatus({
+  userId,
+  symbol,
+  price,
+  changePercent,
+  sentiment,
+  summary
+}) {
+  const isPortfolio = await db.query(
+    `SELECT 1 FROM portfolio WHERE user_id=$1 AND symbol=$2`,
+    [userId, symbol]
+  );
 
-  const avgEntryPrice = totalQuantity > 0 ? totalCost / totalQuantity : 0;
+  const table = isPortfolio.rowCount ? "portfolio" : "watchlist";
 
-  return { totalQuantity, avgEntryPrice };
+  await db.query(`
+    UPDATE ${table}
+    SET
+      last_known_price = $1,
+      last_known_change_percent = $2,
+      last_known_sentiment = $3,
+      last_update_summary = $4,
+      last_update_at = NOW(),
+      has_unread_update = TRUE
+    WHERE user_id = $5 AND symbol = $6
+  `, [
+    price,
+    changePercent,
+    sentiment,
+    summary,
+    userId,
+    symbol
+  ]);
+}
+function extractSymbolFromMessage(text) {
+  // Matches: <b>TCS</b>
+  const match = text.match(/<b>([^<]+)<\/b>/);
+  return match ? match[1].trim() : null;
 }
 
-
-module.exports = { generateUserAlerts, processMessage };
+module.exports = { generateUserAlerts, processMessage, getLastKnownState, detectMeaningfulChange, saveLastStatus, extractSymbolFromMessage };
