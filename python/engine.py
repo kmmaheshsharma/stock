@@ -24,6 +24,20 @@ if not api_key:
     logging.warning("GROQ_API_KEY not found in environment variables.")
 groq_client = Groq(api_key=api_key)
 
+def build_groq_prompt_for_symbol(message):
+    """
+    Builds a prompt to ask Groq AI to extract and correct the stock symbol from the input message.
+    """
+    return f"""
+    You are a professional stock market analyst.
+
+    A user has asked for the analysis of a company. The company name given by the user is:
+    '{message}'
+
+    Please provide the full, correct stock symbol (like 'ABC', 'XYZ.NS', or 'XYZ.BO') that matches this company.
+    Only return the stock symbol, not additional information.
+    """
+
 def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
     """
     Calls Groq AI and extracts JSON safely.
@@ -180,6 +194,15 @@ if __name__ == "__main__":
     parser.add_argument("symbol")
     parser.add_argument("--entry", type=float)
     args = parser.parse_args()
+    prompt = build_groq_prompt_for_symbol(args.message)
+    ai_response = call_groq_ai(prompt)
+    if ai_response and "error" not in ai_response:
+        symbol = ai_response.get("symbol", "").strip()
 
+    if not symbol:
+        logging.error("No valid stock symbol found in the message.")
+        sys.exit(1)
+
+    logging.info(f"Extracted stock symbol: {symbol}")    
     result = run_engine(args.symbol, args.entry)
     print(json.dumps(result, ensure_ascii=False, indent=2))
