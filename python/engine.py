@@ -10,11 +10,11 @@ from chart import generate_chart
 
 # ------------------- Logging Setup -------------------
 logging.basicConfig(
-    level=logging.INFO,  # INFO and above will be printed
+    level=logging.INFO,
     format='[%(asctime)s] %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[logging.StreamHandler(sys.stdout)]  # send logs to stdout
 )
-
 # ------------------- Groq AI -------------------
 from groq import Groq
 
