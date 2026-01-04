@@ -218,7 +218,15 @@ async function loadUserUpdates() {
         <p>${update.last_update_summary}</p>
         <small>${new Date(update.last_update_at).toLocaleTimeString()}</small>
       `;
-
+      if (update.raw_graph_base64) {
+        const chartImg = document.createElement("img");
+        chartImg.src = update.raw_graph_base64;
+        chartImg.style.maxWidth = "400px";   // Adjust as per your layout
+        chartImg.style.maxHeight = "250px";  // Adjust as per your layout
+        chartImg.style.display = "block";    // Ensure it stays on its own line
+        chartImg.style.margin = "10px 0";    // Space above/below the image
+        div.appendChild(chartImg);           // Append the image to the div
+      }
       // Append update as a message in chat (like a normal bot message)
       appendMessage("Bot", div.innerHTML);
 
