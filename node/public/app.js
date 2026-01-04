@@ -101,7 +101,7 @@ function initSocket(userId) {
   });
 
   socket.on("alertMessage", (data) => {
-    const { text, chart } = data;
+    const { text, chart, source } = data;
     const msgEl = document.createElement("div");
     msgEl.className = "message bot-message";
     msgEl.innerHTML = text;
@@ -116,11 +116,12 @@ function initSocket(userId) {
       img.style.maxHeight = "250px";  // max height
       img.style.display = "block";    // ensures it stays on its own line
       img.style.margin = "10px 0";    // space above/below
-
+      const match = text.match(/<b>([^<]+)<\/b>/);
+      const symbol = match ? match[1].trim() : null
+      markUpdateAsRead(symbol, source);
       msgEl.appendChild(img);
     }
-
-
+    
     messagesEl.appendChild(msgEl);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   });
@@ -159,6 +160,7 @@ window.onload = async function() {
     chatScreen.style.display = "";
     initChatBot(userId);
     initSocket(userId);    
+    loadUserUpdates();
   } else {
     // New user: show signup
     signupScreen.style.display = "";
@@ -166,7 +168,63 @@ window.onload = async function() {
   }
 };
 
+// ---------------------- User Updates in Chat Bot ----------------------
 
+async function loadUserUpdates() {
+  const userId = localStorage.getItem("userId");
+  if (!userId) return;
+
+  try {
+    const res = await fetch("/api/user/updates", {
+      method: "POST",  // Change to POST
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId })     
+    });
+    const data = await res.json();
+
+    if (!data.updates || data.updates.length === 0) {
+      appendMessage("Bot", "No new updates 🔔");
+      return;
+    }
+
+    data.updates.forEach(update => {
+      console.log(update.symbol, update.last_update_summary);
+
+      const div = document.createElement("div");
+      div.className = "update-card";
+      div.innerHTML = `
+        <strong>${update.symbol}</strong>
+        <p>${update.last_update_summary}</p>
+        <small>${new Date(update.last_update_at).toLocaleTimeString()}</small>
+      `;
+
+      // Append update as a message in chat (like a normal bot message)
+      appendMessage("Bot", div.innerHTML);
+
+      // Mark this update as read
+      markUpdateAsRead(update.symbol, update.source);
+    });
+  } catch (err) {
+    console.error("Failed to load user updates:", err);
+    appendMessage("Bot", "⚠️ Failed to load updates. Please try again.");
+  }
+}
+
+// Function to mark update as read (this is optional, depending on your backend)
+async function markUpdateAsRead(symbol, source) {
+  try {
+    await fetch("/api/user/updates/read", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbol, source })
+    });
+    console.log(`Marked ${symbol} as read from ${source}`);
+  } catch (err) {
+    console.error("Error marking update as read:", err);
+  }
+}
 // ---------------------- Append chat messages ----------------------
 function appendMessage(sender, html) {
   const div = document.createElement("div");
@@ -348,6 +406,7 @@ async function loadSentiments() {
     console.error("Failed to load sentiments", err);
   }
 }
+
 function initChatBot(userId) {
   console.log("Chat initialized for user", userId);
   loadSentiments();

@@ -162,9 +162,6 @@
 </head>
 
 <body>
-<button id="install-btn" style="display:none">
-  📲 Install App
-</button>
 <div class="app">
   <section id="signup-screen" style="display: none;">
     <h2 style="color:white; text-align:center;">Welcome to NoBroko Bot</h2>
@@ -185,6 +182,7 @@
       <h1>📈 NoBroko Bot</h1>
       <div>
         <button id="alerts-btn">🔔</button>
+        <button id="install-btn" style="display:none">📲 Install App</button>        
         <button>☰</button>
       </div>
     </header>
@@ -201,7 +199,7 @@
   </section>
 </div>
 
-<script src="app.js?v=70"></script>
+<script src="app.js?v=71"></script>
 <script>
   function adjustChatHeight() {
     const headerHeight = document.querySelector('header').offsetHeight; // Get header height
