@@ -288,7 +288,10 @@ function appendMessage(sender, html, chart) {
 
   // Add the message div to the messages container
   messagesEl.appendChild(div);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+  setTimeout(() => {
+    // Ensure that the scroll is at the bottom after the message is added
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }, 50); // A small delay to ensure the message is appended before scrolling
 }
 
 
