@@ -210,7 +210,7 @@ async function loadUserUpdates() {
     const data = await res.json();
 
     if (!data.updates || data.updates.length === 0) {
-      appendMessage("Bot", "No new updates 🔔");
+      appendMessage("Bot", "You don't have any new updates at the moment. Please check back later for the latest stock alerts. 🔔");
       return;
     }
 
