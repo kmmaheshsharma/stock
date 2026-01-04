@@ -23,21 +23,7 @@ api_key = os.environ.get("GROQ_API_KEY")
 if not api_key:
     logging.warning("GROQ_API_KEY not found in environment variables.")
 groq_client = Groq(api_key=api_key)
-def sanitize_input(message):
-    """
-    Removes unwanted characters or extra parameters from the user input
-    to ensure only the company name is passed.
-    """
-    # Remove unwanted segments (like `,--entry,1600`)
-    cleaned_message = re.sub(r'(,--entry,\d+)', '', message)  # Remove any --entry parameters
 
-    # Optionally, remove non-alphanumeric characters or spaces
-    cleaned_message = cleaned_message.strip()
-
-    # Log cleaned message for debugging
-    logging.debug(f"Sanitized input message: {cleaned_message}")
-
-    return cleaned_message
 def build_groq_prompt_for_symbol(message):
     """
     Builds a prompt to ask Groq AI to extract and correct the stock symbol from the input message.
@@ -56,7 +42,7 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
     """
     Calls Groq AI and extracts the stock symbol.
     """
-    logging.info(f"Starting Groq AI call for symbol extraction...{prompt}")
+    logging.info("Starting Groq AI call...")
     try:
         response = groq_client.chat.completions.create(
             messages=[
@@ -71,21 +57,13 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
         raw_text = response.choices[0].message.content
         logging.info("Groq AI response received.")
 
-        # Log the full raw response for debugging
-        logging.info(f"Full raw response from Groq AI: {raw_text}")
-
         # Clean the response to ensure it only contains the symbol
         symbol = raw_text.strip()
 
-        # Handle the case where the symbol is empty
-        if not symbol:
-            logging.error("Empty symbol received from Groq AI.")
-            return {"error": "Empty symbol returned", "raw_text": raw_text}
-
         # Check if the symbol matches expected format (e.g., ABC, XYZ.NS)
-        if re.match(r'^[A-Z]{1,8}(\.[A-Z]{2,3})?$', symbol.replace(" ", "").replace("\n", "")):  # Remove spaces/newlines
+        if re.match(r'^[A-Z]{1,5}(\.[A-Z]{2,3})?$', symbol):
             logging.info(f"Extracted symbol: {symbol}")
-            return symbol
+            return {"symbol": symbol}  # Return as a dictionary with the key 'symbol'
         else:
             logging.warning(f"Invalid symbol format in response: {symbol}")
             return {"error": "Invalid symbol format", "raw_text": raw_text}
@@ -252,21 +230,6 @@ if __name__ == "__main__":
     parser.add_argument("symbol")
     parser.add_argument("--entry", type=float)
     args = parser.parse_args()
-    sanitized_message = sanitize_input(args.symbol)
-    prompt = build_groq_prompt_for_symbol(sanitized_message)
-    ai_response = call_groq_ai_symbol(prompt)
-    
-    # Fix the symbol extraction and error checking
-    if ai_response.get("error"):
-        logging.error(f"Error in symbol extraction: {ai_response['error']}")
-        sys.exit(1)
 
-    symbol = ai_response.get("symbol", "").strip()
-
-    if not symbol:
-        logging.error("No valid stock symbol found in the message.")
-        sys.exit(1)
-
-    logging.info(f"Extracted stock symbol: {symbol}")    
-    result = run_engine(symbol, args.entry)
+    result = run_engine(args.symbol, args.entry)
     print(json.dumps(result, ensure_ascii=False, indent=2))
