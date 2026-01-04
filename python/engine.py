@@ -194,7 +194,7 @@ if __name__ == "__main__":
     parser.add_argument("symbol")
     parser.add_argument("--entry", type=float)
     args = parser.parse_args()
-    prompt = build_groq_prompt_for_symbol(args.message)
+    prompt = build_groq_prompt_for_symbol(args.symbol)
     ai_response = call_groq_ai(prompt)
     if ai_response and "error" not in ai_response:
         symbol = ai_response.get("symbol", "").strip()
