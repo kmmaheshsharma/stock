@@ -123,8 +123,11 @@ function initSocket(userId) {
     const { text, chart, source } = data;
     const msgEl = document.createElement("div");
     msgEl.className = "message bot-message";
+
+    // First, add the update text
     msgEl.innerHTML = text;
 
+    // If the chart exists, create and append the chart image
     if (chart) {
       const br = document.createElement("br"); // create a line break
       msgEl.appendChild(br);                   // add it before the image
@@ -135,12 +138,15 @@ function initSocket(userId) {
       img.style.maxHeight = "250px";  // max height
       img.style.display = "block";    // ensures it stays on its own line
       img.style.margin = "10px 0";    // space above/below
-      const match = text.match(/<b>([^<]+)<\/b>/);
-      const symbol = match ? match[1].trim() : null
-      markUpdateAsRead(symbol, source);
-      msgEl.appendChild(img);
+      msgEl.appendChild(img);         // append the image after the text
     }
-    
+
+    // Mark the update as read based on the symbol and source
+    const match = text.match(/<b>([^<]+)<\/b>/); // Extract symbol from text if in <b> tags
+    const symbol = match ? match[1].trim() : null;
+    if (symbol) markUpdateAsRead(symbol, source);
+
+    // Append the message element to the chat
     messagesEl.appendChild(msgEl);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   });
