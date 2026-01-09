@@ -420,9 +420,11 @@ form.addEventListener("submit", async (e) => {
 
 // ---------------------- Alerts Button ----------------------
 app.get('/api/alerts', async (req, res) => {
+  e.preventDefault();
   try {
+    const typingDiv = botTypingIndicator();
     await runAlertsForAllUsers();
-    res.json({ status: "ok" });
+    typingDiv.remove();
   } catch (err) {
     console.error("Error checking alerts:", err);
     res.status(500).json({ error: "Server error" });
