@@ -25,13 +25,18 @@ groq_client = Groq(api_key=api_key)
 
 def build_groq_prompt_for_symbol(message):
     return f"""
-    You are a professional stock market analyst.
+    You are a professional market analyst.
 
-    A user has asked for the analysis of a company. The company name given by the user is:
+    A user has asked for the analysis of a stock or cryptocurrency.
+    The name or symbol given by the user is:
     '{message}'
 
-    Please provide the full, correct stock symbol (like 'ABC', 'XYZ.NS', or 'XYZ.BO').
-    Only return the stock symbol.
+    Please provide the full, correct trading symbol.
+    Examples:
+    - Stocks: AAPL, SBIN.NS, TSLA
+    - Crypto: BTC-USD, ETH-USD
+
+    Only return the symbol.
     """
 
 def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
@@ -39,7 +44,7 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
     try:
         response = groq_client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "You are a professional stock market analyst."},
+                {"role": "system", "content": "You are a professional market analyst."},
                 {"role": "user", "content": prompt}
             ],
             model=model,
@@ -52,7 +57,7 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
 
         symbol = raw_text.strip()
 
-        if re.match(r'^[A-Z]{1,10}(\.[A-Z]{2,10})?$', symbol):
+        if re.match(r'^[A-Z0-9\-]{1,15}(\.[A-Z]{2,10})?$', symbol):
             logging.info(f"Extracted symbol: {symbol}")
             return {"symbol": symbol}
         else:
@@ -68,7 +73,7 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
     try:
         response = groq_client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "You are a professional stock market analyst."},
+                {"role": "system", "content": "You are a professional market analyst."},
                 {"role": "user", "content": prompt}
             ],
             model=model,
@@ -94,9 +99,9 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
 
 def build_groq_prompt(symbol, price_data, sentiment_score):
     return f"""
-You are a professional stock market analyst.
+You are a professional financial analyst.
 
-Analyze the following stock data:
+Analyze the following asset (stock or crypto):
 
 Symbol: {symbol}
 Current Price: {price_data['price']}
@@ -124,7 +129,7 @@ def normalize_symbol(raw: str):
     raw = re.sub(r"\b(TRACK|ENTRY|BUY|SELL|ADD|SHOW|PRICE)\b", "", raw)
     raw = raw.replace("-", " ").replace("_", " ")
 
-    match = re.search(r"\b[A-Z&]{1,15}\b", raw)
+    match = re.search(r"\b[A-Z0-9&]{1,15}\b", raw)
     if not match:
         raise ValueError(f"Invalid symbol received: {raw}")
 
@@ -138,6 +143,15 @@ def normalize_symbol(raw: str):
         f"{base}.NYSE",
         f"{base}.NASDAQ"
     ]
+
+    # ------------------- CRYPTO ADDITIONS (NEW) -------------------
+    crypto_variants = [
+        f"{base}-USD",
+        f"{base}-USDT",
+        f"{base}-BTC"
+    ]
+
+    symbols.extend(crypto_variants)
 
     return symbols
 
