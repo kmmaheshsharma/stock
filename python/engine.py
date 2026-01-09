@@ -4,11 +4,10 @@ import argparse
 import re
 import os
 import logging
-import requests
 from market import get_price
 from sentiment import sentiment_for_symbol
 from chart import generate_chart
-from groq import Groq
+import requests
 
 # ------------------- Logging Setup -------------------
 logging.basicConfig(
@@ -18,6 +17,8 @@ logging.basicConfig(
 )
 
 # ------------------- Groq AI -------------------
+from groq import Groq
+
 api_key = os.environ.get("GROQ_API_KEY")
 if not api_key:
     logging.warning("GROQ_API_KEY not found in environment variables.")
@@ -30,9 +31,9 @@ COMMON_FILLER = {
     "in","with","to","from","that","this","can","i","you","us","now","kindly","kind",
     "information","details","would","like","want","send","do","does","did","how","what",
     "latest","recent","update","updates","quote","quotes","market","markets","ticker","tickers",
-    "help","any","some","here","there","where","when","why","which",
+    "help","any","some","please","show","me","here","there","where","when","why","which",
     "buy","sell","hold","entry","exit","track","tracking","portfolio","portfolios","investment",
-    "investments","fund","funds","share","shares","unit","units","value","values","worth","worths"
+    "investments","fund","funds","share","shares","unit","units","price","prices","value","values","worth","worths"
 }
 
 # ------------------- Smart Symbol Extraction -------------------
@@ -48,11 +49,9 @@ def extract_possible_name(sentence: str):
     candidates = [w for w in words if w not in COMMON_FILLER]
 
     if not candidates:
-        # fallback: use longest word in sentence
-        words.sort(key=len, reverse=True)
-        candidates = words
+        return sentence  # fallback: use full input
 
-    # Scoring: longer words, letters+numbers/hyphen preferred
+    # Scoring: longer words, words with letters, numbers, hyphens are preferred
     def score_word(word):
         score = len(word)
         if re.search(r'[0-9]', word):
@@ -64,131 +63,185 @@ def extract_possible_name(sentence: str):
     candidates.sort(key=score_word, reverse=True)
     best_candidate = candidates[0]
 
-    logging.info(f"Extracted possible symbol word: '{best_candidate}'")
-    return best_candidate.upper()
+    logging.info(f"Extracted possible symbol word from sentence: '{best_candidate}'")
+    return best_candidate
 
-# ------------------- Yahoo Symbol Resolver -------------------
-def yahoo_symbol_lookup(name: str):
-    """
-    Query Yahoo Finance to get the correct symbol.
-    """
-    try:
-        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={name}"
-        resp = requests.get(url, timeout=5)
-        if resp.status_code == 200:
-            data = resp.json()
-            if "quotes" in data and len(data["quotes"]) > 0:
-                symbol = data["quotes"][0]["symbol"]
-                logging.info(f"Yahoo resolved '{name}' → '{symbol}'")
-                return symbol
-    except Exception as e:
-        logging.warning(f"Yahoo lookup failed for '{name}': {e}")
-    return None
-
-# ------------------- Groq AI Single Call -------------------
-def call_groq_analysis(user_input: str):
-    """
-    Send the full user message to Groq and get symbol + analysis in one shot.
-    """
-    prompt = f"""
-You are a professional financial analyst.
-
-A user has asked for the stock/crypto information using the following text:
-'{user_input}'
-
-1️⃣ Extract the exact trading symbol (stock or crypto) if possible.
-2️⃣ Get the current price, daily high, daily low, volume, change %.
-3️⃣ Give a short analysis and recommendation.
-
-Return a JSON object like this:
-{{
-  "symbol": "RELIANCE.NS",
-  "price": 1234.56,
-  "low": 1200.12,
-  "high": 1250.00,
-  "volume": 1234567,
-  "avg_volume": 1100000,
-  "change_percent": 1.23,
-  "sentiment_score": 0.5,
-  "recommendation": "Buy / Hold / Sell",
-  "notes": "Any short AI analysis"
-}}
-Only return valid JSON. Do not include any extra text.
-"""
-
+# ------------------- Groq AI Helpers -------------------
+def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=600):
+    logging.info("Starting Groq AI call...")
     try:
         response = groq_client.chat.completions.create(
             messages=[
                 {"role": "system", "content": "You are a professional market analyst."},
                 {"role": "user", "content": prompt}
             ],
-            model="openai/gpt-oss-20b",
-            max_tokens=600,
+            model=model,
+            max_tokens=max_tokens,
             temperature=0.3
         )
 
         raw_text = response.choices[0].message.content
         logging.info("Groq AI response received.")
 
+        # Extract JSON from response
         match = re.search(r"\{.*\}", raw_text, re.DOTALL)
         if match:
             ai_json = json.loads(match.group(0))
+            logging.info("Groq AI JSON parsed successfully.")
             return ai_json
 
-        logging.warning("No JSON found in Groq AI response.")
+        logging.warning("No JSON found in Groq AI response, returning raw text.")
         return {"error": "Invalid JSON from Groq AI", "raw_text": raw_text}
+
     except Exception as e:
         logging.error(f"Groq AI call failed: {str(e)}")
         return {"error": str(e)}
 
-# ------------------- Core Engine -------------------
+# ------------------- Symbol Normalization -------------------
+def normalize_symbol(raw: str):
+    raw = raw.upper().strip()
+    raw = re.sub(r"\b(TRACK|ENTRY|BUY|SELL|ADD|SHOW|PRICE)\b", "", raw)
+    raw = raw.replace("-", " ").replace("_", " ")
+
+    match = re.search(r"\b[A-Z0-9&]{1,15}\b", raw)
+    if not match:
+        raise ValueError(f"Invalid symbol received: {raw}")
+
+    base = match.group(0)
+
+    symbols = [
+        f"{base}.NS",
+        f"{base}.BO",
+        base,
+        f"{base}.US",
+        f"{base}.NYSE",
+        f"{base}.NASDAQ"
+    ]
+
+    # ------------------- CRYPTO ADDITIONS -------------------
+    crypto_variants = [
+        f"{base}-USD",
+        f"{base}-USDT",
+        f"{base}-BTC"
+    ]
+
+    symbols.extend(crypto_variants)
+
+    return symbols
+
+# ------------------- Core Engine (Single Groq call) -------------------
 def run_engine(user_input, entry_price=None):
     try:
-        # 1️⃣ Extract candidate word
+        # 1️⃣ Extract likely symbol word from user input
         candidate_word = extract_possible_name(user_input)
 
-        # 2️⃣ Try Yahoo Finance first
-        resolved_symbol = yahoo_symbol_lookup(candidate_word)
+        # 2️⃣ Build Groq prompt for symbol + full analysis
+        prompt = f"""
+You are a professional financial analyst.
 
-        # 3️⃣ Call Groq only once, fallback if Yahoo fails
-        ai_data = call_groq_analysis(user_input)
+A user asked for analysis. The input message is:
+'{user_input}'
 
-        # If Yahoo found a symbol, replace Groq symbol for price lookup
-        if resolved_symbol:
-            ai_data["symbol"] = resolved_symbol
+- Identify the correct trading symbol (stock or crypto) from this input.
+- Get the latest price, daily low/high, volume, avg volume, change percent.
+- Determine Twitter/market sentiment score (numeric).
+- Return a JSON object with these keys:
+  - symbol
+  - price
+  - low
+  - high
+  - volume
+  - avg_volume
+  - change_percent
+  - sentiment_score
+  - predicted_move
+  - confidence
+  - support_level
+  - resistance_level
+  - risk
+  - recommendation
+  - alerts (optional)
 
-        # ------------------- Price & Sentiment -------------------
-        price_data = get_price(ai_data["symbol"]) or {}
-        price = price_data.get("price", ai_data.get("price"))
-        low = price_data.get("low", ai_data.get("low"))
-        high = price_data.get("high", ai_data.get("high"))
-        volume = price_data.get("volume", ai_data.get("volume"))
-        avg_volume = price_data.get("avg_volume", ai_data.get("avg_volume"))
-        change_percent = price_data.get("change_percent", ai_data.get("change_percent"))
+Only return valid JSON.
+"""
 
-        # Alerts
-        alerts = []
-        if entry_price:
-            if price and price > entry_price * 1.05:
+        groq_response = call_groq_ai(prompt)
+        if "error" in groq_response:
+            raise ValueError(f"Groq AI failed: {groq_response.get('error')}")
+
+        # 3️⃣ Extract resolved symbol
+        resolved_symbol = groq_response.get("symbol")
+        if not resolved_symbol:
+            raise ValueError("Groq AI did not return a symbol.")
+
+        # 4️⃣ Normalize symbol variants & get price
+        symbols = normalize_symbol(resolved_symbol)
+        logging.info(f"Normalized symbols: {symbols}")
+
+        price_data = None
+        for sym in symbols:
+            price_data = get_price(sym)
+            if price_data:
+                break
+
+        if not price_data:
+            logging.warning("No price data found from market API. Using Groq values.")
+            price_data = {
+                "symbol": resolved_symbol,
+                "price": groq_response.get("price"),
+                "low": groq_response.get("low"),
+                "high": groq_response.get("high"),
+                "volume": groq_response.get("volume"),
+                "avg_volume": groq_response.get("avg_volume"),
+                "change_percent": groq_response.get("change_percent")
+            }
+            alerts = groq_response.get("alerts", ["error"])
+        else:
+            alerts = []
+
+        # 5️⃣ Entry alerts
+        price = price_data.get("price")
+        low = price_data.get("low")
+        high = price_data.get("high")
+        volume = price_data.get("volume")
+        avg_volume = price_data.get("avg_volume")
+        change_percent = price_data.get("change_percent")
+
+        if entry_price and price:
+            if price > entry_price * 1.05:
                 alerts.append("profit")
-            elif price and price < entry_price * 0.95:
+            elif price < entry_price * 0.95:
                 alerts.append("loss")
 
-        # Sentiment
-        sentiment_score, s_type = sentiment_for_symbol(ai_data.get("symbol"))
+        # 6️⃣ Sentiment
+        sentiment_score = groq_response.get("sentiment_score")
+        if sentiment_score is None:
+            sentiment_score, s_type = sentiment_for_symbol(price_data["symbol"])
+        else:
+            s_type = "accumulation" if sentiment_score > 0 else "hype"
+
         if s_type == "accumulation":
             alerts.append("buy_signal")
         elif s_type == "hype":
             alerts.append("trap_warning")
 
+        # 7️⃣ Suggested entry levels
         suggested_entry = None
         if low and high:
-            suggested_entry = {"lower": round(low*0.99,2), "upper": round(low*1.02,2)}
+            suggested_entry = {
+                "lower": round(low * 0.99, 2),
+                "upper": round(low * 1.02, 2)
+            }
 
-        chart_base64 = generate_chart(ai_data.get("symbol"))
+        # 8️⃣ Chart
+        chart_base64 = generate_chart(price_data["symbol"])
+
+        # 9️⃣ AI analysis fields
+        ai_analysis_keys = ["predicted_move","confidence","support_level","resistance_level","risk","recommendation"]
+        ai_analysis = {k: groq_response.get(k) for k in ai_analysis_keys}
 
         return {
-            "symbol": ai_data.get("symbol"),
+            "symbol": price_data["symbol"],
             "price": price,
             "low": low,
             "high": high,
@@ -200,12 +253,16 @@ def run_engine(user_input, entry_price=None):
             "alerts": alerts,
             "suggested_entry": suggested_entry,
             "chart": chart_base64,
-            "ai_analysis": ai_data
+            "ai_analysis": ai_analysis
         }
 
     except Exception as e:
         logging.error(f"Engine failed: {str(e)}")
-        return {"symbol": user_input, "error": str(e), "alerts": ["error"]}
+        return {
+            "symbol": user_input,
+            "error": str(e),
+            "alerts": ["error"]
+        }
 
 # ------------------- Entry Point -------------------
 if __name__ == "__main__":
