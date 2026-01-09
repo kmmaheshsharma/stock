@@ -422,8 +422,7 @@ form.addEventListener("submit", async (e) => {
 alertsBtn.addEventListener("click", async () => {
   const typingDiv = botTypingIndicator();
   try {
-    await fetch("/api/alerts");
-    await res.json();
+    await fetch("/api/alerts");    
     typingDiv.remove();
     appendMessage("Bot", "🔔 Checking alerts... You’ll be notified if anything triggers.");
 
