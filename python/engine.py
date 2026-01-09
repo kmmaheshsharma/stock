@@ -24,6 +24,48 @@ if not api_key:
     logging.warning("GROQ_API_KEY not found in environment variables.")
 groq_client = Groq(api_key=api_key)
 
+# ------------------- COMMON FILLER WORDS -------------------
+COMMON_FILLER = {
+    "the","my","please","show","me","get","give","analysis","for","of","stock","crypto","analyze",
+    "price","today","current","latest","check","tell","about","on","is","a","an","and",
+    "in","with","to","from","that","this","can","i","you","us","now","kindly","kind",
+    "information","details","would","like","want","send","do","does","did","how","what",
+    "latest","recent","update","updates","quote","quotes","market","markets","ticker","tickers",
+    "help","any","some","please","show","me","here","there","where","when","why","which",
+    "buy","sell","hold","entry","exit","track","tracking","portfolio","portfolios","investment",
+    "investments","fund","funds","share","shares","unit","units","price","prices","value","values","worth","worths"
+}
+
+# ------------------- Smart Symbol Extraction -------------------
+def extract_possible_name(sentence: str):
+    """
+    Extract the most likely stock/crypto name from any random sentence.
+    """
+    sentence = sentence.lower().strip()
+    sentence = re.sub(r'[^\w\s&\-.]', ' ', sentence)  # keep &, -, .
+    words = sentence.split()
+
+    # Remove filler words
+    candidates = [w for w in words if w not in COMMON_FILLER]
+
+    if not candidates:
+        return sentence  # fallback: use full input
+
+    # Scoring: longer words, words with letters, numbers, hyphens are preferred
+    def score_word(word):
+        score = len(word)
+        if re.search(r'[0-9]', word):
+            score += 2
+        if '-' in word or '&' in word or '.' in word:
+            score += 2
+        return score
+
+    candidates.sort(key=score_word, reverse=True)
+    best_candidate = candidates[0]
+
+    logging.info(f"Extracted possible symbol word from sentence: '{best_candidate}'")
+    return best_candidate
+
 # ------------------- Symbol Resolver -------------------
 def resolve_symbol_from_name(name: str):
     """
@@ -90,6 +132,7 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
             max_tokens=max_tokens,
             temperature=0.3
         )
+
         raw_text = response.choices[0].message.content
         logging.info("Groq AI response received.")
 
@@ -100,6 +143,7 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
         else:
             logging.warning(f"Invalid symbol format in response: {symbol}")
             return {"error": "Invalid symbol format", "raw_text": raw_text}
+
     except Exception as e:
         logging.error(f"Groq AI call failed: {str(e)}")
         return {"error": str(e)}
@@ -116,6 +160,7 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
             max_tokens=max_tokens,
             temperature=0.3
         )
+
         raw_text = response.choices[0].message.content
         logging.info("Groq AI response received.")
 
@@ -127,6 +172,7 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
 
         logging.warning("No JSON found in Groq AI response, returning raw text.")
         return {"error": "Invalid JSON from Groq AI", "raw_text": raw_text}
+
     except Exception as e:
         logging.error(f"Groq AI call failed: {str(e)}")
         return {"error": str(e)}
@@ -178,22 +224,28 @@ def normalize_symbol(raw: str):
         f"{base}.NASDAQ"
     ]
 
-    # Crypto variants
-    symbols.extend([
+    # ------------------- CRYPTO ADDITIONS -------------------
+    crypto_variants = [
         f"{base}-USD",
         f"{base}-USDT",
         f"{base}-BTC"
-    ])
+    ]
+
+    symbols.extend(crypto_variants)
 
     return symbols
 
 # ------------------- Core Engine -------------------
-def run_engine(symbol, entry_price=None):
+def run_engine(user_input, entry_price=None):
     try:
-        # ------------------- Smart Symbol Resolution -------------------
-        resolved_symbol = resolve_symbol_from_name(symbol)
+        # 1️⃣ Extract likely symbol word from user input
+        candidate_word = extract_possible_name(user_input)
+
+        # 2️⃣ Resolve the exact symbol
+        resolved_symbol = resolve_symbol_from_name(candidate_word)
         if not resolved_symbol:
-            raise ValueError(f"Could not resolve symbol for '{symbol}'")
+            raise ValueError(f"Could not resolve symbol for '{candidate_word}'")
+
         symbols = normalize_symbol(resolved_symbol)
         logging.info(f"Normalized symbols: {symbols}")
 
@@ -262,7 +314,7 @@ def run_engine(symbol, entry_price=None):
     except Exception as e:
         logging.error(f"Engine failed: {str(e)}")
         return {
-            "symbol": symbol,
+            "symbol": user_input,
             "error": str(e),
             "alerts": ["error"]
         }
