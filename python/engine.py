@@ -178,24 +178,41 @@ def extract_candidate_symbol(text):
     return candidate.upper()
 
 def search_yahoo_symbol(name):
-    """Search Yahoo Finance by company name or partial symbol."""
     try:
-        url = f"https://query1.finance.yahoo.com/v1/finance/search?q={name}"
-        r = requests.get(url, timeout=5)
+        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={name}"
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
+
+        r = requests.get(url, headers=headers, timeout=5)
+
         if r.status_code != 200:
             return None
+
         data = r.json()
         quotes = data.get("quotes", [])
-        if quotes:
-            # Prefer exact match if possible
-            for q in quotes:
-                symbol = q["symbol"]
-                if name.upper() in symbol.upper():
-                    return symbol
-            # Else return first symbol
-            return quotes[0]["symbol"]
-    except Exception:
+        logging.info(f"Yahoo search found {len(quotes)} quotes for '{name}'")
+        if not quotes:
+            return None
+
+        # Prefer EQUITY
+        equities = [q for q in quotes if q.get("quoteType") == "EQUITY"]
+        logging.info(f"Found {len(equities)} EQUITY quotes for '{name}'")
+        if equities:
+            # Prefer NSE
+            for q in equities:
+                if q["symbol"].endswith(".NS"):
+                    return q["symbol"]
+
+            return equities[0]["symbol"]
+
+        # fallback
+        return quotes[0]["symbol"]
+
+    except Exception as e:
+        logging.error(f"Yahoo search error: {e}")
         return None
+
 # ------------------- Core Engine -------------------
 def run_engine(symbol, entry_price=None):
     try:
