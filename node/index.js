@@ -429,6 +429,15 @@ async function runAlertsForAllUsers() {
     console.error("❌ Error running alerts for users:", err.message);
   }
 }
+app.get('/api/alerts', async (req, res) => {
+  try {
+    const alerts = await runAlertsForAllUsers(); // must return array
+    res.json(alerts); // send data back
+  } catch (err) {
+    console.error("Error checking user:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 // Start background jobs
 async function startBackgroundJobs() {
   console.log("⏱️ Starting background jobs");
