@@ -1,4 +1,4 @@
-import sys
+import sys 
 import json
 import argparse
 import re
@@ -8,6 +8,8 @@ from market import get_price
 from sentiment import sentiment_for_symbol
 from chart import generate_chart
 import requests
+from yfinance import Ticker, Tickers
+
 # ------------------- Logging Setup -------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -123,34 +125,43 @@ Return a JSON object with the following keys:
 Only return valid JSON.
 """
 
+# ------------------- Yahoo Symbol Search -------------------
+def search_yahoo_symbol(name):
+    """Search Yahoo Finance by company name and return first symbol found."""
+    try:
+        url = f"https://query1.finance.yahoo.com/v1/finance/search?q={name}"
+        r = requests.get(url)
+        data = r.json()
+        quotes = data.get("quotes", [])
+        if quotes:
+            return quotes[0]["symbol"]
+    except Exception as e:
+        logging.warning(f"Yahoo search failed for {name}: {e}")
+    return None
 
 # ------------------- Symbol Resolver via Yahoo / fallback -------------------
-def resolve_symbol_from_name(name: str):
+def resolve_symbol(user_input):
     """
-    Try to resolve a company/crypto name to a trading symbol.
+    If input is a symbol, return it.
+    If input is a company name, try to resolve to a valid ticker using Yahoo search.
     """
-    name_clean = name.strip()
-    
-    # 1️⃣ Yahoo Finance Search
-    try:
-        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={name_clean}"
-        resp = requests.get(url, timeout=5)
-        data = resp.json()
-        if "quotes" in data and len(data["quotes"]) > 0:
-            symbol = data["quotes"][0]["symbol"]
-            logging.info(f"Yahoo search resolved '{name}' → '{symbol}'")
-            return symbol
-    except Exception as e:
-        logging.warning(f"Yahoo search failed for '{name}': {e}")
+    user_input = user_input.upper().strip()
 
-    # 2️⃣ Groq AI fallback
-    prompt = build_groq_prompt_for_symbol(name_clean)
-    result = call_groq_ai_symbol(prompt)
-    if "symbol" in result:
-        logging.info(f"Groq AI resolved '{name}' → '{result['symbol']}'")
-        return result["symbol"]
+    # First, check direct symbol variants
+    possible_symbols = [user_input] + [user_input + suffix for suffix in [".NS", ".BO", ".US", ".NYSE", ".NASDAQ"]]
+    for sym in possible_symbols:
+        try:
+            t = Ticker(sym)
+            if t.info.get("regularMarketPrice") is not None:
+                return sym  # Found valid ticker
+        except Exception:
+            continue
 
-    logging.error(f"Could not resolve symbol for '{name}'")
+    # If not found, search by company name
+    resolved = search_yahoo_symbol(user_input)
+    if resolved:
+        return resolved
+
     return None
 
 # ------------------- Symbol Normalization -------------------
@@ -188,11 +199,13 @@ def normalize_symbol(raw: str):
 # ------------------- Core Engine -------------------
 def run_engine(symbol, entry_price=None):
     try:
-        resolved = resolve_symbol_from_name(symbol)
-        if resolved:
-            symbol = resolved
-        else:
-            logging.warning(f"Using user input as symbol: {symbol}")        
+        symbol = resolve_symbol(symbol)
+        if not symbol:
+            return {
+                "symbol": symbol,
+                "error": "Symbol not found",
+                "alerts": ["error"]
+            }   
         symbols = normalize_symbol(symbol)
         logging.info(f"Normalized symbols: {symbols}")
 
