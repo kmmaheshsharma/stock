@@ -419,17 +419,21 @@ form.addEventListener("submit", async (e) => {
 });
 
 // ---------------------- Alerts Button ----------------------
-app.get('/api/alerts', async (req, res) => {
-  e.preventDefault();
+alertsBtn.addEventListener("click", async () => {
+  const typingDiv = botTypingIndicator();
   try {
-    const typingDiv = botTypingIndicator();
-    await runAlertsForAllUsers();
+    const res = await fetch("/api/alerts");
+    const data = await res.json();
+
+    await delay(Math.random() * 1000 + 1000);
     typingDiv.remove();
   } catch (err) {
-    console.error("Error checking alerts:", err);
-    res.status(500).json({ error: "Server error" });
+    typingDiv.remove();
+    appendMessage("Bot", "⚠️ Failed to fetch alerts");
+    console.error(err);
   }
 });
+
 
 // ---------------------- Load sentiment cards ----------------------
 async function loadSentiments() {
