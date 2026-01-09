@@ -159,23 +159,34 @@ def normalize_symbol(raw: str):
 
 
 def extract_candidate_symbol(text):
+    """
+    Extract candidate symbol/company/crypto name from user input.
+    Examples:
+        "get me price for ethos" -> "ETHOS"
+        "show me ethereum" -> "ETHEREUM"
+        "price of btc" -> "BTC"
+    """
+
     if not text:
         return None
 
-    text = str(text)
+    text = text.lower()
 
-    cleaned = re.sub(r"\b(get|show|me|price|for|of|the|stock|crypto|please|fetch|give)\b", "", text, flags=re.IGNORECASE)
-    cleaned = re.sub(r"[^A-Za-z0-9& ]", " ", cleaned)
+    stopwords = [
+        "get", "show", "me", "price", "for", "of", "the",
+        "stock", "crypto", "coin", "token", "please",
+        "tell", "give", "fetch", "display", "what", "is"
+    ]
 
-    words = cleaned.strip().split()
-    if not words:
+    # Remove stopwords
+    words = re.findall(r"[a-zA-Z0-9&]+", text)
+    filtered = [w for w in words if w not in stopwords]
+
+    if not filtered:
         return None
 
-    # pick longest meaningful word
-    candidate = max(words, key=len)
-
-    if not candidate:
-        return None
+    # Pick longest meaningful word
+    candidate = max(filtered, key=len)
 
     return candidate.upper()
 
