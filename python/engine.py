@@ -10,7 +10,7 @@ from chart import generate_chart
 
 # ------------------- Logging Setup -------------------
 logging.basicConfig(
-    level=logging.INFO,  # INFO and above will be printed
+    level=logging.INFO,
     format='[%(asctime)s] %(levelname)s: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
@@ -18,30 +18,23 @@ logging.basicConfig(
 # ------------------- Groq AI -------------------
 from groq import Groq
 
-# Initialize Groq client (make sure GROQ_API_KEY is set in your environment)
 api_key = os.environ.get("GROQ_API_KEY")
 if not api_key:
     logging.warning("GROQ_API_KEY not found in environment variables.")
 groq_client = Groq(api_key=api_key)
 
 def build_groq_prompt_for_symbol(message):
-    """
-    Builds a prompt to ask Groq AI to extract and correct the stock symbol from the input message.
-    """
     return f"""
     You are a professional stock market analyst.
 
     A user has asked for the analysis of a company. The company name given by the user is:
     '{message}'
 
-    Please provide the full, correct stock symbol (like 'ABC', 'XYZ.NS', or 'XYZ.BO') that matches this company.
-    Only return the stock symbol, not additional information.
+    Please provide the full, correct stock symbol (like 'ABC', 'XYZ.NS', or 'XYZ.BO').
+    Only return the stock symbol.
     """
 
 def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
-    """
-    Calls Groq AI and extracts the stock symbol.
-    """
     logging.info("Starting Groq AI call...")
     try:
         response = groq_client.chat.completions.create(
@@ -57,25 +50,20 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
         raw_text = response.choices[0].message.content
         logging.info("Groq AI response received.")
 
-        # Clean the response to ensure it only contains the symbol
         symbol = raw_text.strip()
 
-        # Check if the symbol matches expected format (e.g., ABC, XYZ.NS)
         if re.match(r'^[A-Z]{1,10}(\.[A-Z]{2,10})?$', symbol):
             logging.info(f"Extracted symbol: {symbol}")
-            return {"symbol": symbol}  # Return as a dictionary with the key 'symbol'
+            return {"symbol": symbol}
         else:
             logging.warning(f"Invalid symbol format in response: {symbol}")
             return {"error": "Invalid symbol format", "raw_text": raw_text}
 
     except Exception as e:
         logging.error(f"Groq AI call failed: {str(e)}")
-        return {"error": str(e), "raw_text": raw_text}
+        return {"error": str(e)}
 
 def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
-    """
-    Calls Groq AI and extracts JSON safely.
-    """
     logging.info("Starting Groq AI call...")
     try:
         response = groq_client.chat.completions.create(
@@ -91,7 +79,6 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
         raw_text = response.choices[0].message.content
         logging.info("Groq AI response received.")
 
-        # Try to extract JSON object from response
         match = re.search(r"\{.*\}", raw_text, re.DOTALL)
         if match:
             ai_json = json.loads(match.group(0))
@@ -103,12 +90,9 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
 
     except Exception as e:
         logging.error(f"Groq AI call failed: {str(e)}")
-        return {"error": str(e), "raw_text": raw_text}
+        return {"error": str(e)}
 
 def build_groq_prompt(symbol, price_data, sentiment_score):
-    """
-    Builds a stock context prompt for Groq AI with structured JSON request
-    """
     return f"""
 You are a professional stock market analyst.
 
@@ -124,22 +108,18 @@ Change %: {price_data['change_percent']}
 Sentiment Score: {sentiment_score}
 
 Return a JSON object with the following keys:
-- predicted_move (up/down/neutral)
-- confidence (0.0-1.0)
+- predicted_move
+- confidence
 - support_level
 - resistance_level
-- risk (low/medium/high)
-- recommendation (short comment)
+- risk
+- recommendation
 
 Only return valid JSON.
 """
 
 # ------------------- Symbol Normalization -------------------
 def normalize_symbol(raw: str):
-    """
-    Extract ONLY the base stock symbol from user input
-    Supports NSE, BSE, and USA markets (NYSE/NASDAQ)
-    """
     raw = raw.upper().strip()
     raw = re.sub(r"\b(TRACK|ENTRY|BUY|SELL|ADD|SHOW|PRICE)\b", "", raw)
     raw = raw.replace("-", " ").replace("_", " ")
@@ -150,19 +130,14 @@ def normalize_symbol(raw: str):
 
     base = match.group(0)
 
-    # Existing Indian markets
     symbols = [
         f"{base}.NS",
-        f"{base}.BO"
+        f"{base}.BO",
+        base,
+        f"{base}.US",
+        f"{base}.NYSE",
+        f"{base}.NASDAQ"
     ]
-
-    # ✅ USA market additions
-    symbols.extend([
-        base,              # Default US format (AAPL, TSLA, etc.)
-        f"{base}.US",      # Optional
-        f"{base}.NYSE",    # Optional
-        f"{base}.NASDAQ"  # Optional
-    ])
 
     return symbols
 
@@ -171,9 +146,12 @@ def run_engine(symbol, entry_price=None):
     try:
         symbols = normalize_symbol(symbol)
         logging.info(f"Normalized symbols: {symbols}")
-        
-        # Assuming get_price can take a list of symbols, else use symbols[0] or fix accordingly
-        price_data = get_price(symbols[0])  
+
+        price_data = None
+        for sym in symbols:
+            price_data = get_price(sym)
+            if price_data:
+                break
 
         if not price_data:
             logging.warning("No price data found.")
@@ -212,11 +190,9 @@ def run_engine(symbol, entry_price=None):
 
         chart_base64 = generate_chart(price_data["symbol"])
 
-        # ------------------- Groq AI Integration -------------------
         prompt = build_groq_prompt(price_data["symbol"], price_data, sentiment_score)
         ai_analysis = call_groq_ai(prompt)
 
-        # ------------------- Return Combined JSON -------------------
         return {
             "symbol": price_data["symbol"],
             "price": price,
