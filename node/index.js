@@ -429,7 +429,7 @@ async function runAlertsForAllUsers() {
     console.error("❌ Error running alerts for users:", err.message);
   }
 }
-app.get('/api/alerts', async (req, res) => {
+app.post('/api/alerts', async (req, res) => {
   try {
     console.log("⏱️ Starting alerts for all users (manual trigger)");
     await runAlertsForAllUsers(); // must return array   
@@ -438,6 +438,7 @@ app.get('/api/alerts', async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+app.post("/api/webchat", handleChat);
 // Start background jobs
 async function startBackgroundJobs() {
   console.log("⏱️ Starting background jobs");
