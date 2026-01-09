@@ -127,9 +127,17 @@ Only return valid JSON.
 def normalize_symbol(raw: str):
     raw = raw.upper().strip()
     raw = re.sub(r"\b(TRACK|ENTRY|BUY|SELL|ADD|SHOW|PRICE)\b", "", raw)
-    raw = raw.replace("-", " ").replace("_", " ")
+    raw = raw.replace("_", " ").strip()
 
-    match = re.search(r"\b[A-Z0-9&]{1,15}\b", raw)
+    # If already contains known suffix → return as-is
+    known_suffixes = [".NS", ".BO", ".US", ".NYSE", ".NASDAQ", "-USD", "-USDT", "-BTC"]
+
+    for suf in known_suffixes:
+        if raw.endswith(suf):
+            return [raw]
+
+    # Extract base symbol
+    match = re.search(r"\b[A-Z0-9&]{1,20}\b", raw)
     if not match:
         raise ValueError(f"Invalid symbol received: {raw}")
 
@@ -141,20 +149,14 @@ def normalize_symbol(raw: str):
         base,
         f"{base}.US",
         f"{base}.NYSE",
-        f"{base}.NASDAQ"
-    ]
-
-    # ------------------- CRYPTO ADDITIONS (NEW) -------------------
-    crypto_variants = [
+        f"{base}.NASDAQ",
         f"{base}-USD",
         f"{base}-USDT",
         f"{base}-BTC"
     ]
 
-    symbols.extend(crypto_variants)
-
     return symbols
-import re
+
 
 def extract_candidate_symbol(text):
     if not text:
@@ -191,22 +193,33 @@ def search_yahoo_symbol(name):
 
         data = r.json()
         quotes = data.get("quotes", [])
-        logging.info(f"Yahoo search found {len(quotes)} quotes for '{name}'")
+
         if not quotes:
             return None
 
-        # Prefer EQUITY
+        name_upper = name.upper()
+
+        # 1️⃣ Exact symbol contains
+        for q in quotes:
+            symbol = q.get("symbol", "")
+            if name_upper in symbol.upper():
+                return symbol
+
+        # 2️⃣ Shortname contains (ETHOS LIMITED)
+        for q in quotes:
+            shortname = q.get("shortname", "")
+            if name_upper in shortname.upper():
+                return q["symbol"]
+
+        # 3️⃣ Prefer NSE equities
         equities = [q for q in quotes if q.get("quoteType") == "EQUITY"]
-        logging.info(f"Found {len(equities)} EQUITY quotes for '{name}'")
         if equities:
-            # Prefer NSE
             for q in equities:
                 if q["symbol"].endswith(".NS"):
                     return q["symbol"]
-
             return equities[0]["symbol"]
 
-        # fallback
+        # 4️⃣ Fallback
         return quotes[0]["symbol"]
 
     except Exception as e:
