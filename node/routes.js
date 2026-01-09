@@ -37,35 +37,6 @@ async function getOrCreateUser(phone) {
   }
 }
 
-function containsPossibleSymbol(text) {
-  const words = text.split(/\s+/);
-
-  for (let w of words) {
-    w = w.replace(/[^a-zA-Z0-9]/g, "");
-
-    if (
-      w.length >= 2 &&
-      w.length <= 15 &&
-      !isStopWord(w.toLowerCase())
-    ) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-function isStopWord(word) {
-  const stopWords = [
-    "show", "me", "the", "price", "of", "for", "get",
-    "tell", "about", "is", "what", "give", "please",
-    "stock", "crypto", "coin", "share", "today",
-    "now", "current", "rate", "value", "status", "analyze", "analysis", "info", "information",  "details",  "data", "lookup", 
-    "lookup", "check", "my"
-  ];
-
-  return stopWords.includes(word);
-}
 // --- Detect natural language intent ---
 function detectIntent(text) {
   text = text.toLowerCase();
@@ -81,11 +52,7 @@ function detectIntent(text) {
   if (text.startsWith("buy") || text.includes("purchase")) return "BUY";
   if (text.startsWith("sell") || text.includes("exit")) return "SELL";
   if (text.startsWith("track") || text.includes("add to watchlist")) return "TRACK";
-  if (containsPossibleSymbol(text)) {
-    return "SYMBOL";
-  }
-
-  return "UNKNOWN";
+  return "SYMBOL"; 
 }
 
 // --- Add stock to portfolio ---
