@@ -7,6 +7,7 @@ import logging
 from market import get_price
 from sentiment import sentiment_for_symbol
 from chart import generate_chart
+import requests
 
 # ------------------- Logging Setup -------------------
 logging.basicConfig(
@@ -23,6 +24,44 @@ if not api_key:
     logging.warning("GROQ_API_KEY not found in environment variables.")
 groq_client = Groq(api_key=api_key)
 
+# ------------------- Symbol Resolver -------------------
+def resolve_symbol_from_name(name: str):
+    """
+    Tries to resolve a partial company/crypto name to the exact trading symbol.
+    Order:
+    1. Yahoo Finance search
+    2. AI fallback (Groq)
+    """
+    name_clean = name.strip().upper()
+
+    # 1️⃣ Try Yahoo Finance Search
+    try:
+        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={name_clean}"
+        resp = requests.get(url, timeout=5)
+        if resp.status_code == 200:
+            data = resp.json()
+            if "quotes" in data and len(data["quotes"]) > 0:
+                symbol = data["quotes"][0]["symbol"]
+                logging.info(f"Yahoo search resolved '{name}' → '{symbol}'")
+                return symbol
+    except Exception as e:
+        logging.warning(f"Yahoo search failed for '{name}': {e}")
+
+    # 2️⃣ Fallback: Groq AI
+    prompt = f"""
+    You are a professional market analyst.
+    A user typed the name: '{name}'.
+    Provide the exact trading symbol (stock or crypto). Only return the symbol.
+    """
+    result = call_groq_ai_symbol(prompt)
+    if "symbol" in result:
+        logging.info(f"Groq AI resolved '{name}' → '{result['symbol']}'")
+        return result["symbol"]
+
+    logging.error(f"Could not resolve symbol for '{name}'")
+    return None
+
+# ------------------- Groq AI Helpers -------------------
 def build_groq_prompt_for_symbol(message):
     return f"""
     You are a professional market analyst.
@@ -51,19 +90,16 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
             max_tokens=max_tokens,
             temperature=0.3
         )
-
         raw_text = response.choices[0].message.content
         logging.info("Groq AI response received.")
 
         symbol = raw_text.strip()
-
         if re.match(r'^[A-Z0-9\-]{1,15}(\.[A-Z]{2,10})?$', symbol):
             logging.info(f"Extracted symbol: {symbol}")
             return {"symbol": symbol}
         else:
             logging.warning(f"Invalid symbol format in response: {symbol}")
             return {"error": "Invalid symbol format", "raw_text": raw_text}
-
     except Exception as e:
         logging.error(f"Groq AI call failed: {str(e)}")
         return {"error": str(e)}
@@ -80,7 +116,6 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
             max_tokens=max_tokens,
             temperature=0.3
         )
-
         raw_text = response.choices[0].message.content
         logging.info("Groq AI response received.")
 
@@ -92,7 +127,6 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
 
         logging.warning("No JSON found in Groq AI response, returning raw text.")
         return {"error": "Invalid JSON from Groq AI", "raw_text": raw_text}
-
     except Exception as e:
         logging.error(f"Groq AI call failed: {str(e)}")
         return {"error": str(e)}
@@ -144,21 +178,23 @@ def normalize_symbol(raw: str):
         f"{base}.NASDAQ"
     ]
 
-    # ------------------- CRYPTO ADDITIONS (NEW) -------------------
-    crypto_variants = [
+    # Crypto variants
+    symbols.extend([
         f"{base}-USD",
         f"{base}-USDT",
         f"{base}-BTC"
-    ]
-
-    symbols.extend(crypto_variants)
+    ])
 
     return symbols
 
 # ------------------- Core Engine -------------------
 def run_engine(symbol, entry_price=None):
     try:
-        symbols = normalize_symbol(symbol)
+        # ------------------- Smart Symbol Resolution -------------------
+        resolved_symbol = resolve_symbol_from_name(symbol)
+        if not resolved_symbol:
+            raise ValueError(f"Could not resolve symbol for '{symbol}'")
+        symbols = normalize_symbol(resolved_symbol)
         logging.info(f"Normalized symbols: {symbols}")
 
         price_data = None
