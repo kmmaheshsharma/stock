@@ -69,27 +69,31 @@ def extract_possible_name(sentence: str):
 # ------------------- Symbol Resolver -------------------
 def resolve_symbol_from_name(name: str):
     """
-    Tries to resolve a partial company/crypto name to the exact trading symbol.
-    Order:
-    1. Yahoo Finance search
-    2. AI fallback (Groq)
+    Resolve partial company/crypto name to exact trading symbol.
+    Tries Yahoo Finance first (all results), then Groq AI fallback.
     """
     name_clean = name.strip().upper()
-
-    # 1️⃣ Try Yahoo Finance Search
     try:
         url = f"https://query2.finance.yahoo.com/v1/finance/search?q={name_clean}"
         resp = requests.get(url, timeout=5)
         if resp.status_code == 200:
             data = resp.json()
             if "quotes" in data and len(data["quotes"]) > 0:
+                # Try to find a quote whose symbol or shortname matches the input closely
+                for quote in data["quotes"]:
+                    symbol = quote.get("symbol")
+                    shortname = quote.get("shortname", "").upper()
+                    if symbol and (name_clean in symbol.upper() or name_clean in shortname):
+                        logging.info(f"Yahoo search resolved '{name}' → '{symbol}'")
+                        return symbol
+                # fallback to first quote if no close match
                 symbol = data["quotes"][0]["symbol"]
-                logging.info(f"Yahoo search resolved '{name}' → '{symbol}'")
+                logging.info(f"Yahoo search fallback '{name}' → '{symbol}'")
                 return symbol
     except Exception as e:
         logging.warning(f"Yahoo search failed for '{name}': {e}")
 
-    # 2️⃣ Fallback: Groq AI
+    # Fallback: Groq AI
     prompt = f"""
     You are a professional market analyst.
     A user typed the name: '{name}'.
@@ -102,6 +106,7 @@ def resolve_symbol_from_name(name: str):
 
     logging.error(f"Could not resolve symbol for '{name}'")
     return None
+
 
 # ------------------- Groq AI Helpers -------------------
 def build_groq_prompt_for_symbol(message):
