@@ -138,16 +138,33 @@ Only return valid JSON.
 def normalize_symbol(raw: str):
     """
     Extract ONLY the base stock symbol from user input
-    Supports NSE & BSE
+    Supports NSE, BSE, and USA markets (NYSE/NASDAQ)
     """
     raw = raw.upper().strip()
     raw = re.sub(r"\b(TRACK|ENTRY|BUY|SELL|ADD|SHOW|PRICE)\b", "", raw)
     raw = raw.replace("-", " ").replace("_", " ")
-    match = re.search(r"\b[A-Z&]{2,15}\b", raw)
+
+    match = re.search(r"\b[A-Z&]{1,15}\b", raw)
     if not match:
         raise ValueError(f"Invalid symbol received: {raw}")
+
     base = match.group(0)
-    return [f"{base}.NS", f"{base}.BO"]
+
+    # Existing Indian markets
+    symbols = [
+        f"{base}.NS",
+        f"{base}.BO"
+    ]
+
+    # ✅ USA market additions
+    symbols.extend([
+        base,              # Default US format (AAPL, TSLA, etc.)
+        f"{base}.US",      # Optional
+        f"{base}.NYSE",    # Optional
+        f"{base}.NASDAQ"  # Optional
+    ])
+
+    return symbols
 
 # ------------------- Core Engine -------------------
 def run_engine(symbol, entry_price=None):
