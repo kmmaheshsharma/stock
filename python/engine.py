@@ -127,26 +127,32 @@ def normalize_symbol(raw: str):
     raw = re.sub(r"\b(TRACK|ENTRY|BUY|SELL|ADD|SHOW|PRICE)\b", "", raw)
     raw = raw.replace("_", " ")
 
-    is_crypto = "-" in raw or raw.endswith("USD") or raw.endswith("USDT") or raw.endswith("BTC")
-    if is_crypto:
-        symbols = [
-            raw.replace(" ", "-") + "-USD",
-            raw.replace(" ", "-") + "-USDT",
-            raw.replace(" ", "-") + "-BTC"
-        ]
-    else:
-        match = re.search(r"\b[A-Z0-9&]{1,15}\b", raw)
-        if not match:
-            raise ValueError(f"Invalid symbol received: {raw}")
-        base = match.group(0)
-        symbols = [
-            f"{base}.NS",
-            f"{base}.BO",
-            base,
-            f"{base}.US",
-            f"{base}.NYSE",
-            f"{base}.NASDAQ"
-        ]
+    # Detect if the symbol is crypto already
+    if re.search(r"(?:-USD|-USDT|-BTC)$", raw):
+        # Already a crypto symbol, return as is
+        return [raw]
+
+    # Stock symbol normalization
+    match = re.search(r"\b[A-Z0-9&]{1,15}\b", raw)
+    if not match:
+        raise ValueError(f"Invalid symbol received: {raw}")
+    base = match.group(0)
+    symbols = [
+        f"{base}.NS",
+        f"{base}.BO",
+        base,
+        f"{base}.US",
+        f"{base}.NYSE",
+        f"{base}.NASDAQ"
+    ]
+
+    # Optional crypto additions only if it's a stock-like base
+    crypto_variants = [
+        f"{base}-USD",
+        f"{base}-USDT",
+        f"{base}-BTC"
+    ]
+    symbols.extend(crypto_variants)
 
     return symbols
 
