@@ -154,13 +154,59 @@ def normalize_symbol(raw: str):
     symbols.extend(crypto_variants)
 
     return symbols
+import re
 
+def extract_candidate_symbol(text):
+    """
+    Extract candidate symbol/company name from user input.
+    Example:
+        "get me price for ethos" -> "ETHOS"
+        "show me info for TCS" -> "TCS"
+    """
+    # Remove common words
+    cleaned = re.sub(r"\b(get|show|me|price|for|of|the|stock|crypto|please)\b", "", text, flags=re.IGNORECASE)
+    
+    # Remove special characters
+    cleaned = re.sub(r"[^A-Za-z0-9& ]", " ", cleaned)
+
+    # Take first remaining word (or you can take all words)
+    words = cleaned.strip().split()
+    if not words:
+        return None
+
+    # Pick longest word as candidate symbol
+    candidate = max(words, key=len)
+    return candidate.upper()
+
+def search_yahoo_symbol(name):
+    """Search Yahoo Finance by company name or partial symbol."""
+    try:
+        url = f"https://query1.finance.yahoo.com/v1/finance/search?q={name}"
+        r = requests.get(url, timeout=5)
+        if r.status_code != 200:
+            return None
+        data = r.json()
+        quotes = data.get("quotes", [])
+        if quotes:
+            # Prefer exact match if possible
+            for q in quotes:
+                symbol = q["symbol"]
+                if name.upper() in symbol.upper():
+                    return symbol
+            # Else return first symbol
+            return quotes[0]["symbol"]
+    except Exception:
+        return None
 # ------------------- Core Engine -------------------
 def run_engine(symbol, entry_price=None):
     try:
-        
-        symbols = normalize_symbol(symbol)
-        logging.info(f"Normalized symbols: {symbols}")
+        candidate = extract_candidate_symbol(user_text)
+        if not candidate:
+            return None       
+        yahoo_symbol = search_yahoo_symbol(candidate)
+        logging.info(f"Yahoo Finance search result: {yahoo_symbol}")    
+        symbols = normalize_symbol(yahoo_symbol)
+        logging.info(f"Normalized symbols: {yahoo_symbol}")
 
         price_data = None
         for sym in symbols:
