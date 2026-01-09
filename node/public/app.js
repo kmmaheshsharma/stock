@@ -423,14 +423,17 @@ alertsBtn.addEventListener("click", async () => {
   const typingDiv = botTypingIndicator();
   try {
     const res = await fetch("/api/alerts");
+    const data = await res.json(); // wait for backend
+
     typingDiv.remove();
+    appendMessage("Bot", "🔔 Checking alerts... you’ll be notified if anything triggers.");
+
   } catch (err) {
     typingDiv.remove();
     appendMessage("Bot", "⚠️ Failed to fetch alerts");
     console.error(err);
   }
 });
-
 
 // ---------------------- Load sentiment cards ----------------------
 async function loadSentiments() {
