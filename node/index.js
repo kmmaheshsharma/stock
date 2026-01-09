@@ -22,15 +22,7 @@ app.use(express.static(publicPath));
 app.get("/", (req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
-app.post('/api/alerts', async (req, res) => {
-  try {
-    console.log("⏱️ Starting alerts for all users (manual trigger)");
-    await runAlertsForAllUsers();    
-  } catch (err) {
-    console.error("Error checking alerts:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
+
 // ================= META WEBHOOK =================
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
@@ -437,6 +429,15 @@ async function runAlertsForAllUsers() {
     console.error("❌ Error running alerts for users:", err.message);
   }
 }
+app.get('/api/alerts', async (req, res) => {
+  try {
+    console.log("⏱️ Starting alerts for all users (manual trigger)");
+    await runAlertsForAllUsers(); // must return array   
+  } catch (err) {
+    console.error("Error checking user:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 // Start background jobs
 async function startBackgroundJobs() {
   console.log("⏱️ Starting background jobs");
