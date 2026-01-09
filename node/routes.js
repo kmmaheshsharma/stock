@@ -53,7 +53,17 @@ function containsPossibleSymbol(text) {
   }
   return false;
 }
+function isStopWord(word) {
+  const stopWords = [
+    "show", "me", "the", "price", "of", "for", "get",
+    "tell", "about", "is", "what", "give", "please",
+    "stock", "crypto", "coin", "share", "analyze", "analyser",
+    "information", "details", "data", "on", "at",
+    "today", "now", "latest", "current", "update"
+  ];
 
+  return stopWords.includes(word);
+}
 // --- Detect natural language intent ---
 function detectIntent(text) {
   text = text.toLowerCase();
