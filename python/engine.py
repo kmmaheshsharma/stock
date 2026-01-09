@@ -8,7 +8,6 @@ from market import get_price
 from sentiment import sentiment_for_symbol
 from chart import generate_chart
 import requests
-from yfinance import Ticker, Tickers
 # ------------------- Logging Setup -------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -124,39 +123,6 @@ Return a JSON object with the following keys:
 Only return valid JSON.
 """
 
-
-# ------------------- Symbol Resolver via Yahoo / fallback -------------------
-
-def resolve_symbol(user_input):
-    """
-    If input is a symbol, return it.
-    If input is a company name, try to resolve to a valid ticker using yfinance.
-    """
-    user_input = user_input.upper().strip()
-
-    # First, check if it's a valid symbol
-    possible_symbols = [user_input]
-    for suffix in [".NS", ".BO", ".US", ".NYSE", ".NASDAQ"]:
-        possible_symbols.append(user_input + suffix)
-
-    for sym in possible_symbols:
-        t = Ticker(sym)
-        if t.info.get("regularMarketPrice") is not None:
-            return sym  # Found a valid ticker
-
-    # If not found, try searching by name
-    try:
-        from yfinance import search
-        results = search(user_input)
-        if results and len(results) > 0:
-            return results[0]['symbol']
-    except Exception as e:
-        logging.warning(f"Yahoo search failed for {user_input}: {e}")
-
-    # If still not found
-    return None
-
-
 # ------------------- Symbol Normalization -------------------
 def normalize_symbol(raw: str):
     raw = raw.upper().strip()
@@ -192,13 +158,7 @@ def normalize_symbol(raw: str):
 # ------------------- Core Engine -------------------
 def run_engine(symbol, entry_price=None):
     try:
-        symbol = resolve_symbol(symbol)
-        if not symbol:
-            return {
-                "symbol": symbol,
-                "error": "Symbol not found",
-                "alerts": ["error"]
-            }   
+        
         symbols = normalize_symbol(symbol)
         logging.info(f"Normalized symbols: {symbols}")
 
