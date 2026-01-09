@@ -263,8 +263,10 @@ def run_engine(symbol, entry_price=None):
         logging.info(f"Normalized symbols: {yahoo_symbol}")
 
         price_data = None
+        resolved_symbol = None
         for sym in symbols:
             price_data = get_price(sym)
+            resolved_symbol = sym
             if price_data:
                 break
 
@@ -290,7 +292,7 @@ def run_engine(symbol, entry_price=None):
             elif price < entry_price * 0.95:
                 alerts.append("loss")
 
-        sentiment_score, s_type = sentiment_for_symbol(price_data["symbol"])
+        sentiment_score, s_type = sentiment_for_symbol(resolved_symbol)
         if s_type == "accumulation":
             alerts.append("buy_signal")
         elif s_type == "hype":
@@ -303,9 +305,9 @@ def run_engine(symbol, entry_price=None):
                 "upper": round(low * 1.02, 2)
             }
 
-        chart_base64 = generate_chart(price_data["symbol"])
+        chart_base64 = generate_chart(resolved_symbol)
 
-        prompt = build_groq_prompt(price_data["symbol"], price_data, sentiment_score)
+        prompt = build_groq_prompt(resolved_symbol, price_data, sentiment_score)
         ai_analysis = call_groq_ai(prompt)
 
         return {
