@@ -1,4 +1,4 @@
-import sys 
+import sys
 import json
 import argparse
 import re
@@ -9,7 +9,6 @@ from sentiment import sentiment_for_symbol
 from chart import generate_chart
 import requests
 from yfinance import Ticker, Tickers
-
 # ------------------- Logging Setup -------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -125,44 +124,38 @@ Return a JSON object with the following keys:
 Only return valid JSON.
 """
 
-# ------------------- Yahoo Symbol Search -------------------
-def search_yahoo_symbol(name):
-    """Search Yahoo Finance by company name and return first symbol found."""
-    try:
-        url = f"https://query1.finance.yahoo.com/v1/finance/search?q={name}"
-        r = requests.get(url)
-        data = r.json()
-        quotes = data.get("quotes", [])
-        if quotes:
-            return quotes[0]["symbol"]
-    except Exception as e:
-        logging.warning(f"Yahoo search failed for {name}: {e}")
-    return None
 
 # ------------------- Symbol Resolver via Yahoo / fallback -------------------
+
 def resolve_symbol(user_input):
     """
     If input is a symbol, return it.
-    If input is a company name, try to resolve to a valid ticker using Yahoo search.
+    If input is a company name, try to resolve to a valid ticker using yfinance.
     """
     user_input = user_input.upper().strip()
 
-    # First, check direct symbol variants
-    possible_symbols = [user_input] + [user_input + suffix for suffix in [".NS", ".BO", ".US", ".NYSE", ".NASDAQ"]]
+    # First, check if it's a valid symbol
+    possible_symbols = [user_input]
+    for suffix in [".NS", ".BO", ".US", ".NYSE", ".NASDAQ"]:
+        possible_symbols.append(user_input + suffix)
+
     for sym in possible_symbols:
-        try:
-            t = Ticker(sym)
-            if t.info.get("regularMarketPrice") is not None:
-                return sym  # Found valid ticker
-        except Exception:
-            continue
+        t = Ticker(sym)
+        if t.info.get("regularMarketPrice") is not None:
+            return sym  # Found a valid ticker
 
-    # If not found, search by company name
-    resolved = search_yahoo_symbol(user_input)
-    if resolved:
-        return resolved
+    # If not found, try searching by name
+    try:
+        from yfinance import search
+        results = search(user_input)
+        if results and len(results) > 0:
+            return results[0]['symbol']
+    except Exception as e:
+        logging.warning(f"Yahoo search failed for {user_input}: {e}")
 
+    # If still not found
     return None
+
 
 # ------------------- Symbol Normalization -------------------
 def normalize_symbol(raw: str):
