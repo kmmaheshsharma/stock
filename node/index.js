@@ -443,12 +443,12 @@ async function startBackgroundJobs() {
   setInterval(async () => {
     await runAlertsForAllUsers();
     console.log("📨 Background WhatsApp alerts sent to subscribed users");
-  }, 1 * 60 * 1000); // every 1 minute
+  }, 24 * 60 * 60 * 1000); // every 1 minute
 }
 
 // ================= START SERVER =================
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  setTimeout(startBackgroundJobs, 3000);
+  setInterval(startBackgroundJobs, 24 * 60 * 60 * 1000); // 24 hours
 });
