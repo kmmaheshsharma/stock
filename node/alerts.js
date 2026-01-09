@@ -94,17 +94,19 @@ async function processMessage(message) {
     }
     alertsHTML += `</p>`;
   }
-
   // --- Include Groq AI analysis if available ---
   let groqHTML = "";
   if (result.ai_analysis) {
     const ai = result.ai_analysis;
+    const symbol = result.symbol || "";
+    const isUS = !symbol.endsWith(".NS") && !symbol.endsWith(".BO");
+    const currency = isUS ? "$" : "₹";    
     groqHTML = `<div class="groq-analysis">
       <h4>🤖 AI Analysis</h4>
       <p>📈 Predicted Move: ${ai.predicted_move?.toUpperCase() || "N/A"}</p>
       <p>⚡ Confidence: ${ai.confidence != null ? (ai.confidence * 100).toFixed(2) + "%" : "N/A"}</p>
-      <p>🛡️ Support Level: ₹${ai.support_level ?? "N/A"}</p>
-      <p>⛰️ Resistance Level: ₹${ai.resistance_level ?? "N/A"}</p>
+      <p>🛡️ Support Level: ${currency}${ai.support_level ?? "N/A"}</p>
+      <p>⛰️ Resistance Level: ${currency}${ai.resistance_level ?? "N/A"}</p>
       <p>⚠️ Risk: ${ai.risk?.toUpperCase() || "N/A"}</p>
       <p>💡 Recommendation: ${ai.recommendation || "N/A"}</p>
     </div>`;
@@ -115,14 +117,7 @@ async function processMessage(message) {
   <div class="message bot">
     <div class="stock-update">
       <h3>📊 ${result.symbol} Update</h3>
-      <p>💰 <strong>Price:</strong> ₹${result.price ?? "Please check the stock symbol, it may be incorrect."}</p>
-      <p>📉 Low / 📈 High: ₹${result.low ?? "N/A"} / ₹${result.high ?? "N/A"}</p>
-      <p>📊 Volume: ${result.volume ?? "N/A"} | Avg: ${result.avg_volume?.toFixed(0) ?? "N/A"}</p>
-      <p>🔻 Change: ${result.change_percent?.toFixed(2) ?? "0"}%</p>
-      <p>🧠 Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "NEUTRAL"} (${result.sentiment ?? 0})</p>
-      <p>⚡ Recommendation: <strong>${recommendation}</strong></p>
-      ${alertsHTML}
-      ${groqHTML}
+      <p><p>"Please check the stock symbol, it may be incorrect."}</p>     
     </div>
   </div>
   `;
