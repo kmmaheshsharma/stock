@@ -61,7 +61,7 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
         symbol = raw_text.strip()
 
         # Check if the symbol matches expected format (e.g., ABC, XYZ.NS)
-        if re.match(r'^[A-Z]{1,5}(\.[A-Z]{2,3})?$', symbol):
+        if re.match(r'^[A-Z]{1,10}(\.[A-Z]{2,10})?$', symbol):
             logging.info(f"Extracted symbol: {symbol}")
             return {"symbol": symbol}  # Return as a dictionary with the key 'symbol'
         else:
