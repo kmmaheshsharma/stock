@@ -117,7 +117,14 @@ async function processMessage(message) {
   <div class="message bot">
     <div class="stock-update">
       <h3>📊 ${result.symbol} Update</h3>
-      <p><p>"Please check the stock symbol, it may be incorrect."}</p>     
+      <p>💰 <strong>Price:</strong> ₹${result.price ?? "Please check the stock symbol, it may be incorrect."}</p>
+      <p>📉 Low / 📈 High: ₹${result.low ?? "N/A"} / ₹${result.high ?? "N/A"}</p>
+      <p>📊 Volume: ${result.volume ?? "N/A"} | Avg: ${result.avg_volume?.toFixed(0) ?? "N/A"}</p>
+      <p>🔻 Change: ${result.change_percent?.toFixed(2) ?? "0"}%</p>
+      <p>🧠 Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "NEUTRAL"} (${result.sentiment ?? 0})</p>
+      <p>⚡ Recommendation: <strong>${recommendation}</strong></p>
+      ${alertsHTML}
+      ${groqHTML}
     </div>
   </div>
   `;
@@ -236,7 +243,7 @@ async function generateUserAlerts(user) {
       const ai = result.ai_analysis;
       const symbol = result.symbol || "";
       const isUS = !symbol.endsWith(".NS") && !symbol.endsWith(".BO");
-      const currency = isUS ? "$" : "₹";         
+      const currency = isUS ? "$" : "₹";          
       msgText += `<br><br>🤖 AI Analysis:`;
       msgText += `<br>📈 Predicted Move: ${ai.predicted_move?.toUpperCase() || "N/A"}`;
       msgText += `<br>⚡ Confidence: ${ai.confidence != null ? (ai.confidence * 100).toFixed(2) + "%" : "N/A"}`;
