@@ -234,11 +234,14 @@ async function generateUserAlerts(user) {
     // ================= Grok (AI) Analysis =================
     if (result.ai_analysis) {
       const ai = result.ai_analysis;
+      const symbol = result.symbol || "";
+      const isUS = !symbol.endsWith(".NS") && !symbol.endsWith(".BO");
+      const currency = isUS ? "$" : "₹";         
       msgText += `<br><br>🤖 AI Analysis:`;
       msgText += `<br>📈 Predicted Move: ${ai.predicted_move?.toUpperCase() || "N/A"}`;
       msgText += `<br>⚡ Confidence: ${ai.confidence != null ? (ai.confidence * 100).toFixed(2) + "%" : "N/A"}`;
-      msgText += `<br>🛡️ Support Level: ₹${ai.support_level ?? "N/A"}`;
-      msgText += `<br>⛰️ Resistance Level: ₹${ai.resistance_level ?? "N/A"}`;
+      msgText += `<br>🛡️ Support Level: ${currency}${ai.support_level ?? "N/A"}`;
+      msgText += `<br>⛰️ Resistance Level: ${currency}${ai.resistance_level ?? "N/A"}`;
       msgText += `<br>⚠️ Risk: ${ai.risk?.toUpperCase() || "N/A"}`;
       msgText += `<br>💡 Recommendation: ${ai.recommendation || "N/A"}`;
     }
