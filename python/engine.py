@@ -157,25 +157,24 @@ def normalize_symbol(raw: str):
 import re
 
 def extract_candidate_symbol(text):
-    """
-    Extract candidate symbol/company name from user input.
-    Example:
-        "get me price for ethos" -> "ETHOS"
-        "show me info for TCS" -> "TCS"
-    """
-    # Remove common words
-    cleaned = re.sub(r"\b(get|show|me|price|for|of|the|stock|crypto|please)\b", "", text, flags=re.IGNORECASE)
-    
-    # Remove special characters
+    if not text:
+        return None
+
+    text = str(text)
+
+    cleaned = re.sub(r"\b(get|show|me|price|for|of|the|stock|crypto|please|fetch|give)\b", "", text, flags=re.IGNORECASE)
     cleaned = re.sub(r"[^A-Za-z0-9& ]", " ", cleaned)
 
-    # Take first remaining word (or you can take all words)
     words = cleaned.strip().split()
     if not words:
         return None
 
-    # Pick longest word as candidate symbol
+    # pick longest meaningful word
     candidate = max(words, key=len)
+
+    if not candidate:
+        return None
+
     return candidate.upper()
 
 def search_yahoo_symbol(name):
