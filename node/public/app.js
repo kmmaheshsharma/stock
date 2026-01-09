@@ -419,26 +419,13 @@ form.addEventListener("submit", async (e) => {
 });
 
 // ---------------------- Alerts Button ----------------------
-alertsBtn.addEventListener("click", async () => {
-  const typingDiv = botTypingIndicator();
+app.get('/api/alerts', async (req, res) => {
   try {
-    const res = await fetch("/api/alerts");
-    const data = await res.json();
-    await delay(Math.random() * 1000 + 1000);
-    typingDiv.remove();
-
-    if (!data || data.length === 0) {
-      appendMessage("Bot", "No alerts at the moment 🔔");
-      return;
-    }
-
-    data.forEach(alert => {
-      appendMessage("Bot", `🚨 ${alert.symbol}: ${alert.message}`);
-    });
+    await runAlertsForAllUsers();
+    res.json({ status: "ok" });
   } catch (err) {
-    typingDiv.remove();
-    appendMessage("Bot", "⚠️ Failed to fetch alerts");
-    console.error(err);
+    console.error("Error checking alerts:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
