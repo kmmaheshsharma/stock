@@ -37,6 +37,22 @@ async function getOrCreateUser(phone) {
   }
 }
 
+function containsPossibleSymbol(text) {
+  const words = text.split(/\s+/);
+
+  for (let w of words) {
+    w = w.replace(/[^a-zA-Z0-9]/g, "");
+
+    if (
+      w.length >= 2 &&
+      w.length <= 15 &&
+      !isStopWord(w.toLowerCase())
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // --- Detect natural language intent ---
 function detectIntent(text) {
@@ -53,7 +69,9 @@ function detectIntent(text) {
   if (text.startsWith("buy") || text.includes("purchase")) return "BUY";
   if (text.startsWith("sell") || text.includes("exit")) return "SELL";
   if (text.startsWith("track") || text.includes("add to watchlist")) return "TRACK";
-  if (/^[A-Z]{2,15}$/.test(text.toUpperCase())) return "SYMBOL";
+  if (containsPossibleSymbol(original)) {
+    return "SYMBOL";
+  }
 
   return "UNKNOWN";
 }
