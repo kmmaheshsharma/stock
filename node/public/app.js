@@ -422,17 +422,10 @@ form.addEventListener("submit", async (e) => {
 alertsBtn.addEventListener("click", async () => {
   const typingDiv = botTypingIndicator();
   try {
-    fetch('/api/alerts', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: ''
-    })
-    .then(response => response.json())
-    .then(data => console.log("alerts triggered:", data))
-    .catch(error => console.error("Error alerts triggered:", error));
-    typingDiv.remove();    
+    await fetch("/api/alerts");
+    await res.json();
+    typingDiv.remove();
+    appendMessage("Bot", "🔔 Checking alerts... You’ll be notified if anything triggers.");
 
   } catch (err) {
     typingDiv.remove();
