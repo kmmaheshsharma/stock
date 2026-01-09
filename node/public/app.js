@@ -422,9 +422,20 @@ form.addEventListener("submit", async (e) => {
 alertsBtn.addEventListener("click", async () => {
   const typingDiv = botTypingIndicator();
   try {
-    await fetch("/api/alerts");    
-    typingDiv.remove();
-    appendMessage("Bot", "🔔 Checking alerts... You’ll be notified if anything triggers.");
+    const phone = localStorage.getItem("userPhone");
+    const userId = localStorage.getItem("userId");
+    // Send message to backend that uses processMessage (like handleMessage)
+    const res = await fetch("/api/alerts", { // <-- create this endpoint
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "alerts", phone: phone, userId: userId })
+    });
+    const data = await res.json();
+
+    // simulate typing delay
+    await delay(Math.random() * 1000 + 1000);
+
+    typingDiv.remove();  
 
   } catch (err) {
     typingDiv.remove();
