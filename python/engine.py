@@ -175,7 +175,20 @@ def extract_candidate_symbol(text):
     stopwords = [
         "get", "show", "me", "price", "for", "of", "the",
         "stock", "crypto", "coin", "token", "please",
-        "tell", "give", "fetch", "display", "what", "is"
+        "tell", "give", "fetch", "display", "what", "is", "my",
+        "buy", "sell", "track", "add", "to", "entry",
+        "exit", "purchase", "rate", "value", "worth", "current", 
+        "today", "analysis", "report", "analyze", "information", "info",
+        "on", "at", "a", "and", "in", "of", "with", "as", "by", "that", "this", "it", "its", "i", "you", "we", "they", "he", "she",
+        "him", "her", "them", "our", "your", "their", "us", "my", "mine", "yours", "theirs", "ours",
+        "invest", "investment", "market", "markets", "share", "shares", "equity", "equities",
+        "fund", "funds", "portfolio", "portfolios", "index", "indices", "etf", "etfs",
+        "mutual", "mutuals", "bond", "bonds", "derivative", "derivatives",
+        "option", "options", "future", "futures", "currency", "currencies", "forex", "forexes",
+        "digital", "digitals", "asset", "assets", "blockchain", "blockchains", "decentralized", "decentralizeds",
+        "finance", "finances", "technology", "technologies", "company", "companies", "corporation", "corporations",
+        "limited", "ltd", "inc", "incorporated", "plc", "llc", "group", "   groups", "international", "nationwide", "global", "solutions", "systems",
+        "technologies", "holdings", "services", "service", "industries", "industry", "enterprises", "enterprise", "ventures", "venture", "partners", "partner"
     ]
 
     # Remove stopwords
