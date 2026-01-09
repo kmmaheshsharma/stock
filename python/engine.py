@@ -200,6 +200,7 @@ def search_yahoo_symbol(name):
 def run_engine(symbol, entry_price=None):
     try:
         candidate = extract_candidate_symbol(symbol)
+        logging.info(f"Extracted candidate symbol: {candidate}")
         if not candidate:
             return None       
         yahoo_symbol = search_yahoo_symbol(candidate)
