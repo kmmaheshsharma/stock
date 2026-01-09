@@ -51,15 +51,17 @@ function containsPossibleSymbol(text) {
       return true;
     }
   }
+
   return false;
 }
+
 function isStopWord(word) {
   const stopWords = [
     "show", "me", "the", "price", "of", "for", "get",
     "tell", "about", "is", "what", "give", "please",
-    "stock", "crypto", "coin", "share", "analyze", "analyser",
-    "information", "details", "data", "on", "at",
-    "today", "now", "latest", "current", "update"
+    "stock", "crypto", "coin", "share", "today",
+    "now", "current", "rate", "value", "status", "analyze", "analysis", "info", "information",  "details",  "data", "lookup", 
+    "lookup", "check", "my"
   ];
 
   return stopWords.includes(word);
@@ -79,7 +81,7 @@ function detectIntent(text) {
   if (text.startsWith("buy") || text.includes("purchase")) return "BUY";
   if (text.startsWith("sell") || text.includes("exit")) return "SELL";
   if (text.startsWith("track") || text.includes("add to watchlist")) return "TRACK";
-  if (containsPossibleSymbol(original)) {
+  if (containsPossibleSymbol(text)) {
     return "SYMBOL";
   }
 
