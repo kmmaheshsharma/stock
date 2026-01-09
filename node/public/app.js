@@ -423,9 +423,6 @@ alertsBtn.addEventListener("click", async () => {
   const typingDiv = botTypingIndicator();
   try {
     const res = await fetch("/api/alerts");
-    const data = await res.json();
-
-    await delay(Math.random() * 1000 + 1000);
     typingDiv.remove();
   } catch (err) {
     typingDiv.remove();
