@@ -33,14 +33,25 @@ def fetch_tweets(symbol: str, max_results: int = 50, retries: int = 1, backoff: 
         try:
             response = requests.get(url, headers=headers, params=params, timeout=5)
 
+            # Handle rate limit
             if response.status_code == 429:
                 print(f"Rate limit hit for {symbol}, retrying in {backoff} sec (attempt {attempt+1}/{retries+1})...")
                 time.sleep(backoff)
                 backoff *= 2
                 continue
 
+            # Handle other non-200 responses
+            if response.status_code != 200:
+                print(f"Non-200 response for {symbol}: {response.status_code}, skipping attempt")
+                continue
+
             # Parse JSON safely
-            data = response.json().get("data", [])
+            try:
+                data = response.json().get("data", [])
+            except ValueError:
+                print(f"JSON parse error for {symbol}, skipping attempt")
+                continue
+
             tweets = [
                 {
                     "text": t.get("text", ""),
@@ -55,8 +66,6 @@ def fetch_tweets(symbol: str, max_results: int = 50, retries: int = 1, backoff: 
 
         except requests.exceptions.RequestException as e:
             print(f"Network/API error for {symbol}: {e}")
-        except ValueError as e:
-            print(f"JSON parse error for {symbol}: {e}")
 
     # Fallback to cached data if API fails or rate limited
     if symbol in tweets_cache:
