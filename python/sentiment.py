@@ -23,9 +23,23 @@ def sentiment_for_symbol(symbol: str) -> dict:
 
         # Fetch tweets safely
         tweets = fetch_tweets(symbol) or []
-        logging.info(f"Fetched {len(tweets)} tweets for {symbol}")
+        print(f"Fetched {len(tweets)} tweets for {clean_symbol}")
+        # No tweets → neutral fallback
+        if not tweets:
+            return {
+                "symbol": clean_symbol,
+                "sentiment_score": 0,
+                "sentiment_label": "Neutral",
+                "confidence": 0.0,
+                "emoji": "⚪",
+                "explanation": "No sufficient Twitter data",
+                "tweets_count": 0,
+                "bullish_ratio": 0.5
+            }
+
         sentiment = aggregate_sentiment(tweets)
-        logging.info(f"Aggregated sentiment for {symbol}: {sentiment}")
+        print(f"Aggregated sentiment for {clean_symbol}: {sentiment}")
+
         bias = sentiment.get("bias", "neutral")
         confidence = sentiment.get("confidence", 0.0)
         bullish_ratio = sentiment.get("bullish_ratio", 0.5)
@@ -43,7 +57,7 @@ def sentiment_for_symbol(symbol: str) -> dict:
         }
 
         label, emoji, explanation = mapping.get(bias, mapping["neutral"])
-
+        print(f"Sentiment for {clean_symbol}: {label} ({score}), Confidence: {confidence}")
         return {
             "symbol": clean_symbol,
             "sentiment_score": score,
