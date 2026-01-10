@@ -58,7 +58,7 @@ async function processMessage(message) {
 
   console.log(`[SYMBOL] Processing symbol: ${message}`);
   const result = await runPythonEngine(message);
-
+  console.log(`[SYMBOL] Engine result:`, result);
   // --- Early check for invalid symbol ---
   if (!result || !result.symbol) {
     console.warn(`[SYMBOL] Invalid or unknown symbol: ${message}`);
