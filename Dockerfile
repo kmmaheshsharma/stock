@@ -1,47 +1,52 @@
+# =========================
+# Base image with Python
+# =========================
 FROM python:3.11-slim
 
+# Force rebuild when needed
 ARG CACHEBUST=2025-01-01
 
 # =========================
-# System deps + Node.js
+# Install Node.js
 # =========================
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    ca-certificates \
-    gnupg \
+RUN apt-get update && apt-get install -y curl build-essential \
     && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && apt-get purge -y curl gnupg \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get install -y nodejs \
+    && apt-get clean
 
 # =========================
-# Node deps
+# Install Node dependencies
 # =========================
 WORKDIR /app/node
+
+# Copy ONLY package files first (for Docker cache)
 COPY node/package*.json ./
-RUN npm install --omit=dev && npm cache clean --force
+
+RUN npm install --omit=dev
+
+# Copy rest of Node app (includes public/)
 COPY node/ ./
 
 # =========================
-# Python deps
+# Install Python dependencies
 # =========================
 WORKDIR /app
-COPY python/requirements.txt ./python/requirements.txt
 
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir \
-    --extra-index-url https://download.pytorch.org/whl/cpu \
-    -r python/requirements.txt && \
-    rm -rf /root/.cache/pip
-
+# Copy FULL python folder
 COPY python/ ./python/
 
+RUN pip install --no-cache-dir -r python/requirements.txt
+
 # =========================
-# Runtime
+# Runtime config
 # =========================
 ENV PORT=3000
 EXPOSE 3000
 
+# 🔥 VERY IMPORTANT FIX
 WORKDIR /app/node
+
+# =========================
+# Start Node app
+# =========================
 CMD ["node", "index.js"]
