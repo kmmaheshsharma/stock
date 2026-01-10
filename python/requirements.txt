@@ -7,6 +7,5 @@ python-dotenv
 psycopg2-binary
 groq
 alpha_vantage
-Ticker
 transformers
 torch==2.1.0+cpu
