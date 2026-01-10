@@ -32,12 +32,12 @@ You are a professional financial analyst.
 Analyze the following asset (stock or crypto):
 
 Symbol: {symbol}
-Current Price: {price_data['price']}
-Daily Low: {price_data['low']}
-Daily High: {price_data['high']}
-Volume: {price_data['volume']}
-Average Volume: {price_data['avg_volume']}
-Change %: {price_data['change_percent']}
+Current Price: {price_data.get('price', 0.0)}
+Daily Low: {price_data.get('low', 0.0)}
+Daily High: {price_data.get('high', 0.0)}
+Volume: {price_data.get('volume', 0)}
+Average Volume: {price_data.get('avg_volume', 0)}
+Change %: {price_data.get('change_percent', 0.0)}
 Sentiment Score: {sentiment_score}
 
 Return a JSON object with the following keys:
