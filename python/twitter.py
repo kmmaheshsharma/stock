@@ -4,8 +4,8 @@ from transformers import pipeline
 sentiment_cache = {}
 finbert = pipeline(
     "sentiment-analysis",
-    model="ProsusAI/finbert",
-    tokenizer="ProsusAI/finbert"
+    model="yiyanghkust/finbert-tone",
+    tokenizer="yiyanghkust/finbert-tone"
 )
 def fetch_tweets(symbol):
     query = (
