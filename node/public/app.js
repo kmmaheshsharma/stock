@@ -182,8 +182,7 @@ window.onload = async function() {
   if (userId) {
     // Existing user: show chat
     signupScreen.style.display = "none";
-    chatScreen.style.display = "";
-    initChatBot(userId);
+    chatScreen.style.display = "";    
     initSocket(userId);    
     loadUserUpdates();
   } else {
@@ -331,8 +330,7 @@ signupBtn.addEventListener("click", async (e) => {
 
     // Switch to chat screen
     signupScreen.style.display = "none";
-    chatScreen.style.display = "";
-    initChatBot(data.userId);
+    chatScreen.style.display = "";    
   } catch (err) {
     console.error("Signup failed", err);
     alert("Failed to sign up. Try again.");
@@ -374,8 +372,7 @@ signinBtn.addEventListener("click", async (e) => {
 
       // Switch to chat screen
       signupScreen.style.display = "none";
-      chatScreen.style.display = "";
-      initChatBot(data.userId);
+      chatScreen.style.display = "";      
     } else {
       alert("User not found. Please sign up.");
     }
@@ -422,20 +419,9 @@ form.addEventListener("submit", async (e) => {
 alertsBtn.addEventListener("click", async () => {
   const typingDiv = botTypingIndicator();
   try {
-    const phone = localStorage.getItem("userPhone");
-    const userId = localStorage.getItem("userId");
-    // Send message to backend that uses processMessage (like handleMessage)
-    const res = await fetch("/api/alerts", { // <-- create this endpoint
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "alerts", phone: phone, userId: userId })
-    });
-    const data = await res.json();
-
-    // simulate typing delay
-    await delay(Math.random() * 1000 + 1000);
-
-    typingDiv.remove();  
+    await fetch("/api/alerts");    
+    typingDiv.remove();
+    appendMessage("Bot", "🔔 Checking alerts... You’ll be notified if anything triggers.");
 
   } catch (err) {
     typingDiv.remove();
@@ -468,21 +454,12 @@ async function loadSentiments() {
   }
 }
 
-function initChatBot(userId) {
-  console.log("Chat initialized for user", userId);
-  loadSentiments();
-  setInterval(loadSentiments, 30000);
-}
 // ---------------------- Sentiment color ----------------------
 function getColor(sentiment) {
   if (sentiment === "Bullish") return "green";
   if (sentiment === "Bearish") return "red";
   return "goldenrod";
 }
-
-// ---------------------- Initial load & refresh ----------------------
-loadSentiments();
-setInterval(loadSentiments, 30000);
 
 // ---------------------- Service Worker ----------------------
 if ("serviceWorker" in navigator) {
