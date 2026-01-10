@@ -71,7 +71,7 @@ Only return the symbol.
 """
 
 # ------------------- Groq AI Call Wrappers -------------------
-def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):    
+def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
     try:
         response = groq_client.chat.completions.create(
             messages=[
@@ -86,16 +86,16 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
         raw_text = response.choices[0].message.content
         symbol = raw_text.strip()
 
-        if re.match(r'^[A-Z0-9\-]{1,15}(\.[A-Z]{2,10})?$', symbol):        
+        if re.match(r'^[A-Z0-9\-]{1,15}(\.[A-Z]{2,10})?$', symbol):
             return {"symbol": symbol}
-        else:            
+        else:
             return {"error": "Invalid symbol format", "raw_text": raw_text}
 
     except Exception as e:
         logging.error(f"Groq AI call failed: {str(e)}")
         return {"error": str(e)}
 
-def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):    
+def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
     try:
         response = groq_client.chat.completions.create(
             messages=[
@@ -110,8 +110,12 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
         raw_text = response.choices[0].message.content
         match = re.search(r"\{.*\}", raw_text, re.DOTALL)
         if match:
-            ai_json = json.loads(match.group(0))        
-            return ai_json
+            try:
+                ai_json = json.loads(match.group(0))
+                return ai_json
+            except Exception as e_json:
+                logging.warning(f"Groq AI returned invalid JSON: {e_json}")
+                return {"error": "Invalid JSON from Groq AI", "raw_text": raw_text}
 
         logging.warning("No JSON found in Groq AI response, returning raw text.")
         return {"error": "Invalid JSON from Groq AI", "raw_text": raw_text}
@@ -137,7 +141,6 @@ def normalize_symbol(raw: str):
         raise ValueError(f"Invalid symbol received: {raw}")
 
     base = match.group(0)
-
     symbols = [
         f"{base}.NS",
         f"{base}.BO",
@@ -149,7 +152,6 @@ def normalize_symbol(raw: str):
         f"{base}-USDT",
         f"{base}-BTC"
     ]
-
     return symbols
 
 def extract_candidate_symbol(text):
@@ -285,7 +287,7 @@ def run_engine(symbol, entry_price=None):
                 "explanation": "Sentiment service unavailable"
             }
 
-        s_type = result["sentiment_label"]
+        s_type = result.get("sentiment_label", "Neutral")
         if s_type == "Bullish" or s_type == "accumulation":
             alerts.append("buy_signal")
         elif s_type == "Hype":
@@ -302,11 +304,15 @@ def run_engine(symbol, entry_price=None):
 
         chart_base64 = generate_chart(resolved_symbol)
 
-        prompt = build_groq_prompt(
-            resolved_symbol, price_data, result["sentiment_score"],
-            result["sentiment_label"], result["confidence"], result["explanation"]
-        )
-        ai_analysis = call_groq_ai(prompt)
+        try:
+            prompt = build_groq_prompt(
+                resolved_symbol, price_data, result["sentiment_score"],
+                result["sentiment_label"], result["confidence"], result["explanation"]
+            )
+            ai_analysis = call_groq_ai(prompt)
+        except Exception as e_ai:
+            logging.warning(f"Groq AI analysis failed: {e_ai}")
+            ai_analysis = {"error": "Groq AI call failed"}
 
         return {
             "symbol": resolved_symbol,
@@ -316,11 +322,11 @@ def run_engine(symbol, entry_price=None):
             "volume": volume,
             "avg_volume": avg_volume,
             "change_percent": change_percent,
-            "sentiment_score": result["sentiment_score"],
-            "sentiment_label": result["sentiment_label"],
-            "confidence": result["confidence"],
-            "emoji": result["emoji"],
-            "explanation": result["explanation"],
+            "sentiment_score": result.get("sentiment_score", 0),
+            "sentiment_label": result.get("sentiment_label", "Neutral"),
+            "confidence": result.get("confidence", 0.0),
+            "emoji": result.get("emoji", "⚪"),
+            "explanation": result.get("explanation", ""),
             "alerts": alerts,
             "suggested_entry": suggested_entry,
             "chart": chart_base64,
