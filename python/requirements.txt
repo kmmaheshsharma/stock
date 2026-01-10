@@ -11,3 +11,4 @@ groq
 alpha_vantage
 Ticker
 transformers
+torch==2.1.0+cpu torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
