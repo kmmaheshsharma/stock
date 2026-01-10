@@ -4,12 +4,10 @@ import argparse
 import re
 import os
 import logging
+import requests
 from market import get_price
 from sentiment import sentiment_for_symbol
 from chart import generate_chart
-import requests
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from nltk import download
 
 # ------------------- Logging Setup -------------------
 logging.basicConfig(
@@ -26,28 +24,121 @@ if not api_key:
     logging.warning("GROQ_API_KEY not found in environment variables.")
 groq_client = Groq(api_key=api_key)
 
-# ------------------- NLTK Setup -------------------
-download('vader_lexicon')
-sia = SentimentIntensityAnalyzer()
-sentiment_cache = {}
+# ------------------- Prompt Builders -------------------
+def build_groq_prompt(symbol, price_data, sentiment_score, sentiment_score_label, confidence, explanation):
+    return f"""
+You are a professional financial analyst.
 
-# ------------------- Symbol Utilities -------------------
+Analyze the following asset (stock or crypto):
+
+Symbol: {symbol}
+Current Price: {price_data['price']}
+Daily Low: {price_data['low']}
+Daily High: {price_data['high']}
+Volume: {price_data['volume']}
+Average Volume: {price_data['avg_volume']}
+Change %: {price_data['change_percent']}
+Sentiment Score: {sentiment_score}
+Sentiment Label: {sentiment_score_label}
+Confidence: {confidence}
+Explanation: {explanation}
+
+Return a JSON object with the following keys:
+- predicted_move
+- confidence
+- support_level
+- resistance_level
+- risk
+- recommendation
+
+Only return valid JSON.
+"""
+
+def build_groq_prompt_for_symbol(message):
+    return f"""
+You are a professional market analyst.
+
+A user has asked for the analysis of a stock or cryptocurrency.
+The name or symbol given by the user is:
+'{message}'
+
+Please provide the full, correct trading symbol.
+Examples:
+- Stocks: AAPL, SBIN.NS, TSLA
+- Crypto: BTC-USD, ETH-USD
+
+Only return the symbol.
+"""
+
+# ------------------- Groq AI Call Wrappers -------------------
+def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):    
+    try:
+        response = groq_client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": "You are a professional market analyst."},
+                {"role": "user", "content": prompt}
+            ],
+            model=model,
+            max_tokens=max_tokens,
+            temperature=0.3
+        )
+
+        raw_text = response.choices[0].message.content
+        symbol = raw_text.strip()
+
+        if re.match(r'^[A-Z0-9\-]{1,15}(\.[A-Z]{2,10})?$', symbol):        
+            return {"symbol": symbol}
+        else:            
+            return {"error": "Invalid symbol format", "raw_text": raw_text}
+
+    except Exception as e:
+        logging.error(f"Groq AI call failed: {str(e)}")
+        return {"error": str(e)}
+
+def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):    
+    try:
+        response = groq_client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": "You are a professional market analyst."},
+                {"role": "user", "content": prompt}
+            ],
+            model=model,
+            max_tokens=max_tokens,
+            temperature=0.3
+        )
+
+        raw_text = response.choices[0].message.content
+        match = re.search(r"\{.*\}", raw_text, re.DOTALL)
+        if match:
+            ai_json = json.loads(match.group(0))        
+            return ai_json
+
+        logging.warning("No JSON found in Groq AI response, returning raw text.")
+        return {"error": "Invalid JSON from Groq AI", "raw_text": raw_text}
+
+    except Exception as e:
+        logging.error(f"Groq AI call failed: {str(e)}")
+        return {"error": str(e)}
+
+# ------------------- Symbol Normalization -------------------
 def normalize_symbol(raw: str):
     raw = raw.upper().strip()
     raw = re.sub(r"\b(TRACK|ENTRY|BUY|SELL|ADD|SHOW|PRICE)\b", "", raw)
     raw = raw.replace("_", " ").strip()
 
     known_suffixes = [".NS", ".BO", ".US", ".NYSE", ".NASDAQ", "-USD", "-USDT", "-BTC"]
+
     for suf in known_suffixes:
         if raw.endswith(suf):
             return [raw]
 
     match = re.search(r"\b[A-Z0-9&]{1,20}\b", raw)
     if not match:
-        return [raw]
+        raise ValueError(f"Invalid symbol received: {raw}")
 
     base = match.group(0)
-    return [
+
+    symbols = [
         f"{base}.NS",
         f"{base}.BO",
         base,
@@ -59,166 +150,142 @@ def normalize_symbol(raw: str):
         f"{base}-BTC"
     ]
 
+    return symbols
+
 def extract_candidate_symbol(text):
     if not text:
         return None
+
     text = text.lower()
+
     stopwords = [
-        "get","show","me","price","for","of","the","stock","crypto","coin","token",
-        "please","tell","give","fetch","display","what","is","my","buy","sell","track",
-        "add","to","entry","exit","purchase","rate","value","worth","current","today",
-        "analysis","report","analyze","information","info","on","at","a","and","in","with",
-        "as","by","that","this","it","its","i","you","we","they","he","she","him","her",
-        "them","our","your","their","us","my","mine","yours","theirs","ours","invest",
-        "investment","market","markets","share","shares","equity","equities","fund","funds",
-        "portfolio","portfolios","index","indices","etf","etfs","mutual","mutuals","bond",
-        "bonds","derivative","derivatives","option","options","future","futures","currency",
-        "currencies","forex","digital","digitals","asset","assets","blockchain","blockchains",
-        "decentralized","decentralizeds","finance","finances","technology","technologies",
-        "company","companies","corporation","corporations","limited","ltd","inc","incorporated",
-        "plc","llc","group","groups","international","nationwide","global","solutions","systems",
-        "technologies","holdings","services","service","industries","industry","enterprises",
-        "enterprise","ventures","venture","partners","partner"
+        "get", "show", "me", "price", "for", "of", "the",
+        "stock", "crypto", "coin", "token", "please",
+        "tell", "give", "fetch", "display", "what", "is", "my",
+        "buy", "sell", "track", "add", "to", "entry",
+        "exit", "purchase", "rate", "value", "worth", "current", 
+        "today", "analysis", "report", "analyze", "information", "info",
+        "on", "at", "a", "and", "in", "of", "with", "as", "by", "that", "this", "it", "its", "i", "you", "we", "they", "he", "she",
+        "him", "her", "them", "our", "your", "their", "us", "my", "mine", "yours", "theirs", "ours",
+        "invest", "investment", "market", "markets", "share", "shares", "equity", "equities",
+        "fund", "funds", "portfolio", "portfolios", "index", "indices", "etf", "etfs",
+        "mutual", "mutuals", "bond", "bonds", "derivative", "derivatives",
+        "option", "options", "future", "futures", "currency", "currencies", "forex", "forexes",
+        "digital", "digitals", "asset", "assets", "blockchain", "blockchains", "decentralized", "decentralizeds",
+        "finance", "finances", "technology", "technologies", "company", "companies", "corporation", "corporations",
+        "limited", "ltd", "inc", "incorporated", "plc", "llc", "group", "groups", "international", "nationwide", "global", "solutions", "systems",
+        "technologies", "holdings", "services", "service", "industries", "industry", "enterprises", "enterprise", "ventures", "venture", "partners", "partner"
     ]
+
     words = re.findall(r"[a-zA-Z0-9&]+", text)
     filtered = [w for w in words if w not in stopwords]
+
     if not filtered:
         return None
-    return max(filtered, key=len).upper()
+
+    candidate = max(filtered, key=len)
+    return candidate.upper()
 
 def search_yahoo_symbol(name):
     try:
         url = f"https://query2.finance.yahoo.com/v1/finance/search?q={name}"
         headers = {"User-Agent": "Mozilla/5.0"}
         r = requests.get(url, headers=headers, timeout=5)
+
         if r.status_code != 200:
             return None
-        quotes = r.json().get("quotes", [])
+
+        data = r.json()
+        quotes = data.get("quotes", [])
         if not quotes:
             return None
+
         name_upper = name.upper()
         for q in quotes:
-            if name_upper in q.get("symbol","").upper():
-                return q["symbol"]
+            symbol = q.get("symbol", "")
+            if name_upper in symbol.upper():
+                return symbol
+
         for q in quotes:
-            if name_upper in q.get("shortname","").upper():
+            shortname = q.get("shortname", "")
+            if name_upper in shortname.upper():
                 return q["symbol"]
+
         equities = [q for q in quotes if q.get("quoteType") == "EQUITY"]
         if equities:
             for q in equities:
                 if q["symbol"].endswith(".NS"):
                     return q["symbol"]
             return equities[0]["symbol"]
+
         return quotes[0]["symbol"]
+
     except Exception as e:
         logging.error(f"Yahoo search error: {e}")
         return None
-
-# ------------------- Twitter Sentiment -------------------
-def fetch_tweets(symbol):
-    token = os.getenv('X_BEARER_TOKEN')
-    if not token:
-        logging.warning("Twitter Bearer token not set")
-        return []
-    query = f"({symbol} OR #{symbol}) (bullish OR bearish OR buy OR sell OR breakout OR crash OR dump OR moon) lang:en -is:retweet"
-    url = "https://api.twitter.com/2/tweets/search/recent"
-    headers = {"Authorization": f"Bearer {token}"}
-    params = {"query": query,"max_results":50,"tweet.fields":"created_at,public_metrics"}
-    try:
-        r = requests.get(url, headers=headers, params=params, timeout=5)
-        r.raise_for_status()
-        data = r.json().get("data", [])
-        return [{"text": t["text"],"likes": t["public_metrics"]["like_count"],"retweets": t["public_metrics"]["retweet_count"]} for t in data]
-    except Exception as e:
-        logging.warning(f"Twitter error: {e}")
-        return []
-
-def analyze_sentiment(text):
-    key = text[:200]
-    if key in sentiment_cache:
-        return sentiment_cache[key]
-    scores = sia.polarity_scores(text)
-    compound = scores['compound']
-    if compound >= 0.05:
-        label="positive"
-    elif compound <= -0.05:
-        label="negative"
-    else:
-        label="neutral"
-    sentiment_cache[key]=(label, abs(compound))
-    return sentiment_cache[key]
-
-def aggregate_sentiment(tweets):
-    pos=neg=neu=0.0
-    for t in tweets:
-        label, score = analyze_sentiment(t["text"])
-        weight = 1 + (t["likes"]*0.1) + (t["retweets"]*0.2)
-        if label=="positive":
-            pos+=weight
-        elif label=="negative":
-            neg+=weight
-        else:
-            neu+=weight
-    directional = pos+neg
-    if directional==0:
-        return {"bias":"neutral","confidence":0.0,"bullish_ratio":0.5}
-    bullish_ratio = pos/directional
-    if bullish_ratio>0.65:
-        bias="bullish"
-    elif bullish_ratio<0.35:
-        bias="bearish"
-    else:
-        bias="neutral"
-    confidence = round(abs(bullish_ratio-0.5)*2,2)
-    return {"bias":bias,"confidence":confidence,"bullish_ratio":round(bullish_ratio,2)}
 
 # ------------------- Core Engine -------------------
 def run_engine(symbol, entry_price=None):
     try:
         candidate = extract_candidate_symbol(symbol)
         if not candidate:
-            return {"symbol":symbol,"error":"Could not extract symbol","alerts":["error"]}
-
+            return None
         yahoo_symbol = search_yahoo_symbol(candidate)
         logging.info(f"Yahoo resolved symbol: {yahoo_symbol} for candidate: {candidate}")
 
-        symbols = normalize_symbol(yahoo_symbol if yahoo_symbol else candidate)
-        logging.info(f"Normalized symbols: {symbols}")
+        if yahoo_symbol:
+            symbols = normalize_symbol(yahoo_symbol)
+            logging.info(f"Normalized symbols from Yahoo: {symbols}")
+        else:
+            logging.warning(f"Yahoo could not resolve symbol: {candidate}. Trying raw normalization.")
+            symbols = normalize_symbol(candidate)
 
         price_data = None
         resolved_symbol = None
         for sym in symbols:
             price_data = get_price(sym)
+            resolved_symbol = sym
             if price_data:
-                resolved_symbol = sym
                 break
 
         if not price_data:
-            logging.warning(f"No price data for any of symbols: {symbols}")
-            return {"symbol":symbols[0],"error":"No price data found","alerts":["error"]}
+            logging.warning("No price data found.")
+            return {
+                "symbol": symbols,
+                "error": "No price data found",
+                "alerts": ["error"]
+            }
 
-        result = sentiment_for_symbol(resolved_symbol)
-
-        price = price_data.get("price")
-        low = price_data.get("low")
-        high = price_data.get("high")
-        volume = price_data.get("volume")
-        avg_volume = price_data.get("avg_volume")
-        change_percent = price_data.get("change_percent")
+        price = price_data["price"]
+        low = price_data["low"]
+        high = price_data["high"]
+        volume = price_data["volume"]
+        avg_volume = price_data["avg_volume"]
+        change_percent = price_data["change_percent"]
 
         alerts = []
         if entry_price:
-            if price>entry_price*1.05: alerts.append("profit")
-            elif price<entry_price*0.95: alerts.append("loss")
+            if price > entry_price * 1.05:
+                alerts.append("profit")
+            elif price < entry_price * 0.95:
+                alerts.append("loss")
 
+        result = sentiment_for_symbol(resolved_symbol)
         s_type = result["sentiment_label"]
-        if s_type=="Bullish" or s_type=="accumulation": alerts.append("buy_signal")
-        elif s_type=="Hype": alerts.append("trap_warning")
-        elif s_type=="Bearish" or s_type=="distribution": alerts.append("sell_signal")
+
+        if s_type == "Bullish" or s_type == "accumulation":
+            alerts.append("buy_signal")
+        elif s_type == "Hype":
+            alerts.append("trap_warning")
+        elif s_type == "Bearish" or s_type == "distribution":
+            alerts.append("sell_signal")
 
         suggested_entry = None
         if low and high:
-            suggested_entry={"lower":round(low*0.99,2),"upper":round(low*1.02,2)}
+            suggested_entry = {
+                "lower": round(low * 0.99, 2),
+                "upper": round(low * 1.02, 2)
+            }
 
         chart_base64 = generate_chart(resolved_symbol)
 
@@ -246,15 +313,19 @@ def run_engine(symbol, entry_price=None):
 
     except Exception as e:
         logging.error(f"Engine failed: {str(e)}")
-        return {"symbol":symbol,"error":str(e),"alerts":["error"]}
+        return {
+            "symbol": symbol,
+            "error": str(e),
+            "alerts": ["error"]
+        }
 
 # ------------------- Entry Point -------------------
-if __name__=="__main__":
+if __name__ == "__main__":
     logging.info("Engine started via command line.")
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     parser.add_argument("--entry", type=float)
     args = parser.parse_args()
 
-    result = run_engine(args.symbol,args.entry)
-    print(json.dumps(result,ensure_ascii=False,indent=2))
+    result = run_engine(args.symbol, args.entry)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
