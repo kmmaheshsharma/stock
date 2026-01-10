@@ -27,15 +27,24 @@ function runPythonEngine(message) {
     });
 
     py.stderr.on("data", err => {
-      console.error("Python error:", err.toString());
+      console.error("Python log:", err.toString());
     });
 
     py.on("close", code => {
       if (code === 0) {
         try {
-          resolve(JSON.parse(output.trim()));
+          const match = output.match(/\{[\s\S]*\}$/);
+
+          if (!match) {
+            console.error("No JSON found in output:", output);
+            return resolve(null);
+          }
+
+          const json = JSON.parse(match[0]);
+          resolve(json);
         } catch (e) {
-          console.error("Python JSON parse error:", output);
+          console.error("Python JSON parse error:", e);
+          console.error("Raw output:", output);
           resolve(null);
         }
       } else {
@@ -58,9 +67,9 @@ async function processMessage(message) {
 
   console.log(`[SYMBOL] Processing symbol: ${message}`);
   const result = await runPythonEngine(message);
-  console.log(`[SYMBOL] Engine result:`, result);
+  
   // --- Early check for invalid symbol ---
-  if (!result || !result.symbol) {
+  if (!result) {
     console.warn(`[SYMBOL] Invalid or unknown symbol: ${message}`);
     return null; // Node handler will catch this and respond
   }
