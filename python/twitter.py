@@ -15,7 +15,11 @@ sia = SentimentIntensityAnalyzer()
 tweets_cache = {}  # {symbol: {"timestamp": ..., "tweets": [...] }}
 CACHE_TTL = 300  # cache for 5 minutes
 
-def fetch_tweets(symbol, max_results=50):
+# ----------------- Fetch Tweets -----------------
+def fetch_tweets(symbol, max_results=50, retries=2, backoff=2):
+    """
+    Fetch recent tweets for a symbol with caching and rate-limit handling.
+    """
     now = time.time()
 
     # Return cached tweets if within TTL
@@ -27,19 +31,44 @@ def fetch_tweets(symbol, max_results=50):
     headers = {"Authorization": f"Bearer {os.getenv('X_BEARER_TOKEN')}"}
     params = {"query": query, "max_results": max_results, "tweet.fields": "created_at,public_metrics"}
 
-    try:
-        r = requests.get(url, headers=headers, params=params, timeout=5)
-        if r.status_code == 429:
-            print(f"Rate limit hit for {symbol}, skipping Twitter sentiment...")
-            return []  # skip instead of waiting
-        r.raise_for_status()
-        data = r.json().get("data", [])
-        tweets = [{"text": t["text"], "likes": t["public_metrics"]["like_count"], "retweets": t["public_metrics"]["retweet_count"]} for t in data]
-        tweets_cache[symbol] = {"timestamp": now, "tweets": tweets}
-        return tweets
-    except Exception as e:
-        print(f"Error fetching tweets for {symbol}: {e}, skipping Twitter sentiment.")
-        return []
+    attempt = 0
+    while attempt <= retries:
+        try:
+            r = requests.get(url, headers=headers, params=params, timeout=5)
+
+            if r.status_code == 429:
+                # Rate limit hit: retry with backoff
+                print(f"Rate limit hit for {symbol}, retrying in {backoff} sec (attempt {attempt+1}/{retries})...")
+                time.sleep(backoff)
+                attempt += 1
+                backoff *= 2  # exponential backoff
+                continue
+
+            r.raise_for_status()
+            data = r.json().get("data", [])
+            tweets = [
+                {
+                    "text": t["text"],
+                    "likes": t["public_metrics"]["like_count"],
+                    "retweets": t["public_metrics"]["retweet_count"]
+                } for t in data
+            ]
+
+            # Cache tweets
+            tweets_cache[symbol] = {"timestamp": now, "tweets": tweets}
+            return tweets
+
+        except Exception as e:
+            print(f"Error fetching tweets for {symbol}: {e}, skipping Twitter sentiment.")
+            break
+
+    # If all retries fail, fall back to cache or empty
+    if symbol in tweets_cache:
+        print(f"Using cached tweets for {symbol} due to failures.")
+        return tweets_cache[symbol]["tweets"]
+
+    print(f"No tweets available for {symbol}. Returning empty list.")
+    return []
 
 # ----------------- Sentiment Analysis -----------------
 def analyze_sentiment(text):
