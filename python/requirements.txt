@@ -9,3 +9,7 @@ python-dotenv
 psycopg2-binary
 groq
 alpha_vantage
+Ticker
+Tickers
+transformers
+torch

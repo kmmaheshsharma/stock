@@ -91,7 +91,7 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
         logging.error(f"Groq AI call failed: {str(e)}")
         return {"error": str(e)}
 
-def build_groq_prompt(symbol, price_data, sentiment_score):
+def build_groq_prompt(symbol, price_data, sentiment_score, sentiment_score_label, confidence, explanation):
     return f"""
 You are a professional financial analyst.
 
@@ -105,6 +105,9 @@ Volume: {price_data['volume']}
 Average Volume: {price_data['avg_volume']}
 Change %: {price_data['change_percent']}
 Sentiment Score: {sentiment_score}
+Sentiment Label: {sentiment_score_label}
+Confidence: {confidence}
+Explanation: {explanation}
 
 Return a JSON object with the following keys:
 - predicted_move
@@ -283,12 +286,20 @@ def run_engine(symbol, entry_price=None):
             elif price < entry_price * 0.95:
                 alerts.append("loss")
 
-        sentiment_score, s_type = sentiment_for_symbol(resolved_symbol)
-        if s_type == "accumulation":
-            alerts.append("buy_signal")
-        elif s_type == "hype":
-            alerts.append("trap_warning")
+        result = sentiment_for_symbol(resolved_symbol)
 
+        # Alerts based on new sentiment_label
+        alerts = []
+        s_type = result["sentiment_label"]  # previously was s_type
+
+        if s_type == "Bullish" or s_type == "accumulation":
+            alerts.append("buy_signal")
+        elif s_type == "Hype":
+            alerts.append("trap_warning")
+        elif s_type == "Bearish" or s_type == "distribution":
+            alerts.append("sell_signal")  # optional if you want to handle bearish
+
+        # Suggested entry calculation
         suggested_entry = None
         if low and high:
             suggested_entry = {
@@ -298,7 +309,7 @@ def run_engine(symbol, entry_price=None):
 
         chart_base64 = generate_chart(resolved_symbol)
 
-        prompt = build_groq_prompt(resolved_symbol, price_data, sentiment_score)
+        prompt = build_groq_prompt(resolved_symbol, price_data, result["sentiment_score"], result["sentiment_label"], result["confidence"], result["explanation"])
         ai_analysis = call_groq_ai(prompt)
 
         return {
@@ -309,8 +320,11 @@ def run_engine(symbol, entry_price=None):
             "volume": volume,
             "avg_volume": avg_volume,
             "change_percent": change_percent,
-            "sentiment": sentiment_score,
-            "sentiment_type": s_type,
+            "sentiment_score": result["sentiment_score"],
+            "sentiment_label": result["sentiment_label"],
+            "confidence": result["confidence"],
+            "emoji": result["emoji"],
+            "explanation": result["explanation"],
             "alerts": alerts,
             "suggested_entry": suggested_entry,
             "chart": chart_base64,

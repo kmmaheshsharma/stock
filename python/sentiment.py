@@ -1,8 +1,4 @@
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from twitter import fetch_tweets
-
-analyzer = SentimentIntensityAnalyzer()
-
 
 def base_symbol(symbol: str) -> str:
     """
@@ -12,31 +8,64 @@ def base_symbol(symbol: str) -> str:
     return symbol.replace(".NS", "").upper()
 
 
-def sentiment_for_symbol(symbol):
+def sentiment_for_symbol(symbol: str) -> dict:
     """
-    symbol is expected as KPIGREEN.NS
+    Returns DISPLAY-READY sentiment data
     """
+
     clean_symbol = base_symbol(symbol)
+    tweets = fetch_tweets(symbol)
 
-    tweets = fetch_tweets(clean_symbol)
     if not tweets:
-        return 0, "neutral"
+        return {
+            "symbol": clean_symbol,
+            "sentiment_score": 0,
+            "sentiment_label": "Neutral",
+            "confidence": 0.0,
+            "emoji": "⚪",
+            "explanation": "No sufficient Twitter data"
+        }
 
-    # Calculate compound scores
-    scores = [analyzer.polarity_scores(t)["compound"] for t in tweets]
-    avg = sum(scores) / len(scores)
+    sentiment = aggregate_sentiment(tweets)
 
-    score = round(avg * 100)
+    bias = sentiment["bias"]
+    confidence = sentiment["confidence"]
 
-    # Hype detection
-    hype_count = sum(("🚀" in t or "🔥" in t) for t in tweets)
-    if hype_count > 3:
-        return score, "hype"
+    # Convert to score (0–100)
+    score = int(sentiment["bullish_ratio"] * 100)
 
-    # Sentiment buckets
-    if avg > 0.05:
-        return score, "accumulation"
-    if avg < -0.05:
-        return score, "distribution"
+    # Display mapping
+    if bias == "bullish":
+        label = "Bullish"
+        emoji = "📈"
+        explanation = "Twitter crowd is bullish on this stock"
+    elif bias == "bearish":
+        label = "Bearish"
+        emoji = "📉"
+        explanation = "Twitter crowd is bearish on this stock"
+    else:
+        label = "Neutral"
+        emoji = "⚪"
+        explanation = "Twitter sentiment is mixed or unclear"
 
-    return score, "neutral"
+    return {
+        "symbol": clean_symbol,
+        "sentiment_score": score,
+        "sentiment_label": label,
+        "confidence": confidence,
+        "emoji": emoji,
+        "explanation": explanation
+    }
+
+def detect_hype(tweets, sentiment):
+    hype_words = ["moon", "rocket", "breakout", "pump", "爆", "🚀", "🔥"]
+
+    hype_count = sum(
+        any(word in t["text"].lower() for word in hype_words)
+        for t in tweets
+    )
+
+    if hype_count >= 5 and sentiment["confidence"] > 0.7:
+        return True
+
+    return False
