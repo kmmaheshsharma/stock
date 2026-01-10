@@ -8,12 +8,20 @@ import requests
 from market import get_price
 from sentiment import sentiment_for_symbol
 from chart import generate_chart
-
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+logging.getLogger("matplotlib").setLevel(logging.ERROR)
+logging.getLogger("PIL").setLevel(logging.ERROR)
 # ------------------- Logging Setup -------------------
+class StderrHandler(logging.StreamHandler):
+    def __init__(self):
+        super().__init__(sys.stderr)
+
+logging.getLogger().handlers = []
 logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[StderrHandler()]
 )
 
 # ------------------- Groq AI -------------------
@@ -314,6 +322,8 @@ def run_engine(symbol, entry_price=None):
                 resolved_symbol, price_data, result.get("sentiment_score", 0)
             )
             ai_analysis = call_groq_ai(prompt)
+            if not isinstance(ai_analysis, dict):
+                ai_analysis = {"error": "Invalid AI response"}            
         except Exception as e_ai:
             logging.warning(f"Groq AI analysis failed: {e_ai}")
             ai_analysis = {"error": "Groq AI call failed"}
@@ -354,4 +364,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     result = run_engine(args.symbol, args.entry)
+    sys.stdout.write(json.dumps(result, ensure_ascii=False))
+    sys.stdout.flush()
    
