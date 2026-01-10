@@ -39,9 +39,6 @@ def fetch_tweets(symbol: str, max_results: int = 50, retries: int = 1, backoff: 
                 backoff *= 2
                 continue
 
-            # Raise error for non-200 codes except 429
-            response.raise_for_status()
-
             # Parse JSON safely
             data = response.json().get("data", [])
             tweets = [
