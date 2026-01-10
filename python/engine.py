@@ -322,7 +322,7 @@ def run_engine(symbol, entry_price=None):
             "chart": chart_base64,
             "ai_analysis": ai_analysis
         }       
-        print(f"Engine result one")
+        print(f"mahesh Engine return json for {resolved_symbol}: {return_json} done")
         return return_json
     except Exception as e:
         logging.error(f"Engine failed: {str(e)}")
