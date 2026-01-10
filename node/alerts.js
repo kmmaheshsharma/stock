@@ -80,20 +80,41 @@ async function processMessage(message) {
   }
 
   // --- Build alerts HTML ---
-  let alertsHTML = "";
+let alertsHTML = "";
+
+  // If no alerts, show default message
   if (!Array.isArray(result.alerts) || result.alerts.length === 0) {
     alertsHTML = `<p>⚠️ No strong signal yet<br>📌 Stock is in watch mode</p>`;
   } else {
     alertsHTML = `<p>🚨 Alerts:<br>`;
     for (const alert of result.alerts) {
-      if (alert === "profit") alertsHTML += `• 📈 Profit booking zone<br>`;
-      if (alert === "loss") alertsHTML += `• 📉 Stoploss breached<br>`;
-      if (alert === "buy_signal") alertsHTML += `• 🟢 Accumulation detected<br>`;
-      if (alert === "trap_warning") alertsHTML += `• 🚨 Hype trap risk<br>`;
-      if (alert === "error") alertsHTML += `• ⚠️ Error fetching data<br>`;
+      switch (alert) {
+        case "profit":
+          alertsHTML += `• 📈 Profit booking zone<br>`;
+          break;
+        case "loss":
+          alertsHTML += `• 📉 Stoploss breached<br>`;
+          break;
+        case "buy_signal":
+          alertsHTML += `• 🟢 Bullish / Accumulation detected<br>`;
+          break;
+        case "trap_warning":
+          alertsHTML += `• 🚨 Hype trap risk<br>`;
+          break;
+        case "sell_signal":
+          alertsHTML += `• 🔴 Bearish / Distribution detected<br>`;
+          break;
+        case "error":
+          alertsHTML += `• ⚠️ Error fetching data<br>`;
+          break;
+        default:
+          alertsHTML += `• ⚡ ${alert}<br>`;
+          break;
+      }
     }
     alertsHTML += `</p>`;
   }
+
   // --- Include Groq AI analysis if available ---
   let groqHTML = "";
   if (result.ai_analysis) {
@@ -121,9 +142,15 @@ async function processMessage(message) {
       <p>📉 Low / 📈 High: ₹${result.low ?? "N/A"} / ₹${result.high ?? "N/A"}</p>
       <p>📊 Volume: ${result.volume ?? "N/A"} | Avg: ${result.avg_volume?.toFixed(0) ?? "N/A"}</p>
       <p>🔻 Change: ${result.change_percent?.toFixed(2) ?? "0"}%</p>
-      <p>🧠 Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "NEUTRAL"} (${result.sentiment ?? 0})</p>
-      <p>⚡ Recommendation: <strong>${recommendation}</strong></p>
+
+      <p>🧠 Twitter Sentiment: ${result.sentiment_label?.toUpperCase() || "NEUTRAL"} 
+        (${result.sentiment_score ?? 0}) ${result.emoji ?? ""} 
+        - Confidence: ${(result.confidence * 100)?.toFixed(1) ?? "0"}%</p>
+      <p>💬 Explanation: ${result.explanation ?? "No explanation available."}</p>
+
+      <p>⚡ Recommendation: <strong>${recommendation ?? "N/A"}</strong></p>
       ${alertsHTML}
+      ${result.suggested_entry ? `<p>🔑 Suggested Entry: ₹${result.suggested_entry.lower} - ₹${result.suggested_entry.upper}</p>` : ""}
       ${groqHTML}
     </div>
   </div>

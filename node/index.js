@@ -41,26 +41,22 @@ app.get("/webhook", (req, res) => {
 // ================= PWA API ROUTES =================
 app.get("/api/sentiments", async (req, res) => {
   try {
+    updateSentiment();
     const rows = await pool.query(
-      "SELECT symbol, sentiment_type, sentiment, change_percent FROM watchlist"
+      "SELECT symbol, sentiment_score, sentiment_type, confidence, emoji, explanation, change_percent FROM twitter_sentiment"
     );
 
     const data = rows.rows.map(r => {
-      let percent = 50;
-      if (r.sentiment_type === "accumulation") percent = 75;
-      else if (r.sentiment_type === "distribution") percent = 25;
-
+      const score = parseInt(r.sentiment_score) || 50;
       const changePercent = parseFloat(r.change_percent) || 0;
 
       return {
         symbol: r.symbol,
-        sentiment:
-          r.sentiment_type === "accumulation"
-            ? "Bullish"
-            : r.sentiment_type === "distribution"
-            ? "Bearish"
-            : "Neutral",
-        percent,
+        sentiment: r.sentiment_type || "Neutral",
+        score,                    // 0-100 numeric score
+        confidence: parseFloat(r.confidence) || 0,
+        emoji: r.emoji || "⚪",
+        explanation: r.explanation || "",
         change: `${changePercent.toFixed(2)}%`,
         trend:
           changePercent > 0
@@ -77,6 +73,7 @@ app.get("/api/sentiments", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch sentiments" });
   }
 });
+
 app.post('/api/check-user', async (req, res) => {
   const { phone } = req.body;  // Only need to check the phone
 
@@ -429,7 +426,7 @@ async function runAlertsForAllUsers() {
     console.error("❌ Error running alerts for users:", err.message);
   }
 }
-app.post('/api/alerts', async (req, res) => {
+app.get('/api/alerts', async (req, res) => {
   try {
     console.log("⏱️ Starting alerts for all users (manual trigger)");
     await runAlertsForAllUsers(); // must return array   
