@@ -31,7 +31,7 @@ You are a professional financial analyst.
 
 Analyze the following asset (stock or crypto):
 
-Symbol: {symbol}
+Symbol: "{symbol}"
 Current Price: {price_data.get('price', 0.0)}
 Daily Low: {price_data.get('low', 0.0)}
 Daily High: {price_data.get('high', 0.0)}
@@ -40,16 +40,17 @@ Average Volume: {price_data.get('avg_volume', 0)}
 Change %: {price_data.get('change_percent', 0.0)}
 Sentiment Score: {sentiment_score}
 
-Return a JSON object with the following keys:
-- predicted_move
-- confidence
-- support_level
-- resistance_level
-- risk
-- recommendation
+Return a JSON object ONLY with the following keys (no extra text):
+- predicted_move (values: "up", "down", "neutral")
+- confidence (float between 0 and 1)
+- support_level (float)
+- resistance_level (float)
+- risk (values: "low", "moderate", "high")
+- recommendation (values: "buy", "sell", "hold")
 
-Only return valid JSON.
+Do not include any explanations or extra text. Output must be valid JSON.
 """
+
 
 def build_groq_prompt_for_symbol(message):
     return f"""
