@@ -370,4 +370,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     result = run_engine(args.symbol, args.entry)
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+   
