@@ -318,7 +318,7 @@ def run_engine(symbol, entry_price=None):
         ai_analysis = call_groq_ai(prompt)
 
         return {
-            "symbol": price_data["symbol"],
+            "symbol": resolved_symbol,
             "price": price,
             "low": low,
             "high": high,
