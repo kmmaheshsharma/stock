@@ -4,15 +4,14 @@ import requests
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk import download
 
-# Download VADER lexicon if not present
+# ----------------- NLTK Setup -----------------
 try:
     download('vader_lexicon')
 except:
     pass
 
-# ----------------- Sentiment Analyzer -----------------
-sentiment_cache = {}
 sia = SentimentIntensityAnalyzer()
+sentiment_cache = {}
 
 # ----------------- Tweets Cache -----------------
 tweets_cache = {}  # {symbol: {"timestamp": ..., "tweets": [...] }}
@@ -46,68 +45,12 @@ def fetch_tweets(symbol: str, max_results: int = 50) -> list:
     try:
         response = requests.get(url, headers=headers, params=params, timeout=5)
 
-        # Handle rate limit
-        if response.status_code == 429:
-            print(f"Rate limit hit for {symbol}, using cache.")
-
-            # Get cached tweets if any
-            cached_tweets = tweets_cache.get(symbol, {}).get("tweets", [])
-
-            # Build full consistent response
-            result = {
-                "symbol": symbol,
-                "tweets": cached_tweets,
-                "alerts": [],
-                "sentiment_label": "Neutral",
-                "sentiment_score": 0,
-                "bullish_ratio": 0.5,
-                "rate_limited": True,
-                "chart": None,  # or cached chart if you have
-                "price_data": {}  # optional, to match expected structure
-            }
-            return result
-
-        # Any other error
         if response.status_code != 200:
             print(f"Twitter API error {response.status_code} for {symbol}")
-            # Get cached tweets if any
-            cached_tweets = tweets_cache.get(symbol, {}).get("tweets", [])
+            return tweets_cache.get(symbol, {}).get("tweets", [])
 
-            # Build full consistent response
-            result = {
-                "symbol": symbol,
-                "tweets": cached_tweets,
-                "alerts": [],
-                "sentiment_label": "Neutral",
-                "sentiment_score": 0,
-                "bullish_ratio": 0.5,
-                "rate_limited": True,
-                "chart": None,  # or cached chart if you have
-                "price_data": {}  # optional, to match expected structure
-            }
-            return result
-
-        try:
-            raw = response.json()
-            data = raw.get("data", [])
-        except Exception:
-            print("Twitter JSON parse failed.")
-            # Get cached tweets if any
-            cached_tweets = tweets_cache.get(symbol, {}).get("tweets", [])
-
-            # Build full consistent response
-            result = {
-                "symbol": symbol,
-                "tweets": cached_tweets,
-                "alerts": [],
-                "sentiment_label": "Neutral",
-                "sentiment_score": 0,
-                "bullish_ratio": 0.5,
-                "rate_limited": True,
-                "chart": None,  # or cached chart if you have
-                "price_data": {}  # optional, to match expected structure
-            }
-            return result
+        raw = response.json()
+        data = raw.get("data", [])
 
         tweets = [
             {
@@ -123,22 +66,7 @@ def fetch_tweets(symbol: str, max_results: int = 50) -> list:
 
     except Exception as e:
         print(f"Twitter fetch failed for {symbol}: {e}")
-        cached_tweets = tweets_cache.get(symbol, {}).get("tweets", [])
-
-            # Build full consistent response
-        result = {
-            "symbol": symbol,
-            "tweets": cached_tweets,
-            "alerts": [],
-            "sentiment_label": "Neutral",
-            "sentiment_score": 0,
-            "bullish_ratio": 0.5,
-            "rate_limited": True,
-            "chart": None,  # or cached chart if you have
-            "price_data": {}  # optional, to match expected structure
-        }
-        return result
-
+        return tweets_cache.get(symbol, {}).get("tweets", [])
 
 # ----------------- Sentiment Analysis -----------------
 def analyze_sentiment(text: str) -> tuple:
@@ -162,18 +90,29 @@ def analyze_sentiment(text: str) -> tuple:
     sentiment_cache[key] = (label, abs(compound))
     return sentiment_cache[key]
 
-
+# ----------------- Aggregate Sentiment -----------------
 def aggregate_sentiment(tweets: list) -> dict:
     try:
         pos = neg = neu = 0.0
 
         for t in tweets:
-            label, _ = analyze_sentiment(t.get("text", ""))
-            weight = 1 + (t.get("likes", 0) * 0.1) + (t.get("retweets", 0) * 0.2)
+            text = ""
+            likes = 0
+            retweets = 0
 
-            if label == "positive":
+            if isinstance(t, dict):
+                text = t.get("text", "")
+                likes = t.get("likes", 0)
+                retweets = t.get("retweets", 0)
+            elif isinstance(t, str):
+                text = t
+
+            label, _ = analyze_sentiment(text)
+            weight = 1 + (likes * 0.1) + (retweets * 0.2)
+
+            if label.lower() == "positive":
                 pos += weight
-            elif label == "negative":
+            elif label.lower() == "negative":
                 neg += weight
             else:
                 neu += weight
@@ -183,7 +122,6 @@ def aggregate_sentiment(tweets: list) -> dict:
             return {"bias": "neutral", "confidence": 0.0, "bullish_ratio": 0.5}
 
         bullish_ratio = pos / directional
-
         if bullish_ratio > 0.65:
             bias = "bullish"
         elif bullish_ratio < 0.35:
@@ -202,3 +140,5 @@ def aggregate_sentiment(tweets: list) -> dict:
     except Exception as e:
         print("Aggregate sentiment failed:", e)
         return {"bias": "neutral", "confidence": 0.0, "bullish_ratio": 0.5}
+
+

@@ -33,7 +33,8 @@ def sentiment_for_symbol(symbol: str) -> dict:
                 "confidence": 0.0,
                 "emoji": "⚪",
                 "explanation": "No sufficient Twitter data",
-                "tweets_count": 0
+                "tweets_count": 0,
+                "bullish_ratio": 0.5
             }
 
         sentiment = aggregate_sentiment(tweets)
