@@ -142,15 +142,9 @@ let alertsHTML = "";
       <p>📉 Low / 📈 High: ₹${result.low ?? "N/A"} / ₹${result.high ?? "N/A"}</p>
       <p>📊 Volume: ${result.volume ?? "N/A"} | Avg: ${result.avg_volume?.toFixed(0) ?? "N/A"}</p>
       <p>🔻 Change: ${result.change_percent?.toFixed(2) ?? "0"}%</p>
-
-      <p>🧠 Twitter Sentiment: ${result.sentiment_label?.toUpperCase() || "NEUTRAL"} 
-        (${result.sentiment_score ?? 0}) ${result.emoji ?? ""} 
-        - Confidence: ${(result.confidence * 100)?.toFixed(1) ?? "0"}%</p>
-      <p>💬 Explanation: ${result.explanation ?? "No explanation available."}</p>
-
-      <p>⚡ Recommendation: <strong>${recommendation ?? "N/A"}</strong></p>
+      <p>🧠 Twitter Sentiment: ${result.sentiment_type?.toUpperCase() || "NEUTRAL"} (${result.sentiment ?? 0})</p>
+      <p>⚡ Recommendation: <strong>${recommendation}</strong></p>
       ${alertsHTML}
-      ${result.suggested_entry ? `<p>🔑 Suggested Entry: ₹${result.suggested_entry.lower} - ₹${result.suggested_entry.upper}</p>` : ""}
       ${groqHTML}
     </div>
   </div>
