@@ -17,7 +17,7 @@ tweets_cache = {}  # {symbol: {"timestamp": ..., "tweets": [...] }}
 CACHE_TTL = 300  # cache for 5 minutes
 
 # ----------------- Fetch Tweets -----------------
-def fetch_tweets(symbol: str, max_results: int = 50, retries: int = 2, backoff: int = 2) -> list:
+def fetch_tweets(symbol: str, max_results: int = 50, retries: int = 1, backoff: int = 2) -> list:
     now = time.time()
 
     # Return cached tweets if within TTL
@@ -32,33 +32,42 @@ def fetch_tweets(symbol: str, max_results: int = 50, retries: int = 2, backoff: 
     for attempt in range(retries + 1):
         try:
             response = requests.get(url, headers=headers, params=params, timeout=5)
-            
+
             if response.status_code == 429:
-                print(f"Rate limit hit for {symbol}, retrying in {backoff} sec (attempt {attempt+1}/{retries})...")
+                print(f"Rate limit hit for {symbol}, retrying in {backoff} sec (attempt {attempt+1}/{retries+1})...")
                 time.sleep(backoff)
                 backoff *= 2
                 continue
 
+            # Raise error for non-200 codes except 429
             response.raise_for_status()
+
+            # Parse JSON safely
             data = response.json().get("data", [])
             tweets = [
                 {
-                    "text": t["text"],
-                    "likes": t["public_metrics"]["like_count"],
-                    "retweets": t["public_metrics"]["retweet_count"]
+                    "text": t.get("text", ""),
+                    "likes": t.get("public_metrics", {}).get("like_count", 0),
+                    "retweets": t.get("public_metrics", {}).get("retweet_count", 0)
                 } for t in data
             ]
+
+            # Save to cache and return
             tweets_cache[symbol] = {"timestamp": now, "tweets": tweets}
             return tweets
 
-        except Exception as e:
-            print(f"Error fetching tweets for {symbol}: {e}")
-            break
+        except requests.exceptions.RequestException as e:
+            print(f"Network/API error for {symbol}: {e}")
+        except ValueError as e:
+            print(f"JSON parse error for {symbol}: {e}")
 
-    # Fallback to cache or empty
+    # Fallback to cached data if API fails or rate limited
     if symbol in tweets_cache:
+        print(f"Returning cached data for {symbol} due to API failure or rate limit")
         return tweets_cache[symbol]["tweets"]
 
+    # Return empty if nothing is available
+    print(f"No data available for {symbol}, returning empty list")
     tweets_cache[symbol] = {"timestamp": now, "tweets": []}
     return []
 
