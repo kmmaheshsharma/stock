@@ -122,8 +122,6 @@ Only return valid JSON.
 
 # ------------------- Symbol Normalization -------------------
 def normalize_symbol(raw: str):
-    if not raw:
-        raise ValueError("normalize_symbol received empty input")    
     raw = raw.upper().strip()
     raw = re.sub(r"\b(TRACK|ENTRY|BUY|SELL|ADD|SHOW|PRICE)\b", "", raw)
     raw = raw.replace("_", " ").strip()
@@ -256,9 +254,10 @@ def run_engine(symbol, entry_price=None):
         if not candidate:
             return None       
         yahoo_symbol = search_yahoo_symbol(candidate)
-
+        logging.info(f"Yahoo resolved symbol: {yahoo_symbol} for candidate: {candidate}")
         if yahoo_symbol:
             symbols = normalize_symbol(yahoo_symbol)
+            logging.info(f"Normalized symbols from Yahoo: {symbols}")
         else:
             logging.warning(f"Yahoo could not resolve symbol: {candidate}. Trying raw normalization.")
             symbols = normalize_symbol(candidate)  
