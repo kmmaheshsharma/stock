@@ -1,13 +1,22 @@
+# Data & Finance
 yfinance
 pandas
-nltk
-vaderSentiment
-matplotlib
-requests
 numpy
-python-dotenv
-psycopg2-binary
-groq
 alpha_vantage
 Ticker
-transformers>=4.30.0
+
+# ML / NLP lightweight
+nltk
+vaderSentiment
+transformers>=4.30.0  # only for tokenizer / config, no torch needed
+
+# Visualization
+matplotlib
+
+# HTTP / Env / DB
+requests
+python-dotenv
+psycopg2-binary
+
+# Groq AI client
+groq
