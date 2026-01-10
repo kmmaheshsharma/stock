@@ -12,13 +12,12 @@ def sentiment_for_symbol(symbol: str) -> dict:
     """
     Returns display-ready sentiment data using lightweight VADER analysis.
     Handles missing tweets and weights score by confidence.
+    Caches empty results to avoid repeated API calls when no tweets exist.
     """
     clean_symbol = base_symbol(symbol)
     
-    # Fetch tweets (try cache if empty)
+    # Fetch tweets (caching inside fetch_tweets handles empty lists too)
     tweets = fetch_tweets(symbol) or []
-    if not tweets:
-        tweets = fetch_tweets(symbol, use_cache=True) or []
 
     # No tweets found: return neutral
     if not tweets:
@@ -28,7 +27,8 @@ def sentiment_for_symbol(symbol: str) -> dict:
             "sentiment_label": "Neutral",
             "confidence": 0.0,
             "emoji": "⚪",
-            "explanation": "No sufficient Twitter data"
+            "explanation": "No sufficient Twitter data",
+            "tweets_count": 0
         }
 
     # Aggregate sentiment
@@ -55,13 +55,13 @@ def sentiment_for_symbol(symbol: str) -> dict:
         "confidence": confidence,
         "emoji": emoji,
         "explanation": explanation,
-        "tweets_count": len(tweets)  # optional info for debugging
+        "tweets_count": len(tweets)
     }
 
 def detect_hype(tweets: list, sentiment: dict) -> bool:
     """
     Detect social media hype based on common hype words and confidence.
-    More robust than strict count; weighted by confidence.
+    Works even with empty tweets list.
     """
     if not tweets or not sentiment:
         return False
