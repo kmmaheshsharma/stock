@@ -56,12 +56,14 @@ def fetch_tweets(symbol: str, max_results: int = 50) -> list:
             # Build full consistent response
             result = {
                 "symbol": symbol,
-                "tweets_count": len(cached_tweets),
-                "alerts": [],  # always include
+                "tweets": cached_tweets,
+                "alerts": [],
                 "sentiment_label": "Neutral",
-                "sentiment_score": 0.0,
+                "sentiment_score": 0,
                 "bullish_ratio": 0.5,
-                "rate_limited": True
+                "rate_limited": True,
+                "chart": None,  # or cached chart if you have
+                "price_data": {}  # optional, to match expected structure
             }
             return result
 
