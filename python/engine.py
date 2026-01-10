@@ -321,8 +321,7 @@ def run_engine(symbol, entry_price=None):
             "suggested_entry": suggested_entry,
             "chart": chart_base64,
             "ai_analysis": ai_analysis
-        }
-        json.dumps(return_json) 
+        }       
         print(f"Engine result one")
         return return_json
     except Exception as e:
