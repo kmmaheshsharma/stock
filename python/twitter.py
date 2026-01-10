@@ -1,15 +1,32 @@
 import os
 import requests
+import time
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk import download
 
 # Download VADER lexicon if not present
 download('vader_lexicon')
 
+# ----------------- Sentiment Analyzer -----------------
 sentiment_cache = {}
 sia = SentimentIntensityAnalyzer()
 
-def fetch_tweets(symbol):
+# ----------------- Tweets Cache -----------------
+tweets_cache = {}  # {symbol: {"timestamp": ..., "tweets": [...] }}
+CACHE_TTL = 300  # cache for 5 minutes
+
+def fetch_tweets(symbol, max_results=50):
+    """
+    Fetch recent tweets for a symbol, with caching and rate-limit handling.
+    """
+    now = time.time()
+
+    # Return cached tweets if within TTL
+    if symbol in tweets_cache:
+        cache_entry = tweets_cache[symbol]
+        if now - cache_entry["timestamp"] < CACHE_TTL:
+            return cache_entry["tweets"]
+
     query = (
         f"({symbol} OR #{symbol}) "
         "(bullish OR bearish OR buy OR sell OR breakout OR crash OR dump OR moon) "
@@ -17,34 +34,49 @@ def fetch_tweets(symbol):
     )
 
     url = "https://api.twitter.com/2/tweets/search/recent"
-
-    headers = {
-        "Authorization": f"Bearer {os.getenv('X_BEARER_TOKEN')}"
-    }
-
+    headers = {"Authorization": f"Bearer {os.getenv('X_BEARER_TOKEN')}"}
     params = {
         "query": query,
-        "max_results": 50,
+        "max_results": max_results,
         "tweet.fields": "created_at,public_metrics"
     }
 
-    try:
-        r = requests.get(url, headers=headers, params=params, timeout=5)
-        r.raise_for_status()
-    except Exception as e:
-        print("Twitter error:", e)
-        return []
+    retries = 3
+    for attempt in range(retries):
+        try:
+            r = requests.get(url, headers=headers, params=params, timeout=10)
 
-    data = r.json().get("data", [])
-    return [
-        {
-            "text": t["text"],
-            "likes": t["public_metrics"]["like_count"],
-            "retweets": t["public_metrics"]["retweet_count"]
-        }
-        for t in data
-    ]
+            if r.status_code == 429:
+                wait_time = 60 * (attempt + 1)
+                print(f"Rate limit hit for {symbol}, sleeping {wait_time}s...")
+                time.sleep(wait_time)
+                continue
 
+            r.raise_for_status()
+            data = r.json().get("data", [])
+
+            tweets = [
+                {
+                    "text": t["text"],
+                    "likes": t["public_metrics"]["like_count"],
+                    "retweets": t["public_metrics"]["retweet_count"]
+                }
+                for t in data
+            ]
+
+            # Cache results
+            tweets_cache[symbol] = {"timestamp": now, "tweets": tweets}
+            return tweets
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching tweets for {symbol}: {e}")
+            time.sleep(5)
+
+    # If all retries fail, return empty list
+    print(f"Failed to fetch tweets for {symbol} after {retries} attempts.")
+    return []
+
+# ----------------- Sentiment Analysis -----------------
 def analyze_sentiment(text):
     key = text[:200]
     if key in sentiment_cache:
@@ -53,7 +85,6 @@ def analyze_sentiment(text):
     scores = sia.polarity_scores(text)
     compound = scores['compound']
 
-    # Map to simplified positive/negative/neutral
     if compound >= 0.05:
         label = "positive"
     elif compound <= -0.05:

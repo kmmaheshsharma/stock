@@ -6,7 +6,6 @@ alpha_vantage
 Ticker
 
 # ML / NLP lightweight
-nltk
 vaderSentiment
 transformers>=4.30.0  # only for tokenizer / config, no torch needed
 
