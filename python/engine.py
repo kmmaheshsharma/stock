@@ -25,7 +25,7 @@ if not api_key:
 groq_client = Groq(api_key=api_key)
 
 # ------------------- Prompt Builders -------------------
-def build_groq_prompt(symbol, price_data, sentiment_score, sentiment_score_label, confidence, explanation):
+def build_groq_prompt(symbol, price_data, sentiment_score):
     return f"""
 You are a professional financial analyst.
 
@@ -39,9 +39,6 @@ Volume: {price_data['volume']}
 Average Volume: {price_data['avg_volume']}
 Change %: {price_data['change_percent']}
 Sentiment Score: {sentiment_score}
-Sentiment Label: {sentiment_score_label}
-Confidence: {confidence}
-Explanation: {explanation}
 
 Return a JSON object with the following keys:
 - predicted_move
@@ -306,9 +303,7 @@ def run_engine(symbol, entry_price=None):
 
         try:
             prompt = build_groq_prompt(
-                resolved_symbol, price_data, result["sentiment_score"],
-                result["sentiment_label"], result["confidence"], result["explanation"]
-            )
+                resolved_symbol, price_data, result["sentiment_score"])
             ai_analysis = call_groq_ai(prompt)
         except Exception as e_ai:
             logging.warning(f"Groq AI analysis failed: {e_ai}")
