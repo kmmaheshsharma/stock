@@ -18,12 +18,6 @@ CACHE_TTL = 300  # cache for 5 minutes
 
 # ----------------- Fetch Tweets -----------------
 def fetch_tweets(symbol: str, max_results: int = 50, retries: int = 2, backoff: int = 2) -> list:
-    """
-    Fetch recent tweets for a symbol.
-    Caches results (even empty lists) to avoid repeated API calls.
-    Handles rate limits with retries and exponential backoff.
-    Returns a list of tweets (each: {"text": ..., "likes": ..., "retweets": ...}).
-    """
     now = time.time()
 
     # Return cached tweets if within TTL
@@ -35,16 +29,13 @@ def fetch_tweets(symbol: str, max_results: int = 50, retries: int = 2, backoff: 
     query = f"({symbol} OR #{symbol}) (bullish OR bearish OR buy OR sell OR breakout OR crash OR dump OR moon) lang:en -is:retweet"
     params = {"query": query, "max_results": max_results, "tweet.fields": "created_at,public_metrics"}
 
-    attempt = 0
-    while attempt <= retries:
+    for attempt in range(retries + 1):
         try:
             response = requests.get(url, headers=headers, params=params, timeout=5)
             
             if response.status_code == 429:
-                # Rate limit: exponential backoff
                 print(f"Rate limit hit for {symbol}, retrying in {backoff} sec (attempt {attempt+1}/{retries})...")
                 time.sleep(backoff)
-                attempt += 1
                 backoff *= 2
                 continue
 
@@ -57,8 +48,6 @@ def fetch_tweets(symbol: str, max_results: int = 50, retries: int = 2, backoff: 
                     "retweets": t["public_metrics"]["retweet_count"]
                 } for t in data
             ]
-
-            # Cache result (even if empty)
             tweets_cache[symbol] = {"timestamp": now, "tweets": tweets}
             return tweets
 
@@ -66,13 +55,11 @@ def fetch_tweets(symbol: str, max_results: int = 50, retries: int = 2, backoff: 
             print(f"Error fetching tweets for {symbol}: {e}")
             break
 
-    # If all retries fail, fallback to cached tweets or empty list
+    # Fallback to cache or empty
     if symbol in tweets_cache:
-        print(f"Using cached tweets for {symbol} due to failures.")
         return tweets_cache[symbol]["tweets"]
 
-    print(f"No tweets available for {symbol}. Returning empty list.")
-    tweets_cache[symbol] = {"timestamp": now, "tweets": []}  # cache empty list
+    tweets_cache[symbol] = {"timestamp": now, "tweets": []}
     return []
 
 # ----------------- Sentiment Analysis -----------------
