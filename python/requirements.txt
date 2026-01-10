@@ -1,11 +1,10 @@
---extra-index-url https://download.pytorch.org/whl/cpu
+numpy<2
 torch==2.1.0
-transformers
+transformers==4.35.2
 yfinance
 pandas
 matplotlib
 requests
-numpy
 python-dotenv
 psycopg2-binary
 groq
