@@ -227,6 +227,18 @@ def search_yahoo_symbol(name):
 # ------------------- Core Engine -------------------
 def run_engine(symbol, entry_price=None):
     try:
+        def safe_float(x):
+            try:
+                return float(x)
+            except:
+                return None
+
+        def safe_int(x):
+            try:
+                return int(x)
+            except:
+                return None
+
         candidate = extract_candidate_symbol(symbol)
         if not candidate:
             return {"symbol": symbol, "error": "Could not extract candidate symbol", "alerts": ["error"]}
@@ -257,14 +269,15 @@ def run_engine(symbol, entry_price=None):
                 "alerts": ["error"]
             }
 
-        price = price_data["price"]
-        low = price_data["low"]
-        high = price_data["high"]
-        volume = price_data["volume"]
-        avg_volume = price_data["avg_volume"]
-        change_percent = price_data["change_percent"]
+        price = safe_float(price_data.get("price"))
+        low = safe_float(price_data.get("low"))
+        high = safe_float(price_data.get("high"))
+        volume = safe_int(price_data.get("volume"))
+        avg_volume = safe_int(price_data.get("avg_volume"))
+        change_percent = safe_float(price_data.get("change_percent"))
 
         alerts = []
+
         # ----------------- Sentiment -----------------
         try:
             result = sentiment_for_symbol(resolved_symbol)
@@ -278,7 +291,7 @@ def run_engine(symbol, entry_price=None):
                 "emoji": "⚪",
                 "explanation": "Sentiment service unavailable"
             }
-        
+
         s_type = result.get("sentiment_label", "Neutral")
         if s_type == "Bullish" or s_type == "accumulation":
             alerts.append("buy_signal")
@@ -288,7 +301,7 @@ def run_engine(symbol, entry_price=None):
             alerts.append("sell_signal")
 
         suggested_entry = None
-        if low and high:
+        if low is not None and high is not None:
             suggested_entry = {
                 "lower": round(low * 0.99, 2),
                 "upper": round(low * 1.02, 2)
@@ -298,12 +311,15 @@ def run_engine(symbol, entry_price=None):
 
         try:
             prompt = build_groq_prompt(
-                resolved_symbol, price_data, result["sentiment_score"])
+                resolved_symbol, price_data, result.get("sentiment_score", 0)
+            )
             ai_analysis = call_groq_ai(prompt)
         except Exception as e_ai:
             logging.warning(f"Groq AI analysis failed: {e_ai}")
             ai_analysis = {"error": "Groq AI call failed"}
+
         print(f"mahesh Groq AI analysis for {resolved_symbol}: {ai_analysis} doone")
+
         return_json = {
             "symbol": resolved_symbol,
             "price": price,
@@ -312,18 +328,31 @@ def run_engine(symbol, entry_price=None):
             "volume": volume,
             "avg_volume": avg_volume,
             "change_percent": change_percent,
-            "sentiment_score": result.get("sentiment_score", 0),
+            "sentiment_score": safe_float(result.get("sentiment_score", 0)),
             "sentiment_label": result.get("sentiment_label", "Neutral"),
-            "confidence": result.get("confidence", 0.0),
+            "confidence": safe_float(result.get("confidence", 0.0)),
             "emoji": result.get("emoji", "⚪"),
             "explanation": result.get("explanation", ""),
             "alerts": alerts,
             "suggested_entry": suggested_entry,
             "chart": chart_base64,
             "ai_analysis": ai_analysis
-        }       
+        }
+
+        # Force JSON validation here
+        try:
+            json.dumps(return_json)
+        except Exception as json_err:
+            logging.error(f"JSON serialization failed: {json_err}")
+            return {
+                "symbol": resolved_symbol,
+                "error": "JSON serialization failed",
+                "alerts": ["error"]
+            }
+
         print(f"mahesh Engine return json for {resolved_symbol}: {return_json} done")
         return return_json
+
     except Exception as e:
         logging.error(f"Engine failed: {str(e)}")
         return {
