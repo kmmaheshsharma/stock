@@ -229,7 +229,8 @@ def run_engine(symbol, entry_price=None):
     try:
         candidate = extract_candidate_symbol(symbol)
         if not candidate:
-            return None
+            return {"symbol": symbol, "error": "Could not extract candidate symbol", "alerts": ["error"]}
+
         yahoo_symbol = search_yahoo_symbol(candidate)
         logging.info(f"Yahoo resolved symbol: {yahoo_symbol} for candidate: {candidate}")
 
@@ -270,9 +271,21 @@ def run_engine(symbol, entry_price=None):
             elif price < entry_price * 0.95:
                 alerts.append("loss")
 
-        result = sentiment_for_symbol(resolved_symbol)
-        s_type = result["sentiment_label"]
+        # ----------------- Sentiment -----------------
+        try:
+            result = sentiment_for_symbol(resolved_symbol)
+        except Exception as e:
+            logging.warning(f"Sentiment analysis failed: {e}")
+            result = {
+                "symbol": resolved_symbol,
+                "sentiment_score": 0,
+                "sentiment_label": "Neutral",
+                "confidence": 0.0,
+                "emoji": "⚪",
+                "explanation": "Sentiment service unavailable"
+            }
 
+        s_type = result["sentiment_label"]
         if s_type == "Bullish" or s_type == "accumulation":
             alerts.append("buy_signal")
         elif s_type == "Hype":
@@ -289,7 +302,10 @@ def run_engine(symbol, entry_price=None):
 
         chart_base64 = generate_chart(resolved_symbol)
 
-        prompt = build_groq_prompt(resolved_symbol, price_data, result["sentiment_score"], result["sentiment_label"], result["confidence"], result["explanation"])
+        prompt = build_groq_prompt(
+            resolved_symbol, price_data, result["sentiment_score"],
+            result["sentiment_label"], result["confidence"], result["explanation"]
+        )
         ai_analysis = call_groq_ai(prompt)
 
         return {

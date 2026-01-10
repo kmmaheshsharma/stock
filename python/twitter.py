@@ -18,7 +18,13 @@ CACHE_TTL = 300  # cache for 5 minutes
 def fetch_tweets(symbol, max_results=50):
     """
     Fetch recent tweets for a symbol, with caching and rate-limit handling.
+    Returns [] immediately if token is missing.
     """
+    token = os.getenv('X_BEARER_TOKEN')
+    if not token:
+        print("X_BEARER_TOKEN missing! Skipping Twitter fetch.")
+        return []
+
     now = time.time()
 
     # Return cached tweets if within TTL
@@ -34,7 +40,7 @@ def fetch_tweets(symbol, max_results=50):
     )
 
     url = "https://api.twitter.com/2/tweets/search/recent"
-    headers = {"Authorization": f"Bearer {os.getenv('X_BEARER_TOKEN')}"}
+    headers = {"Authorization": f"Bearer {token}"}
     params = {
         "query": query,
         "max_results": max_results,
@@ -47,7 +53,7 @@ def fetch_tweets(symbol, max_results=50):
             r = requests.get(url, headers=headers, params=params, timeout=10)
 
             if r.status_code == 429:
-                wait_time = 60 * (attempt + 1)
+                wait_time = 10 * (attempt + 1)  # reduce wait for testing
                 print(f"Rate limit hit for {symbol}, sleeping {wait_time}s...")
                 time.sleep(wait_time)
                 continue
@@ -70,9 +76,8 @@ def fetch_tweets(symbol, max_results=50):
 
         except requests.exceptions.RequestException as e:
             print(f"Error fetching tweets for {symbol}: {e}")
-            time.sleep(5)
+            time.sleep(2)  # reduce sleep for faster retries
 
-    # If all retries fail, return empty list
     print(f"Failed to fetch tweets for {symbol} after {retries} attempts.")
     return []
 
