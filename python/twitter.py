@@ -1,6 +1,7 @@
 import os
 import requests
 import time
+import re
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk import download
 
@@ -19,6 +20,8 @@ CACHE_TTL = 300  # cache for 5 minutes
 def fetch_tweets(symbol, max_results=50, retries=2, backoff=2):
     """
     Fetch recent tweets for a symbol with caching and rate-limit handling.
+    Returns a list of tweets, never None.
+    Each tweet: {"text": ..., "likes": ..., "retweets": ...}
     """
     now = time.time()
 
@@ -37,11 +40,11 @@ def fetch_tweets(symbol, max_results=50, retries=2, backoff=2):
             r = requests.get(url, headers=headers, params=params, timeout=5)
 
             if r.status_code == 429:
-                # Rate limit hit: retry with backoff
+                # Rate limit hit: retry with exponential backoff
                 print(f"Rate limit hit for {symbol}, retrying in {backoff} sec (attempt {attempt+1}/{retries})...")
                 time.sleep(backoff)
                 attempt += 1
-                backoff *= 2  # exponential backoff
+                backoff *= 2
                 continue
 
             r.raise_for_status()
@@ -90,6 +93,10 @@ def analyze_sentiment(text):
     return sentiment_cache[key]
 
 def aggregate_sentiment(tweets):
+    """
+    Aggregate multiple tweets into a single sentiment object.
+    Returns: {"bias": "bullish/bearish/neutral", "confidence": float, "bullish_ratio": float}
+    """
     pos = neg = neu = 0.0
 
     for t in tweets:
@@ -117,3 +124,84 @@ def aggregate_sentiment(tweets):
 
     confidence = round(abs(bullish_ratio - 0.5) * 2, 2)
     return {"bias": bias, "confidence": confidence, "bullish_ratio": round(bullish_ratio, 2)}
+
+# ----------------- Base Symbol -----------------
+def base_symbol(symbol: str) -> str:
+    """
+    Convert Yahoo/other formatted symbols to base symbol.
+    E.g., KPIGREEN.NS -> KPIGREEN
+    """
+    return re.sub(r"\.\w+$", "", symbol).upper()
+
+# ----------------- Display-ready Sentiment -----------------
+def sentiment_for_symbol(symbol: str) -> dict:
+    """
+    Returns display-ready sentiment for a symbol.
+    Ensures valid result even if tweets cannot be fetched.
+    """
+    clean_symbol = base_symbol(symbol)
+    tweets = fetch_tweets(symbol)  # caching & retries handled internally
+
+    if not tweets:
+        return {
+            "symbol": clean_symbol,
+            "sentiment_score": 0,
+            "sentiment_label": "Neutral",
+            "confidence": 0.0,
+            "emoji": "⚪",
+            "explanation": "No sufficient Twitter data"
+        }
+
+    sentiment = aggregate_sentiment(tweets)
+    bias = sentiment.get("bias", "neutral")
+    confidence = sentiment.get("confidence", 0.0)
+    bullish_ratio = sentiment.get("bullish_ratio", 0.5)
+
+    # Weighted score 0-100
+    score = int(bullish_ratio * 100 * confidence)
+
+    mapping = {
+        "bullish": ("Bullish", "📈", "Twitter crowd is bullish on this stock"),
+        "bearish": ("Bearish", "📉", "Twitter crowd is bearish on this stock"),
+        "neutral": ("Neutral", "⚪", "Twitter sentiment is mixed or unclear")
+    }
+    label, emoji, explanation = mapping.get(bias, mapping["neutral"])
+
+    return {
+        "symbol": clean_symbol,
+        "sentiment_score": score,
+        "sentiment_label": label,
+        "confidence": confidence,
+        "emoji": emoji,
+        "explanation": explanation,
+        "tweets_count": len(tweets)
+    }
+
+# ----------------- Hype Detection -----------------
+def detect_hype(tweets: list, sentiment: dict) -> bool:
+    """
+    Detect social media hype based on common hype words and sentiment confidence.
+    Works with cached or partial tweets.
+    """
+    if not tweets or not sentiment:
+        return False
+
+    hype_words = ["moon", "rocket", "breakout", "pump", "爆", "🚀", "🔥"]
+
+    hype_score = sum(
+        sum(1 for w in hype_words if w in t["text"].lower())
+        for t in tweets
+    )
+
+    weighted_hype = hype_score * sentiment.get("confidence", 0.0)
+    return weighted_hype >= 3
+
+# ----------------- Example Usage -----------------
+if __name__ == "__main__":
+    symbol = "AAPL"
+    sentiment = sentiment_for_symbol(symbol)
+    print("Sentiment:", sentiment)
+
+    tweets = fetch_tweets(symbol)
+    hype = detect_hype(tweets, sentiment)
+    print("Hype detected:", hype)
