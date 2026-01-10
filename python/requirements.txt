@@ -1,12 +1,12 @@
-numpy<2
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.1.0+cpu
-transformers==4.35.2
 yfinance
 pandas
+nltk
+vaderSentiment
 matplotlib
 requests
+numpy
 python-dotenv
 psycopg2-binary
 groq
 alpha_vantage
+Ticker
