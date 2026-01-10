@@ -346,6 +346,7 @@ def run_engine(symbol, entry_price=None):
 
 # ------------------- Entry Point -------------------
 if __name__ == "__main__":
+    logging.info("Engine started via command line.")
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol")
     parser.add_argument("--entry", type=float)
