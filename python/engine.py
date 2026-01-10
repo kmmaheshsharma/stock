@@ -286,7 +286,7 @@ def run_engine(symbol, entry_price=None):
                 "emoji": "⚪",
                 "explanation": "Sentiment service unavailable"
             }
-
+        print(f"Sentiment result for {resolved_symbol}: {result}")
         s_type = result.get("sentiment_label", "Neutral")
         if s_type == "Bullish" or s_type == "accumulation":
             alerts.append("buy_signal")
@@ -313,7 +313,7 @@ def run_engine(symbol, entry_price=None):
         except Exception as e_ai:
             logging.warning(f"Groq AI analysis failed: {e_ai}")
             ai_analysis = {"error": "Groq AI call failed"}
-
+        print(f"mahesh Groq AI analysis for {resolved_symbol}: {ai_analysis}")
         return {
             "symbol": resolved_symbol,
             "price": price,
@@ -332,7 +332,7 @@ def run_engine(symbol, entry_price=None):
             "chart": chart_base64,
             "ai_analysis": ai_analysis
         }
-
+    
     except Exception as e:
         logging.error(f"Engine failed: {str(e)}")
         return {
