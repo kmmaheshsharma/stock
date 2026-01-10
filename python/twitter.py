@@ -1,7 +1,6 @@
 import os
-import requests
 import time
-import re
+import requests
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk import download
 
@@ -13,15 +12,17 @@ sentiment_cache = {}
 sia = SentimentIntensityAnalyzer()
 
 # ----------------- Tweets Cache -----------------
+# Caches tweets per symbol (even empty lists)
 tweets_cache = {}  # {symbol: {"timestamp": ..., "tweets": [...] }}
 CACHE_TTL = 300  # cache for 5 minutes
 
 # ----------------- Fetch Tweets -----------------
-def fetch_tweets(symbol, max_results=50, retries=2, backoff=2):
+def fetch_tweets(symbol: str, max_results: int = 50, retries: int = 2, backoff: int = 2) -> list:
     """
-    Fetch recent tweets for a symbol with caching and rate-limit handling.
-    Returns a list of tweets, never None.
-    Each tweet: {"text": ..., "likes": ..., "retweets": ...}
+    Fetch recent tweets for a symbol.
+    Caches results (even empty lists) to avoid repeated API calls.
+    Handles rate limits with retries and exponential backoff.
+    Returns a list of tweets (each: {"text": ..., "likes": ..., "retweets": ...}).
     """
     now = time.time()
 
@@ -29,26 +30,26 @@ def fetch_tweets(symbol, max_results=50, retries=2, backoff=2):
     if symbol in tweets_cache and now - tweets_cache[symbol]["timestamp"] < CACHE_TTL:
         return tweets_cache[symbol]["tweets"]
 
-    query = f"({symbol} OR #{symbol}) (bullish OR bearish OR buy OR sell OR breakout OR crash OR dump OR moon) lang:en -is:retweet"
     url = "https://api.twitter.com/2/tweets/search/recent"
     headers = {"Authorization": f"Bearer {os.getenv('X_BEARER_TOKEN')}"}
+    query = f"({symbol} OR #{symbol}) (bullish OR bearish OR buy OR sell OR breakout OR crash OR dump OR moon) lang:en -is:retweet"
     params = {"query": query, "max_results": max_results, "tweet.fields": "created_at,public_metrics"}
 
     attempt = 0
     while attempt <= retries:
         try:
-            r = requests.get(url, headers=headers, params=params, timeout=5)
-
-            if r.status_code == 429:
-                # Rate limit hit: retry with exponential backoff
+            response = requests.get(url, headers=headers, params=params, timeout=5)
+            
+            if response.status_code == 429:
+                # Rate limit: exponential backoff
                 print(f"Rate limit hit for {symbol}, retrying in {backoff} sec (attempt {attempt+1}/{retries})...")
                 time.sleep(backoff)
                 attempt += 1
                 backoff *= 2
                 continue
 
-            r.raise_for_status()
-            data = r.json().get("data", [])
+            response.raise_for_status()
+            data = response.json().get("data", [])
             tweets = [
                 {
                     "text": t["text"],
@@ -57,24 +58,25 @@ def fetch_tweets(symbol, max_results=50, retries=2, backoff=2):
                 } for t in data
             ]
 
-            # Cache tweets
+            # Cache result (even if empty)
             tweets_cache[symbol] = {"timestamp": now, "tweets": tweets}
             return tweets
 
         except Exception as e:
-            print(f"Error fetching tweets for {symbol}: {e}, skipping Twitter sentiment.")
+            print(f"Error fetching tweets for {symbol}: {e}")
             break
 
-    # If all retries fail, fall back to cache or empty
+    # If all retries fail, fallback to cached tweets or empty list
     if symbol in tweets_cache:
         print(f"Using cached tweets for {symbol} due to failures.")
         return tweets_cache[symbol]["tweets"]
 
     print(f"No tweets available for {symbol}. Returning empty list.")
+    tweets_cache[symbol] = {"timestamp": now, "tweets": []}  # cache empty list
     return []
 
 # ----------------- Sentiment Analysis -----------------
-def analyze_sentiment(text):
+def analyze_sentiment(text: str) -> tuple:
     key = text[:200]
     if key in sentiment_cache:
         return sentiment_cache[key]
@@ -92,17 +94,11 @@ def analyze_sentiment(text):
     sentiment_cache[key] = (label, abs(compound))
     return sentiment_cache[key]
 
-def aggregate_sentiment(tweets):
-    """
-    Aggregate multiple tweets into a single sentiment object.
-    Returns: {"bias": "bullish/bearish/neutral", "confidence": float, "bullish_ratio": float}
-    """
+def aggregate_sentiment(tweets: list) -> dict:
     pos = neg = neu = 0.0
-
     for t in tweets:
-        label, score = analyze_sentiment(t["text"])
+        label, _ = analyze_sentiment(t["text"])
         weight = 1 + (t["likes"] * 0.1) + (t["retweets"] * 0.2)
-
         if label == "positive":
             pos += weight
         elif label == "negative":
@@ -125,22 +121,15 @@ def aggregate_sentiment(tweets):
     confidence = round(abs(bullish_ratio - 0.5) * 2, 2)
     return {"bias": bias, "confidence": confidence, "bullish_ratio": round(bullish_ratio, 2)}
 
-# ----------------- Base Symbol -----------------
+# ----------------- Symbol Helper -----------------
+import re
 def base_symbol(symbol: str) -> str:
-    """
-    Convert Yahoo/other formatted symbols to base symbol.
-    E.g., KPIGREEN.NS -> KPIGREEN
-    """
     return re.sub(r"\.\w+$", "", symbol).upper()
 
 # ----------------- Display-ready Sentiment -----------------
 def sentiment_for_symbol(symbol: str) -> dict:
-    """
-    Returns display-ready sentiment for a symbol.
-    Ensures valid result even if tweets cannot be fetched.
-    """
     clean_symbol = base_symbol(symbol)
-    tweets = fetch_tweets(symbol)  # caching & retries handled internally
+    tweets = fetch_tweets(symbol) or []
 
     if not tweets:
         return {
@@ -149,15 +138,14 @@ def sentiment_for_symbol(symbol: str) -> dict:
             "sentiment_label": "Neutral",
             "confidence": 0.0,
             "emoji": "⚪",
-            "explanation": "No sufficient Twitter data"
+            "explanation": "No sufficient Twitter data",
+            "tweets_count": 0
         }
 
     sentiment = aggregate_sentiment(tweets)
     bias = sentiment.get("bias", "neutral")
     confidence = sentiment.get("confidence", 0.0)
     bullish_ratio = sentiment.get("bullish_ratio", 0.5)
-
-    # Weighted score 0-100
     score = int(bullish_ratio * 100 * confidence)
 
     mapping = {
@@ -179,26 +167,20 @@ def sentiment_for_symbol(symbol: str) -> dict:
 
 # ----------------- Hype Detection -----------------
 def detect_hype(tweets: list, sentiment: dict) -> bool:
-    """
-    Detect social media hype based on common hype words and sentiment confidence.
-    Works with cached or partial tweets.
-    """
     if not tweets or not sentiment:
         return False
 
     hype_words = ["moon", "rocket", "breakout", "pump", "爆", "🚀", "🔥"]
-
     hype_score = sum(
         sum(1 for w in hype_words if w in t["text"].lower())
         for t in tweets
     )
-
     weighted_hype = hype_score * sentiment.get("confidence", 0.0)
     return weighted_hype >= 3
 
-# ----------------- Example Usage -----------------
+# ----------------- Example -----------------
 if __name__ == "__main__":
-    symbol = "AAPL"
+    symbol = "KPIGREEN.NS"
     sentiment = sentiment_for_symbol(symbol)
     print("Sentiment:", sentiment)
 
