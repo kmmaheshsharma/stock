@@ -122,6 +122,8 @@ Only return valid JSON.
 
 # ------------------- Symbol Normalization -------------------
 def normalize_symbol(raw: str):
+    if not raw:
+        raise ValueError("normalize_symbol received empty input")    
     raw = raw.upper().strip()
     raw = re.sub(r"\b(TRACK|ENTRY|BUY|SELL|ADD|SHOW|PRICE)\b", "", raw)
     raw = raw.replace("_", " ").strip()
@@ -253,8 +255,13 @@ def run_engine(symbol, entry_price=None):
         candidate = extract_candidate_symbol(symbol)        
         if not candidate:
             return None       
-        yahoo_symbol = search_yahoo_symbol(candidate)        
-        symbols = normalize_symbol(yahoo_symbol)        
+        yahoo_symbol = search_yahoo_symbol(candidate)
+
+        if yahoo_symbol:
+            symbols = normalize_symbol(yahoo_symbol)
+        else:
+            logging.warning(f"Yahoo could not resolve symbol: {candidate}. Trying raw normalization.")
+            symbols = normalize_symbol(candidate)  
 
         price_data = None
         resolved_symbol = None
@@ -288,8 +295,7 @@ def run_engine(symbol, entry_price=None):
 
         result = sentiment_for_symbol(resolved_symbol)
 
-        # Alerts based on new sentiment_label
-        alerts = []
+        # Alerts based on new sentiment_label        
         s_type = result["sentiment_label"]  # previously was s_type
 
         if s_type == "Bullish" or s_type == "accumulation":
