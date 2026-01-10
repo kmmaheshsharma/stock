@@ -318,9 +318,7 @@ def run_engine(symbol, entry_price=None):
             logging.warning(f"Groq AI analysis failed: {e_ai}")
             ai_analysis = {"error": "Groq AI call failed"}
 
-        print(f"mahesh Groq AI analysis for {resolved_symbol}: {ai_analysis} doone")
-
-        return_json = {
+        return {
             "symbol": resolved_symbol,
             "price": price,
             "low": low,
@@ -338,20 +336,6 @@ def run_engine(symbol, entry_price=None):
             "chart": chart_base64,
             "ai_analysis": ai_analysis
         }
-
-        # Force JSON validation here
-        try:
-            json.dumps(return_json)
-        except Exception as json_err:
-            logging.error(f"JSON serialization failed: {json_err}")
-            return {
-                "symbol": resolved_symbol,
-                "error": "JSON serialization failed",
-                "alerts": ["error"]
-            }
-
-        print(f"mahesh Engine return json for {resolved_symbol}: {return_json} done")
-        return return_json
 
     except Exception as e:
         logging.error(f"Engine failed: {str(e)}")
