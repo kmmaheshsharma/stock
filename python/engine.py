@@ -39,8 +39,7 @@ def build_groq_prompt_for_symbol(message):
     Only return the symbol.
     """
 
-def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
-    logging.info("Starting Groq AI call...")
+def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):    
     try:
         response = groq_client.chat.completions.create(
             messages=[
@@ -53,23 +52,20 @@ def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400)
         )
 
         raw_text = response.choices[0].message.content
-        logging.info("Groq AI response received.")
+        
 
         symbol = raw_text.strip()
 
-        if re.match(r'^[A-Z0-9\-]{1,15}(\.[A-Z]{2,10})?$', symbol):
-            logging.info(f"Extracted symbol: {symbol}")
+        if re.match(r'^[A-Z0-9\-]{1,15}(\.[A-Z]{2,10})?$', symbol):        
             return {"symbol": symbol}
-        else:
-            logging.warning(f"Invalid symbol format in response: {symbol}")
+        else:            
             return {"error": "Invalid symbol format", "raw_text": raw_text}
 
     except Exception as e:
         logging.error(f"Groq AI call failed: {str(e)}")
         return {"error": str(e)}
 
-def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
-    logging.info("Starting Groq AI call...")
+def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):    
     try:
         response = groq_client.chat.completions.create(
             messages=[
@@ -82,12 +78,10 @@ def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
         )
 
         raw_text = response.choices[0].message.content
-        logging.info("Groq AI response received.")
-
+        
         match = re.search(r"\{.*\}", raw_text, re.DOTALL)
         if match:
-            ai_json = json.loads(match.group(0))
-            logging.info("Groq AI JSON parsed successfully.")
+            ai_json = json.loads(match.group(0))        
             return ai_json
 
         logging.warning("No JSON found in Groq AI response, returning raw text.")
@@ -253,14 +247,11 @@ def search_yahoo_symbol(name):
 # ------------------- Core Engine -------------------
 def run_engine(symbol, entry_price=None):
     try:
-        candidate = extract_candidate_symbol(symbol)
-        logging.info(f"Extracted candidate symbol: {candidate}")
+        candidate = extract_candidate_symbol(symbol)        
         if not candidate:
             return None       
-        yahoo_symbol = search_yahoo_symbol(candidate)
-        logging.info(f"Yahoo Finance search result: {yahoo_symbol}")    
-        symbols = normalize_symbol(yahoo_symbol)
-        logging.info(f"Normalized symbols: {yahoo_symbol}")
+        yahoo_symbol = search_yahoo_symbol(candidate)        
+        symbols = normalize_symbol(yahoo_symbol)        
 
         price_data = None
         resolved_symbol = None

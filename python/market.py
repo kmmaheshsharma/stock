@@ -25,8 +25,7 @@ def get_price(symbol):
         if result:
             return result
 
-        # If Yahoo Finance fails, try Alpha Vantage as a fallback
-        logging.info(f"Trying Alpha Vantage for {sym}...")
+        # If Yahoo Finance fails, try Alpha Vantage as a fallback        
         result = get_price_from_alpha_vantage(sym)
         if result:
             return result
