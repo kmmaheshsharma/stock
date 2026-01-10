@@ -49,19 +49,63 @@ def fetch_tweets(symbol: str, max_results: int = 50) -> list:
         # Handle rate limit
         if response.status_code == 429:
             print(f"Rate limit hit for {symbol}, using cache.")
-            return tweets_cache.get(symbol, {}).get("tweets", [])
+
+            # Get cached tweets if any
+            cached_tweets = tweets_cache.get(symbol, {}).get("tweets", [])
+
+            # Build full consistent response
+            result = {
+                "symbol": symbol,
+                "tweets_count": len(cached_tweets),
+                "alerts": [],  # always include
+                "sentiment_label": "Neutral",
+                "sentiment_score": 0.0,
+                "bullish_ratio": 0.5,
+                "rate_limited": True
+            }
+            return result
 
         # Any other error
         if response.status_code != 200:
             print(f"Twitter API error {response.status_code} for {symbol}")
-            return tweets_cache.get(symbol, {}).get("tweets", [])
+            # Get cached tweets if any
+            cached_tweets = tweets_cache.get(symbol, {}).get("tweets", [])
+
+            # Build full consistent response
+            result = {
+                "symbol": symbol,
+                "tweets": cached_tweets,
+                "alerts": [],
+                "sentiment_label": "Neutral",
+                "sentiment_score": 0,
+                "bullish_ratio": 0.5,
+                "rate_limited": True,
+                "chart": None,  # or cached chart if you have
+                "price_data": {}  # optional, to match expected structure
+            }
+            return result
 
         try:
             raw = response.json()
             data = raw.get("data", [])
         except Exception:
             print("Twitter JSON parse failed.")
-            return tweets_cache.get(symbol, {}).get("tweets", [])
+            # Get cached tweets if any
+            cached_tweets = tweets_cache.get(symbol, {}).get("tweets", [])
+
+            # Build full consistent response
+            result = {
+                "symbol": symbol,
+                "tweets": cached_tweets,
+                "alerts": [],
+                "sentiment_label": "Neutral",
+                "sentiment_score": 0,
+                "bullish_ratio": 0.5,
+                "rate_limited": True,
+                "chart": None,  # or cached chart if you have
+                "price_data": {}  # optional, to match expected structure
+            }
+            return result
 
         tweets = [
             {
@@ -77,7 +121,21 @@ def fetch_tweets(symbol: str, max_results: int = 50) -> list:
 
     except Exception as e:
         print(f"Twitter fetch failed for {symbol}: {e}")
-        return tweets_cache.get(symbol, {}).get("tweets", [])
+        cached_tweets = tweets_cache.get(symbol, {}).get("tweets", [])
+
+            # Build full consistent response
+        result = {
+            "symbol": symbol,
+            "tweets": cached_tweets,
+            "alerts": [],
+            "sentiment_label": "Neutral",
+            "sentiment_score": 0,
+            "bullish_ratio": 0.5,
+            "rate_limited": True,
+            "chart": None,  # or cached chart if you have
+            "price_data": {}  # optional, to match expected structure
+        }
+        return result
 
 
 # ----------------- Sentiment Analysis -----------------
