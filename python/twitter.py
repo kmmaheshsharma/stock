@@ -1,12 +1,14 @@
 import os
 import requests
-from transformers import pipeline
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from nltk import download
+
+# Download VADER lexicon if not present
+download('vader_lexicon')
+
 sentiment_cache = {}
-finbert = pipeline(
-    "sentiment-analysis",
-    model="yiyanghkust/finbert-tone",
-    tokenizer="yiyanghkust/finbert-tone"
-)
+sia = SentimentIntensityAnalyzer()
+
 def fetch_tweets(symbol):
     query = (
         f"({symbol} OR #{symbol}) "
@@ -26,28 +28,40 @@ def fetch_tweets(symbol):
         "tweet.fields": "created_at,public_metrics"
     }
 
-    r = requests.get(url, headers=headers, params=params)
-    if r.status_code != 200:
-        print("Twitter error:", r.text)
+    try:
+        r = requests.get(url, headers=headers, params=params, timeout=5)
+        r.raise_for_status()
+    except Exception as e:
+        print("Twitter error:", e)
         return []
 
+    data = r.json().get("data", [])
     return [
         {
             "text": t["text"],
             "likes": t["public_metrics"]["like_count"],
             "retweets": t["public_metrics"]["retweet_count"]
         }
-        for t in r.json().get("data", [])
+        for t in data
     ]
 
 def analyze_sentiment(text):
     key = text[:200]
-
     if key in sentiment_cache:
         return sentiment_cache[key]
 
-    result = finbert(text[:512])[0]
-    sentiment_cache[key] = (result["label"], result["score"])
+    scores = sia.polarity_scores(text)
+    compound = scores['compound']
+
+    # Map to simplified positive/negative/neutral
+    if compound >= 0.05:
+        label = "positive"
+    elif compound <= -0.05:
+        label = "negative"
+    else:
+        label = "neutral"
+
+    sentiment_cache[key] = (label, abs(compound))
     return sentiment_cache[key]
 
 def aggregate_sentiment(tweets):
@@ -55,7 +69,6 @@ def aggregate_sentiment(tweets):
 
     for t in tweets:
         label, score = analyze_sentiment(t["text"])
-
         weight = 1 + (t["likes"] * 0.1) + (t["retweets"] * 0.2)
 
         if label == "positive":
@@ -66,16 +79,10 @@ def aggregate_sentiment(tweets):
             neu += weight
 
     directional = pos + neg
-
     if directional == 0:
-        return {
-            "bias": "neutral",
-            "confidence": 0.0,
-            "bullish_ratio": 0.5
-        }
+        return {"bias": "neutral", "confidence": 0.0, "bullish_ratio": 0.5}
 
     bullish_ratio = pos / directional
-
     if bullish_ratio > 0.65:
         bias = "bullish"
     elif bullish_ratio < 0.35:
@@ -84,9 +91,4 @@ def aggregate_sentiment(tweets):
         bias = "neutral"
 
     confidence = round(abs(bullish_ratio - 0.5) * 2, 2)
-
-    return {
-        "bias": bias,
-        "confidence": confidence,
-        "bullish_ratio": round(bullish_ratio, 2)
-    }
+    return {"bias": bias, "confidence": confidence, "bullish_ratio": round(bullish_ratio, 2)}

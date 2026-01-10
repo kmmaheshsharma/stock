@@ -1,4 +1,4 @@
-from twitter import fetch_tweets
+from twitter import fetch_tweets, aggregate_sentiment
 
 def base_symbol(symbol: str) -> str:
     """
@@ -7,10 +7,9 @@ def base_symbol(symbol: str) -> str:
     """
     return symbol.replace(".NS", "").upper()
 
-
 def sentiment_for_symbol(symbol: str) -> dict:
     """
-    Returns DISPLAY-READY sentiment data
+    Returns DISPLAY-READY sentiment data using lightweight VADER analysis
     """
 
     clean_symbol = base_symbol(symbol)
@@ -31,10 +30,10 @@ def sentiment_for_symbol(symbol: str) -> dict:
     bias = sentiment["bias"]
     confidence = sentiment["confidence"]
 
-    # Convert to score (0–100)
+    # Convert bullish_ratio to a 0–100 score
     score = int(sentiment["bullish_ratio"] * 100)
 
-    # Display mapping
+    # Map bias to label, emoji, explanation
     if bias == "bullish":
         label = "Bullish"
         emoji = "📈"
@@ -58,6 +57,9 @@ def sentiment_for_symbol(symbol: str) -> dict:
     }
 
 def detect_hype(tweets, sentiment):
+    """
+    Detect social media hype based on common hype words and confidence
+    """
     hype_words = ["moon", "rocket", "breakout", "pump", "爆", "🚀", "🔥"]
 
     hype_count = sum(
@@ -65,7 +67,4 @@ def detect_hype(tweets, sentiment):
         for t in tweets
     )
 
-    if hype_count >= 5 and sentiment["confidence"] > 0.7:
-        return True
-
-    return False
+    return hype_count >= 5 and sentiment["confidence"] > 0.7
