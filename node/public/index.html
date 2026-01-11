@@ -305,14 +305,14 @@
   </section>
 </div>
 
-<script src="app.js?v=79"></script>
+<script src="app.js?v=80"></script>
 <script>
   function adjustChatHeight() {
     const headerHeight = document.querySelector('header').offsetHeight;
     const windowHeight = window.innerHeight;
     const cardsEl = document.getElementById('sentiment-cards');
     const cardsHeight = cardsEl ? cardsEl.offsetHeight : 0;
-    document.querySelector('.ScrollStyle').style.maxHeight = `${windowHeight - headerHeight - cardsHeight - 170}px`;
+    document.querySelector('.ScrollStyle').style.maxHeight = `${windowHeight - headerHeight - cardsHeight - document.getElementById('chat-form').offsetHeight}px`;
   }
   window.addEventListener('load', adjustChatHeight);
   window.addEventListener('resize', adjustChatHeight);

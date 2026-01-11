@@ -388,7 +388,7 @@ form.addEventListener("submit", async (e) => {
   const msg = input.value.trim();
   if (!msg) return;
 
-  appendMessage("You", msg);
+  //appendMessage("You", msg);
   input.value = "";
 
   const typingDiv = botTypingIndicator();
