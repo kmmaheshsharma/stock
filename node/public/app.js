@@ -446,7 +446,24 @@ form.addEventListener("submit", async (e) => {
 function updateSentimentCard(data) {
   const card = document.querySelector("#sentiment-cards .glass-card");
   if (!card) return;
+  // --- Clear all fields first ---
+  card.querySelector(".stock-symbol").textContent = "--";
+  card.querySelector(".stock-price").innerHTML = "₹-- <span>(--)</span>";
 
+  const stats1 = card.querySelectorAll(".stats-grid .stat strong");
+  stats1.forEach((el) => (el.textContent = "--"));
+
+  const rows1 = card.querySelectorAll(".row-line .value");
+  rows1.forEach((el) => {
+    el.textContent = "--";
+    el.className = "value neutral"; // reset color
+  });
+
+  const aiBox1 = card.querySelector(".ai-box");
+  if (aiBox1) aiBox1.textContent = "{}";
+
+  const chartBox1 = card.querySelector(".chart-box");
+  if (chartBox1) chartBox1.innerHTML = "";
   // Helpers
   const safeNum = (n) => (isNaN(parseFloat(n)) ? "--" : parseFloat(n).toFixed(2));
   const formatNumber = (n) => {
