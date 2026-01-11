@@ -332,7 +332,7 @@
     const windowHeight = window.innerHeight;
     const cardsEl = document.getElementById('sentiment-cards');
     const cardsHeight = cardsEl ? cardsEl.offsetHeight : 0;
-    document.querySelector('.ScrollStyle').style.maxHeight = `${windowHeight - headerHeight - cardsHeight - document.getElementById('chat-form').offsetHeight}px`;
+    document.querySelector('.ScrollStyle').style.maxHeight = `${windowHeight - headerHeight - cardsHeight - document.getElementById('chat-form').offsetHeight - 50}px`;
   }
   window.addEventListener('load', adjustChatHeight);
   window.addEventListener('resize', adjustChatHeight);   
