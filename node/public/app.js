@@ -431,10 +431,9 @@ form.addEventListener("submit", async (e) => {
     });
     const data = await res.json();
     updateSentimentCard(data.__raw_result); // update the sentiment card if needed
+     typingDiv.remove();
     // simulate typing delay
-    await delay(Math.random() * 1000 + 1000);
-
-    typingDiv.remove();
+    await delay(Math.random() * 1000 + 1000);   
     document.getElementById("symbol-loader").style.display = "none";
     //appendMessage("Bot", data.text, data.chart); // display the bot response
   } catch (err) {
