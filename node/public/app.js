@@ -541,8 +541,40 @@ function updateSentimentCard(data) {
 
   // AI Box
   const aiBox = card.querySelector(".ai-box");
-  if (aiBox) {
-    aiBox.textContent = JSON.stringify(data.ai_analysis || {}, null, 2);
+  if (aiBox && data.ai_analysis) {
+    const ai = data.ai_analysis;
+    aiBox.innerHTML = `
+      <div class="analysis-card">
+        <div class="analysis-item ${ai.trend.toLowerCase()}">
+          <span>📉 Trend</span>
+          <strong>${ai.trend}</strong>
+        </div>
+
+        <div class="analysis-item">
+          <span>🎯 Confidence</span>
+          <strong>${ai.confidence}%</strong>
+        </div>
+
+        <div class="analysis-item">
+          <span>🧱 Support</span>
+          <strong>₹${ai.support}</strong>
+        </div>
+
+        <div class="analysis-item">
+          <span>🚧 Resistance</span>
+          <strong>₹${ai.resistance}</strong>
+        </div>
+
+        <div class="analysis-item ${ai.risk.toLowerCase()}">
+          <span>⚠️ Risk</span>
+          <strong>${ai.risk}</strong>
+        </div>
+        <div class="analysis-item ${ai.risk.toLowerCase()}">
+          <span>⚡ Recommendation:</span>
+          <strong>${ai.recommendation}</strong>
+        </div>        
+      </div>
+    `;
   }
   const chartBox = card.querySelector(".chart-box");
   chartBox.innerHTML = renderChart(data.chart);
