@@ -402,7 +402,7 @@ form.addEventListener("submit", async (e) => {
       body: JSON.stringify({ message: msg, phone: phone, userId: userId })
     });
     const data = await res.json();
-    updateStockUI(data.__raw_result);
+    updateSentimentCard(data.__raw_result);
     // simulate typing delay
     await delay(Math.random() * 1000 + 1000);
 
@@ -415,36 +415,83 @@ form.addEventListener("submit", async (e) => {
   }
 });
 // Function to update the existing stock card
-function updateStockUI(data) {
-  document.getElementById("stockSymbol").textContent = data.symbol;
+function updateSentimentCard(data) {
+  const card = document.querySelector("#sentiment-cards .glass-card");
+  if (!card) return;
 
-  document.getElementById("stockPrice").innerHTML = `
-    ₹${data.price}
-    <span style="color:${data.change_percent >= 0 ? '#22c55e' : '#ef4444'};">
-      (${data.change_percent}%)
+  // Helpers
+  const safeNum = (n) => (isNaN(parseFloat(n)) ? "--" : parseFloat(n).toFixed(2));
+  const formatNumber = (n) => {
+    n = parseFloat(n);
+    if (isNaN(n)) return "--";
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + "M";
+    if (n >= 1_000) return (n / 1_000).toFixed(2) + "K";
+    return n.toString();
+  };
+
+  const getColorClass = (label) => {
+    if (label === "Bullish") return "green";
+    if (label === "Bearish") return "red";
+    return "neutral";
+  };
+
+  // Symbol
+  card.querySelector(".stock-symbol").textContent = data.symbol || "--";
+
+  // Price + Change
+  const priceEl = card.querySelector(".stock-price");
+  const price = parseFloat(data.price);
+  const change = parseFloat(data.change_percent);
+
+  priceEl.innerHTML = `
+    ₹${!isNaN(price) ? price.toFixed(2) : "--"}
+    <span style="color:${change >= 0 ? "#22c55e" : "#ef4444"};">
+      (${!isNaN(change) ? (change >= 0 ? "+" : "") + change.toFixed(2) + "%" : "--"})
     </span>
   `;
 
-  document.getElementById("lowVal").textContent = data.low.toFixed(2);
-  document.getElementById("highVal").textContent = data.high.toFixed(2);
-  document.getElementById("volumeVal").textContent = formatNumber(data.volume);
-  document.getElementById("avgVolumeVal").textContent = formatNumber(data.avg_volume);
+  // Low / High / Volume / Avg Volume
+  const stats = card.querySelectorAll(".stats-grid .stat strong");
+  if (stats.length >= 4) {
+    stats[0].textContent = safeNum(data.low);
+    stats[1].textContent = safeNum(data.high);
+    stats[2].textContent = formatNumber(data.volume);
+    stats[3].textContent = formatNumber(data.avg_volume);
+  }
 
-  const sentimentEl = document.getElementById("sentimentVal");
-  sentimentEl.textContent = `${data.emoji} ${data.sentiment_label}`;
-  sentimentEl.className = "value " + getSentimentColor(data.sentiment_label);
+  // Row values
+  const rows = card.querySelectorAll(".row-line .value");
 
-  document.getElementById("confidenceVal").textContent = data.confidence;
+  // Sentiment
+  if (rows[0]) {
+    rows[0].textContent = `${data.emoji || ""} ${data.sentiment_label || "--"}`;
+    rows[0].className = "value " + getColorClass(data.sentiment_label);
+  }
 
-  document.getElementById("entryVal").textContent =
-    `₹${data.suggested_entry.lower} – ₹${data.suggested_entry.upper}`;
+  // Confidence
+  if (rows[1]) {
+    rows[1].textContent = data.confidence !== undefined ? data.confidence : "--";
+  }
 
-  document.getElementById("alertVal").textContent =
-    data.alerts.length ? data.alerts.join(", ") : "No Alerts";
+  // Suggested Entry
+  if (rows[2]) {
+    const lower = data.suggested_entry?.lower;
+    const upper = data.suggested_entry?.upper;
+    rows[2].textContent =
+      lower && upper ? `₹${lower.toFixed(2)}–₹${upper.toFixed(2)}` : "--";
+  }
 
-  document.getElementById("aiBox").textContent = JSON.stringify({
-    explanation: data.explanation
-  }, null, 2);
+  // Alerts
+  if (rows[3]) {
+    rows[3].textContent =
+      data.alerts && data.alerts.length ? data.alerts.join(", ") : "No Alerts";
+  }
+
+  // AI Box
+  const aiBox = card.querySelector(".ai-box");
+  if (aiBox) {
+    aiBox.textContent = JSON.stringify(data.ai_analysis || {}, null, 2);
+  }
 }
 
 // ---------------------- Alerts Button ----------------------
