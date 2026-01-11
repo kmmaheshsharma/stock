@@ -230,7 +230,8 @@ exports.handleChat = async (req, res) => {
           console.log(`[SYMBOL] Sending response for symbol: ${symbolQuery}`);
           return res.json({
             text: result.text, // HTML formatted
-            chart: result.chart
+            chart: result.chart,
+            __raw_result: result.__raw_result || null
           });
 
         } catch (err) {
