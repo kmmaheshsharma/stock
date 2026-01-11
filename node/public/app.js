@@ -14,7 +14,7 @@ messagesEl.innerHTML = "";
 //cardsEl.innerHTML = "";
 let socket;
 let deferredPrompt;
-document.addEventListener('visibilitychange', function() {
+document.addEventListener('visibilitychange', function() {  
   isAppInForeground = !document.hidden;
   console.log("App is in " + (isAppInForeground ? "foreground" : "background"));
 
@@ -74,6 +74,7 @@ function arrayBufferToBase64(buffer) {
   return btoa(binary);
 }
 async function enablePushNotifications() {
+  setInterval(updateMarketStatus, 60000);
   const userId = await getAndCheckUser();
   console.log("enablePushNotifications called"); // debug line
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
@@ -501,6 +502,36 @@ function renderChart(chartData) {
   if (!chartData) return "";
 
   return `<img src="${chartData}" style="width:100%; border-radius:12px;" />`;
+}
+function updateMarketStatus() {
+  const now = new Date();
+
+  // Convert to IST (Indian Standard Time) if your server/user is in another timezone
+  const istOffset = 5.5 * 60; // IST = UTC+5:30 in minutes
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const istTime = new Date(utc + (istOffset * 60000));
+
+  const day = istTime.getDay(); // 0 = Sunday, 6 = Saturday
+  const hours = istTime.getHours();
+  const minutes = istTime.getMinutes();
+  const totalMinutes = hours * 60 + minutes;
+
+  // NSE market hours: 09:15 - 15:30 IST, Monday-Friday
+  const marketOpen = 9 * 60 + 15;  // 9:15 AM
+  const marketClose = 15 * 60 + 30; // 3:30 PM
+
+  const isMarketOpen = day >= 1 && day <= 5 && totalMinutes >= marketOpen && totalMinutes <= marketClose;
+
+  const circle = document.getElementById("market-circle");
+  const text = document.getElementById("market-text");
+
+  if (isMarketOpen) {
+    circle.setAttribute("fill", "#22c55e"); // Green
+    text.textContent = "Market Open";
+  } else {
+    circle.setAttribute("fill", "#ef4444"); // Red
+    text.textContent = "Market Closed";
+  }
 }
 // ---------------------- Alerts Button ----------------------
 alertsBtn.addEventListener("click", async () => {

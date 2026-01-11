@@ -261,9 +261,11 @@
         </div>
       </div>
 
-      <div class="market-status">
-        <svg width="10" height="10"><circle cx="5" cy="5" r="5" fill="#22c55e" /></svg>
-        Market Open
+      <div class="market-status" id="market-status">
+        <svg width="10" height="10">
+          <circle cx="5" cy="5" r="5" fill="#22c55e" id="market-circle"/>
+        </svg>
+        <span id="market-text">Market Open</span>
       </div>
     </header>
 
@@ -323,7 +325,7 @@
   </section>
 </div>
 
-<script src="app.js?v=81"></script>
+<script src="app.js?v=82"></script>
 <script>
   function adjustChatHeight() {
     const headerHeight = document.querySelector('header').offsetHeight;
@@ -333,7 +335,7 @@
     document.querySelector('.ScrollStyle').style.maxHeight = `${windowHeight - headerHeight - cardsHeight - document.getElementById('chat-form').offsetHeight}px`;
   }
   window.addEventListener('load', adjustChatHeight);
-  window.addEventListener('resize', adjustChatHeight);
+  window.addEventListener('resize', adjustChatHeight);   
 </script>
 </body>
 </html>
