@@ -402,7 +402,7 @@ form.addEventListener("submit", async (e) => {
       body: JSON.stringify({ message: msg, phone: phone, userId: userId })
     });
     const data = await res.json();
-    updateStockCardValues(data.__raw_result);
+    updateStockUI(data.__raw_result);
     // simulate typing delay
     await delay(Math.random() * 1000 + 1000);
 
@@ -415,43 +415,38 @@ form.addEventListener("submit", async (e) => {
   }
 });
 // Function to update the existing stock card
-function updateStockCardValues(stock) {
-  const card = document.querySelector("#sentiment-cards .glass-card");
-  if (!card) return;
+function updateStockUI(data) {
+  document.getElementById("stockSymbol").textContent = data.symbol;
 
-  // Update symbol and price
-  card.querySelector(".stock-symbol").textContent = stock.symbol;
-  card.querySelector(".stock-price").innerHTML = `
-    ₹${stock.price.toFixed(2)} 
-    <span style="color:${stock.change >= 0 ? '#22c55e' : '#ef4444'};">
-      (${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)}%)
+  document.getElementById("stockPrice").innerHTML = `
+    ₹${data.price}
+    <span style="color:${data.change_percent >= 0 ? '#22c55e' : '#ef4444'};">
+      (${data.change_percent}%)
     </span>
   `;
 
-  // Update Low / High / Volume / Avg Vol
-  const stats = card.querySelectorAll(".stats-grid .stat");
-  stats[0].innerHTML = `Low<br><strong>₹${stock.low.toFixed(2)}</strong>`;
-  stats[1].innerHTML = `High<br><strong>₹${stock.high.toFixed(2)}</strong>`;
-  stats[2].innerHTML = `Volume<br><strong>${stock.volume}</strong>`;
-  stats[3].innerHTML = `Avg Vol<br><strong>${stock.avgVolume}</strong>`;
+  document.getElementById("lowVal").textContent = data.low.toFixed(2);
+  document.getElementById("highVal").textContent = data.high.toFixed(2);
+  document.getElementById("volumeVal").textContent = formatNumber(data.volume);
+  document.getElementById("avgVolumeVal").textContent = formatNumber(data.avg_volume);
 
-  // Update Sentiment / Confidence / Suggested Entry / Alert
-  const rowValues = card.querySelectorAll(".row-line .value");
-  rowValues[0].textContent = stock.sentiment;
-  rowValues[0].className = `value ${getColor(stock.sentiment)}`;
+  const sentimentEl = document.getElementById("sentimentVal");
+  sentimentEl.textContent = `${data.emoji} ${data.sentiment_label}`;
+  sentimentEl.className = "value " + getSentimentColor(data.sentiment_label);
 
-  rowValues[1].textContent = stock.confidence.toFixed(2);
-  rowValues[1].className = `value ${stock.confidence >= 0.5 ? 'green' : 'red'}`;
+  document.getElementById("confidenceVal").textContent = data.confidence;
 
-  rowValues[2].textContent = `₹${stock.entryLow}–₹${stock.entryHigh}`;
-  rowValues[3].textContent = stock.alertType;
-  rowValues[3].className = `value ${stock.alertType === 'Breakout Watch' ? 'green' : 'red'}`;
+  document.getElementById("entryVal").textContent =
+    `₹${data.suggested_entry.lower} – ₹${data.suggested_entry.upper}`;
 
-  // Update AI Box
-  card.querySelector(".ai-box").textContent = JSON.stringify(stock.aiAnalysis, null, 2);
+  document.getElementById("alertVal").textContent =
+    data.alerts.length ? data.alerts.join(", ") : "No Alerts";
 
-  // Buttons stay the same (already in layout)
+  document.getElementById("aiBox").textContent = JSON.stringify({
+    explanation: data.explanation
+  }, null, 2);
 }
+
 // ---------------------- Alerts Button ----------------------
 alertsBtn.addEventListener("click", async () => {
   const typingDiv = botTypingIndicator();
