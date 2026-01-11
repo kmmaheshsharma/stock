@@ -191,6 +191,20 @@
       .msg-content{ font-size:13px; padding:8px;}
       .glass-card{padding:12px;margin:8px;}
     }
+    .loader {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top: 2px solid #22c55e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
   </style>
 </head>
 <body>
@@ -256,10 +270,14 @@
     <section id="sentiment-cards">
       <!-- Stock Card Example -->
       <div class="glass-card" style="margin:12px 12px 0 12px;">
-        <div class="stock-row">
+      <div class="stock-row">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="loader" id="symbol-loader" style="display:none;"></div>
           <div class="stock-symbol">KPIGREEN.NS</div>
-          <div class="stock-price">₹447.00 <span style="color:#22c55e;">(+2.31%)</span></div>
         </div>
+        <div class="stock-price">₹447.00 <span style="color:#22c55e;">(+2.31%)</span></div>
+      </div>
+
 
         <div class="stats-grid">
           <div class="stat">Low<br><strong>439.50</strong></div>

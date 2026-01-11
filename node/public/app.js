@@ -385,6 +385,7 @@ signinBtn.addEventListener("click", async (e) => {
 // ---------------------- Handle web chat messages ----------------------
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+  document.getElementById("symbol-loader").style.display = "block";
   const msg = input.value.trim();
   if (!msg) return;
 
@@ -407,6 +408,7 @@ form.addEventListener("submit", async (e) => {
     await delay(Math.random() * 1000 + 1000);
 
     typingDiv.remove();
+    document.getElementById("symbol-loader").style.display = "none";
     //appendMessage("Bot", data.text, data.chart); // display the bot response
   } catch (err) {
     typingDiv.remove();
