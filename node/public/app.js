@@ -300,20 +300,23 @@ function appendMessage(sender, html, chart) {
 
 // ---------------------- Typing simulation ----------------------
 function botTypingIndicator() {
-  // Create wrapper div
   const div = document.createElement("div");
   div.className = "bot-msg";
 
-  // Create inner content with animated dots
+  // Fancy typing dots container
   const content = document.createElement("div");
   content.className = "msg-content";
-  content.textContent = "Bot is typing";
 
-  const dots = document.createElement("span");
-  dots.className = "typing-dots";
-  dots.textContent = "...";
+  const dotsContainer = document.createElement("div");
+  dotsContainer.className = "typing-dots";
 
-  content.appendChild(dots);
+  // Create 3 bouncing dots
+  for (let i = 0; i < 3; i++) {
+    const dot = document.createElement("span");
+    dotsContainer.appendChild(dot);
+  }
+
+  content.appendChild(dotsContainer);
   div.appendChild(content);
 
   // Timestamp (optional)
@@ -322,19 +325,10 @@ function botTypingIndicator() {
   time.textContent = "...";
   div.appendChild(time);
 
-  // Append to messages container
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 
-  // Animate dots
-  let dotCount = 0;
-  const interval = setInterval(() => {
-    dotCount = (dotCount + 1) % 4; // cycle 0..3
-    dots.textContent = ".".repeat(dotCount);
-  }, 500);
-
-  // Return both div and interval so caller can remove it later
-  return { div, interval };
+  return div; // no interval needed, CSS handles animation
 }
 
 function delay(ms) {
