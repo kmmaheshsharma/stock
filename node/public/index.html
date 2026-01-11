@@ -228,50 +228,60 @@
     0%, 80%, 100% { transform: scale(0); }
     40% { transform: scale(1); }
   }
+  .groq-analysis {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .analysis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
   .analysis-card {
-    background: linear-gradient(180deg, #0f1b2d, #0b1220);
-    border-radius: 16px;
-    padding: 16px;
+    width: 100%;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-top: 12px;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    box-sizing: border-box;
   }
 
   .analysis-item {
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 12px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 13px;
-  }
-
-  .analysis-item span {
-    color: #9ca3af;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .analysis-item strong {
-    color: #fff;
-    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  /* Trend colors */
-  .analysis-item.bearish strong {
-    color: #ef4444;
-  }
-
+  /* Trend */
   .analysis-item.bullish strong {
     color: #22c55e;
   }
 
-  /* Risk colors */
+  .analysis-item.bearish strong {
+    color: #ef4444;
+  }
+
+  /* Risk */
+  .analysis-item.low strong {
+    color: #22c55e;
+  }
+
   .analysis-item.moderate strong {
     color: #facc15;
-}
+  }
 
-  </style>
+  .analysis-item.high strong {
+    color: #ef4444;
+  }
+
+ </style>
 </head>
 <body>
 <div class="app">
