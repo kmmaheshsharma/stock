@@ -509,7 +509,7 @@ function renderChart(chartData) {
 function updateMarketStatus() {
   const now = new Date();
 
-  // Convert to IST (Indian Standard Time)
+  // Convert to IST
   const istOffset = 5.5 * 60; // IST = UTC+5:30 in minutes
   const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
   const istTime = new Date(utc + (istOffset * 60000));
@@ -519,7 +519,7 @@ function updateMarketStatus() {
   const minutes = istTime.getMinutes();
   const totalMinutes = hours * 60 + minutes;
 
-  // NSE market hours: 09:15 - 15:30 IST, Monday-Friday
+  // NSE market hours: 09:15 - 15:30 IST
   const marketOpen = 9 * 60 + 15;
   const marketClose = 15 * 60 + 30;
 
@@ -529,11 +529,13 @@ function updateMarketStatus() {
   const text = document.getElementById("market-text");
 
   if (isMarketOpen) {
-    circle.setAttribute("fill", "#22c55e"); // Green
+    circle.setAttribute("fill", "#22c55e");   // Green circle
     text.textContent = "Market Open";
+    text.style.color = "#22c55e";            // Green text
   } else {
-    circle.setAttribute("fill", "#ef4444"); // Red
+    circle.setAttribute("fill", "#ef4444");  // Red circle
     text.textContent = "Market Closed";
+    text.style.color = "#ef4444";            // Red text
   }
 }
 // ---------------------- Alerts Button ----------------------
