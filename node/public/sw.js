@@ -1,4 +1,4 @@
-const CACHE_NAME = "nobroko-cache-v80";
+const CACHE_NAME = "nobroko-cache-v81";
 const urlsToCache = [
   "/",
   "/index.html",

@@ -402,7 +402,7 @@ form.addEventListener("submit", async (e) => {
       body: JSON.stringify({ message: msg, phone: phone, userId: userId })
     });
     const data = await res.json();
-    updateSentimentCard(data.__raw_result);
+    updateSentimentCard(data.__raw_result); // update the sentiment card if needed
     // simulate typing delay
     await delay(Math.random() * 1000 + 1000);
 
@@ -493,7 +493,7 @@ function updateSentimentCard(data) {
     aiBox.textContent = JSON.stringify(data.ai_analysis || {}, null, 2);
   }
   const chartBox = card.querySelector(".chart-box");
-  chartBox.innerHTML = renderChart(data.__raw_result.chart);
+  chartBox.innerHTML = renderChart(data.chart);
 }
 function renderChart(chartData) {
   if (!chartData) return "";
