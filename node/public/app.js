@@ -11,7 +11,7 @@ const signupForm = document.getElementById("signup-form");
 let isAppInForeground = true;
 // Clear previous content on load
 messagesEl.innerHTML = "";
-cardsEl.innerHTML = "";
+//cardsEl.innerHTML = "";
 let socket;
 let deferredPrompt;
 document.addEventListener('visibilitychange', function() {
@@ -437,7 +437,7 @@ async function loadSentiments() {
     const res = await fetch("/api/sentiments");
     const data = await res.json();
 
-    cardsEl.innerHTML = "";
+    //cardsEl.innerHTML = "";
     data.forEach(stock => {
       const card = document.createElement("div");
       card.className = "card";
@@ -447,7 +447,7 @@ async function loadSentiments() {
         <div class="progress-bar"><div class="indicator" style="left:${stock.percent}%"></div></div>
         ${stock.change} | ${stock.trend}
       `;
-      cardsEl.appendChild(card);
+      //cardsEl.appendChild(card);
     });
   } catch (err) {
     console.error("Failed to load sentiments", err);
