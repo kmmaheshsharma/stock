@@ -164,7 +164,8 @@ let alertsHTML = "";
   console.log(`[SYMBOL] Response ready for symbol: ${result.symbol}`);
   return {
     text: msgHTML, // HTML content for PWA chat
-    chart: result.chart || null
+    chart: result.chart || null,
+    __raw_result: result || null
   };
 }
 
