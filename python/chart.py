@@ -7,8 +7,8 @@ import pandas as pd
 
 def generate_chart(symbol):
     """
-    Generates a fancy chart for the given symbol and returns base64 image string.
-    Handles timezone-aware index and missing data gracefully.
+    Generates a chart for the given symbol and returns a base64 image string.
+    Ensures the data is 1D and handles empty/malformed data gracefully.
     """
     # --- Chart folder ---
     chart_dir = os.path.join(os.getcwd(), "chart")
@@ -27,13 +27,21 @@ def generate_chart(symbol):
         print(f"❌ Error fetching {symbol}: {e}")
         return None
 
+    # --- Validate 'Close' column ---
     if data.empty or "Close" not in data.columns:
         print(f"⚠️ No valid 'Close' data for {symbol}")
         return None
 
-    # --- Ensure index is timezone-naive for matplotlib ---
-    if isinstance(data.index, pd.DatetimeIndex) and data.index.tz is not None:
-        data.index = data.index.tz_convert(None)
+    # --- Force 1D numpy array ---
+    y = data["Close"].to_numpy().ravel()  # ensures 1D even if 2D
+    x = data.index
+    if len(y) == 0:
+        print(f"⚠️ 'Close' data is empty for {symbol}")
+        return None
+
+    # --- Ensure timezone-naive index for matplotlib ---
+    if isinstance(x, pd.DatetimeIndex) and x.tz is not None:
+        x = x.tz_convert(None)
 
     # --- Plot ---
     plt.figure(figsize=(7, 4), facecolor="#020617")
@@ -41,31 +49,20 @@ def generate_chart(symbol):
     ax.set_facecolor("#020617")
 
     # Line plot
-    plt.plot(data.index, data["Close"], color="#22c55e", linewidth=2, label="Close Price")
+    plt.plot(x, y, color="#22c55e", linewidth=2, label="Close Price")
 
     # Gradient fill
-    plt.fill_between(
-        data.index,
-        data["Close"],
-        data["Close"].min(),
-        color="#22c55e",
-        alpha=0.15
-    )
+    plt.fill_between(x, y, y.min(), color="#22c55e", alpha=0.15)
 
     # Title & labels
     plt.title(symbol, color="white", fontsize=14, pad=10)
     plt.xlabel("Time", color="#94a3b8")
     plt.ylabel("Price", color="#94a3b8")
-
     plt.xticks(color="#94a3b8", rotation=45)
     plt.yticks(color="#94a3b8")
-
     for spine in ax.spines.values():
         spine.set_visible(False)
-
     plt.grid(alpha=0.1)
-
-    # Tight layout
     plt.tight_layout()
 
     # Save locally (optional)
