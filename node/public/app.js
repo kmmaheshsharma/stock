@@ -300,12 +300,41 @@ function appendMessage(sender, html, chart) {
 
 // ---------------------- Typing simulation ----------------------
 function botTypingIndicator() {
+  // Create wrapper div
   const div = document.createElement("div");
   div.className = "bot-msg";
-  div.innerHTML = `<div class="msg-content">Bot is typing...</div><div class="msg-time">...</div>`;
+
+  // Create inner content with animated dots
+  const content = document.createElement("div");
+  content.className = "msg-content";
+  content.textContent = "Bot is typing";
+
+  const dots = document.createElement("span");
+  dots.className = "typing-dots";
+  dots.textContent = "...";
+
+  content.appendChild(dots);
+  div.appendChild(content);
+
+  // Timestamp (optional)
+  const time = document.createElement("div");
+  time.className = "msg-time";
+  time.textContent = "...";
+  div.appendChild(time);
+
+  // Append to messages container
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
-  return div;
+
+  // Animate dots
+  let dotCount = 0;
+  const interval = setInterval(() => {
+    dotCount = (dotCount + 1) % 4; // cycle 0..3
+    dots.textContent = ".".repeat(dotCount);
+  }, 500);
+
+  // Return both div and interval so caller can remove it later
+  return { div, interval };
 }
 
 function delay(ms) {
@@ -396,7 +425,7 @@ form.addEventListener("submit", async (e) => {
   //appendMessage("You", msg);
   input.value = "";
 
-  //const typingDiv = botTypingIndicator();
+  const typingDiv = botTypingIndicator();
   const phone = localStorage.getItem("userPhone");
   const userId = localStorage.getItem("userId");
     try {
@@ -411,7 +440,7 @@ form.addEventListener("submit", async (e) => {
     // simulate typing delay
     await delay(Math.random() * 1000 + 1000);
 
-   // typingDiv.remove();
+    typingDiv.remove();
     document.getElementById("symbol-loader").style.display = "none";
     //appendMessage("Bot", data.text, data.chart); // display the bot response
   } catch (err) {
