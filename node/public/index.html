@@ -4,271 +4,304 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NoBroko Bot</title>
-
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#020617">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+
   <style>
     :root {
       --bg: #020617;
-      --header: #1f2937;
+      --glass: rgba(255,255,255,0.06);
+      --stroke: rgba(255,255,255,0.08);
+      --card: rgba(31,41,55,.85);
       --primary: #22c55e;
-      --bot: #1f2937;
-      --user: #22c55e;
       --text: #e5e7eb;
+      --muted: #9ca3af;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-    }
+    * { box-sizing: border-box; margin:0; }
 
     body {
-      margin: 0;
       height: 100vh;
-      background: #000;
-      font-family: Inter, system-ui, Arial, sans-serif;
+      background: black;
+      font-family: -apple-system, BlinkMacSystemFont, Inter, system-ui, sans-serif;
       color: var(--text);
     }
 
     .app {
       width: 100%;
       height: 100%;
-      background: var(--bg);
-      border-radius: 28px;
-      box-shadow: 0 30px 80px rgba(0,0,0,.8);
+      background: linear-gradient(180deg, #020617 0%, #020617 100%);
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
+    /* HEADER */
     header {
-      padding: 14px 16px;
-      background: var(--header);
-      color: var(--text);
+      background: rgba(2,6,23,.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--stroke);
+      padding: 12px 16px 10px;
+    }
+
+    .header-top {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #1f2937;
-      height: 50px;
+      justify-content: space-between;
     }
 
-    header h1 {
-      font-size: 1.25rem;
-      margin: 0;
-    }
-
-    #chat-container {
+    .header-center {
       display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-      padding-bottom: 70px;
-      overflow-y: auto;
-      padding: 10px;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      letter-spacing: .3px;
     }
+
+    .header-icons {
+      display: flex;
+      gap: 14px;
+    }
+
+    .market-status {
+      font-size: 12px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    /* GLASS CARD */
+    .glass-card {
+      background: linear-gradient(180deg, rgba(31,41,55,.9), rgba(2,6,23,.9));
+      border-radius: 20px;
+      padding: 16px;
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.6);
+    }
+
+    /* CHAT */
+    #chat-container { flex:1; display:flex; flex-direction:column; overflow:hidden; }
 
     .ScrollStyle {
+      flex: 1;
       overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex-grow: 1;
-      scroll-behavior: smooth;
+      padding: 12px;
       scrollbar-width: none;
-      padding: 10px;
+      scroll-behavior: smooth;
     }
 
-    .user-msg, .bot-msg {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .user-msg {
-      align-items: flex-end;
-    }
-
-    .bot-msg {
-      align-items: flex-start;
-    }
-
+    /* MESSAGES */
+    #messages { display:flex; flex-direction:column; gap:10px; padding-bottom:90px; }
+    .user-msg, .bot-msg { display:flex; flex-direction:column; }
+    .user-msg { align-items:flex-end; }
+    .bot-msg { align-items:flex-start; }
     .msg-content {
-      max-width: 100%;
-      padding: 12px 16px;
-      border-radius: 18px;
-      font-size: 1rem;
-      word-wrap: break-word;
-      background: var(--bot);
+      max-width:100%;
+      padding:12px 16px;
+      border-radius:18px;
+      font-size:15px;
+      word-wrap:break-word;
+      background: var(--card);
       color: var(--text);
     }
-
     .user-msg .msg-content {
-      background: var(--user);
+      background: var(--primary);
       color: #022c22;
     }
 
+    /* CHAT FORM */
     #chat-form {
-      display: flex;
-      gap: 8px;
-      padding: 12px;
-      border-top: 1px solid #1f2937;
-      background: var(--bg);
       position: fixed;
-      bottom: 0;
-      width: 100%;
-      z-index: 10;
-      box-sizing: border-box;
+      bottom: env(safe-area-inset-bottom,0);
+      left:0;
+      width:100%;
+      padding:10px 16px;
+      display:flex;
+      gap:8px;
+      background: rgba(2,6,23,.85);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--stroke);
+      z-index:20;
     }
-
     #message-input {
-      flex: 1;
-      padding: 12px 16px;
-      border-radius: 24px;
-      border: 1px solid #1f2937;
-      background: #020617;
+      flex:1;
+      padding:12px 16px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(31,41,55,.6);
       color: var(--text);
-      font-size: 1rem;
+      font-size:15px;
     }
-
     #chat-form button {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      border: none;
-      background: var(--primary);
-      font-size: 1.25rem;
-      cursor: pointer;
+      width:48px;
+      height:48px;
+      border-radius:50%;
+      background: linear-gradient(180deg, #22c55e, #16a34a);
+      border:none;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
     }
+    #chat-form button svg { stroke:#022c22; stroke-width:2; }
 
-    .install-btn {
-      background: #16a34a;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      margin-left: 10px;
+    /* STOCK CARD */
+    .stock-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .stock-symbol { font-weight:600; font-size:16px; }
+    .stock-price { font-weight:600; font-size:16px; }
+    .stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:12px; }
+    .stat { font-size:12px; color: var(--muted); }
+    .stat strong { color: var(--text); font-weight:500; }
+    .row-line { display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px; }
+    .row-line .label { color: var(--muted); }
+    .row-line .value.green { color: var(--primary); font-weight:500; }
+    .ai-box {
+      background: rgba(2,6,23,.7);
+      border-radius:14px;
+      padding:12px;
+      border:1px solid var(--stroke);
+      font-family:ui-monospace, SFMono-Regular, Menlo;
+      font-size:12px;
+      color:#9ca3af;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
+    .action-row { display:flex; gap:12px; margin-top:12px; }
+    .btn-outline { flex:1; border-radius:999px; padding:10px; background:transparent; border:1px solid var(--stroke); color: var(--text); font-weight:500; }
+    .btn-primary { flex:1; border-radius:999px; padding:10px; background: linear-gradient(180deg, #22c55e, #16a34a); border:none; color:#022c22; font-weight:600; }
 
-    .install-btn:hover {
-      background: #15803d;
+    img, .chart { width:100%; height:auto; border-radius:14px; }
+
+    /* RESPONSIVE */
+    @media (min-width:768px) {
+      .app { max-width:480px; margin:auto; border-radius:28px; box-shadow:0 30px 80px rgba(0,0,0,.8); }
     }
-
-    /* Mobile-Specific Styling */
-    @media (max-width: 768px) {
-      .app {
-        width: 100%;
-      }
-
-      header h1 {
-        font-size: 18px;
-      }
-
-      #chat-form {
-        padding: 10px;
-      }
-
-      #message-input {
-        font-size: 14px;
-        padding: 10px;
-      }
-
-      #chat-form button {
-        padding: 12px;
-        font-size: 18px;
-      }
-
-      .msg-content {
-        font-size: 14px;
-        padding: 10px;
-        max-width: 100%;
-      }
-
-      .ScrollStyle {
-        padding: 8px;
-      }
-
-      .user-msg, .bot-msg {
-        font-size: 14px;
-      }
-
-      /* Ensuring the message area is not too narrow */
-      #messages {
-        padding: 12px;
-        width: 100%;
-      }
-
-      /* Making images and charts responsive */
-      img, .chart {
-        width: 100%;
-        height: auto;
-      }
+    @media (max-width:768px){
+      #message-input{ font-size:14px; padding:10px;}
+      .msg-content{ font-size:14px; padding:10px;}
+      .glass-card{padding:14px;margin:10px;}
     }
-
-    @media (max-width: 480px) {
-      header h1 {
-        font-size: 16px;
-      }
-
-      #message-input {
-        font-size: 13px;
-        padding: 8px;
-      }
-
-      #chat-form button {
-        padding: 10px;
-        font-size: 16px;
-      }
-
-      .msg-content {
-        font-size: 13px;
-        padding: 8px;
-        max-width: 100%;
-      }
-
-      .ScrollStyle {
-        padding: 6px;
-      }
+    @media (max-width:480px){
+      #message-input{ font-size:13px; padding:8px;}
+      .msg-content{ font-size:13px; padding:8px;}
+      .glass-card{padding:12px;margin:8px;}
     }
   </style>
 </head>
-
 <body>
 <div class="app">
-  <section id="signup-screen" style="display: none;">
+
+  <!-- SIGNUP SCREEN -->
+  <section id="signup-screen" style="display:none;">
     <h2 style="color:white; text-align:center;">Welcome to NoBroko Bot</h2>
     <form id="signup-form" style="display:flex; flex-direction:column; gap:12px; padding:20px;">
       <input type="text" id="name" placeholder="Name" required style="padding:10px; border-radius:8px; border:none;">
       <input type="text" id="phone" placeholder="Phone (+91xxxxxxx)" required style="padding:10px; border-radius:8px; border:none;">
       <input type="email" id="email" placeholder="Email" required style="padding:10px; border-radius:8px; border:none;">
-      <label style="color:white;">
-        <input type="checkbox" id="subscribe" checked> Subscribe to alerts
-      </label>
+      <label style="color:white;"><input type="checkbox" id="subscribe" checked> Subscribe to alerts</label>
       <button type="button" id="signin-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%;">Sign In</button>
       <button type="button" id="signup-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%;">Sign Up</button>
     </form>
   </section>
 
+  <!-- CHAT SCREEN -->
   <section id="chat-screen" style="display:block;">
     <header>
-      <h1>📈 NoBroko Bot</h1>
-      <div>
-        <button id="alerts-btn">🔔</button>
-        <button id="install-btn" style="display:none">📲 Install App</button>        
-        <button>☰</button>
+      <div class="header-top">
+        <button id="back-btn" style="background:none; border:none; cursor:pointer;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <div class="header-center">
+          <span>📈</span>
+          <span>NoBroko Bot</span>
+        </div>
+
+        <div class="header-icons">
+          <button id="alerts-btn" style="background:none; border:none; cursor:pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 01-3.46 0"></path>
+            </svg>
+          </button>
+          <button id="install-btn" style="display:none; background:none; border:none; cursor:pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14"></path>
+              <path d="M5 12l7 7 7-7  -7 7 7-7 2-2"></path>
+            </svg>
+          </button>
+          <button style="background:none; border:none; cursor:pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="market-status">
+        <svg width="10" height="10"><circle cx="5" cy="5" r="5" fill="#22c55e" /></svg>
+        Market Open
       </div>
     </header>
 
-    <section id="sentiment-cards"></section> 
+    <section id="sentiment-cards">
+      <!-- Stock Card Example -->
+      <div class="glass-card" style="margin:12px 12px 0 12px;">
+        <div class="stock-row">
+          <div class="stock-symbol">KPIGREEN.NS</div>
+          <div class="stock-price">₹447.00 <span style="color:#22c55e;">(+2.31%)</span></div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat">Low<br><strong>439.50</strong></div>
+          <div class="stat">High<br><strong>451.86</strong></div>
+          <div class="stat">Volume<br><strong>1.23M</strong></div>
+          <div class="stat">Avg Vol<br><strong>980K</strong></div>
+        </div>
+
+        <div class="row-line"><span class="label">Sentiment</span><span class="value green">Bullish</span></div>
+        <div class="row-line"><span class="label">Confidence</span><span class="value green">0.79</span></div>
+        <div class="row-line"><span class="label">Suggested Entry</span><span class="value">₹440–₹445</span></div>
+        <div class="row-line"><span class="label">Alert</span><span class="value green">Breakout Watch</span></div>
+
+        <div class="ai-box" style="margin-top:12px;">
+          {
+            "trend": "uptrend",
+            "momentum": "strong",
+            "volume_spike": true,
+            "pattern": "ascending triangle"
+          }
+        </div>
+
+        <div class="action-row">
+          <button class="btn-outline">Add to Watchlist</button>
+          <button class="btn-primary">Set Alert</button>
+        </div>
+      </div>
+    </section>
 
     <section id="chat-container">
-      <div id="messages" class="ScrollStyle"></div> <!-- Applying ScrollStyle here -->
+      <div id="messages" class="ScrollStyle"></div>
+
       <form id="chat-form">
-        <input id="message-input" placeholder="Ask about a stock…">
-        <button>➤</button>
+        <input id="message-input" placeholder="Ask about a stock…" autocomplete="off">
+        <button type="submit">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#022c22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
       </form>
     </section>
   </section>
@@ -277,19 +310,14 @@
 <script src="app.js?v=76"></script>
 <script>
   function adjustChatHeight() {
-    const headerHeight = document.querySelector('header').offsetHeight; // Get header height
-    const windowHeight = window.innerHeight; // Get the total window height
-    const availableHeight = windowHeight - headerHeight; // Subtracting any other fixed padding/space
+    const headerHeight = document.querySelector('header').offsetHeight;
+    const windowHeight = window.innerHeight;
     const cardsEl = document.getElementById('sentiment-cards');
-    const cardsHeight = cardsEl ? cardsEl.offsetHeight : 0; // Height of sentiment cards
-    // Set max-height of chat area
-    document.querySelector('.ScrollStyle').style.maxHeight = `${availableHeight - cardsHeight - 170}px`;
+    const cardsHeight = cardsEl ? cardsEl.offsetHeight : 0;
+    document.querySelector('.ScrollStyle').style.maxHeight = `${windowHeight - headerHeight - cardsHeight - 170}px`;
   }
-
-  // Adjust the height on page load and when the window is resized
   window.addEventListener('load', adjustChatHeight);
   window.addEventListener('resize', adjustChatHeight);
 </script>
-
 </body>
 </html>
