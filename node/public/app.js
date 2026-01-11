@@ -411,11 +411,32 @@ signinBtn.addEventListener("click", async (e) => {
 
 // ---------------------- Handle web chat messages ----------------------
 form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+  e.preventDefault();  
   document.getElementById("symbol-loader").style.display = "block";
   const msg = input.value.trim();
   if (!msg) return;
 
+  const card = document.querySelector("#sentiment-cards .glass-card");
+  if (card) {
+    // --- Clear all fields first ---
+    card.querySelector(".stock-symbol").textContent = "--";
+    card.querySelector(".stock-price").innerHTML = "₹-- <span>(--)</span>";
+
+    const stats1 = card.querySelectorAll(".stats-grid .stat strong");
+    stats1.forEach((el) => (el.textContent = "--"));
+
+    const rows1 = card.querySelectorAll(".row-line .value");
+    rows1.forEach((el) => {
+      el.textContent = "--";
+      el.className = "value neutral"; // reset color
+    });
+
+    const aiBox1 = card.querySelector(".ai-box");
+    if (aiBox1) aiBox1.textContent = "{}";
+
+    const chartBox1 = card.querySelector(".chart-box");
+    if (chartBox1) chartBox1.innerHTML = "";
+ }
   //appendMessage("You", msg);
   input.value = "";
 
@@ -450,20 +471,6 @@ function updateSentimentCard(data) {
   card.querySelector(".stock-symbol").textContent = "--";
   card.querySelector(".stock-price").innerHTML = "₹-- <span>(--)</span>";
 
-  const stats1 = card.querySelectorAll(".stats-grid .stat strong");
-  stats1.forEach((el) => (el.textContent = "--"));
-
-  const rows1 = card.querySelectorAll(".row-line .value");
-  rows1.forEach((el) => {
-    el.textContent = "--";
-    el.className = "value neutral"; // reset color
-  });
-
-  const aiBox1 = card.querySelector(".ai-box");
-  if (aiBox1) aiBox1.textContent = "{}";
-
-  const chartBox1 = card.querySelector(".chart-box");
-  if (chartBox1) chartBox1.innerHTML = "";
   // Helpers
   const safeNum = (n) => (isNaN(parseFloat(n)) ? "--" : parseFloat(n).toFixed(2));
   const formatNumber = (n) => {
