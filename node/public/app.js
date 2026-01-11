@@ -407,7 +407,7 @@ form.addEventListener("submit", async (e) => {
     await delay(Math.random() * 1000 + 1000);
 
     typingDiv.remove();
-    appendMessage("Bot", data.text, data.chart); // display the bot response
+    //appendMessage("Bot", data.text, data.chart); // display the bot response
   } catch (err) {
     typingDiv.remove();
     appendMessage("Bot", "⚠️ Error fetching response");
@@ -492,8 +492,14 @@ function updateSentimentCard(data) {
   if (aiBox) {
     aiBox.textContent = JSON.stringify(data.ai_analysis || {}, null, 2);
   }
+  const chartBox = card.querySelector(".chart-box");
+  chartBox.innerHTML = renderChart(data.__raw_result.chart);
 }
+function renderChart(chartData) {
+  if (!chartData) return "";
 
+  return `<img src="${chartData}" style="width:100%; border-radius:12px;" />`;
+}
 // ---------------------- Alerts Button ----------------------
 alertsBtn.addEventListener("click", async () => {
   const typingDiv = botTypingIndicator();
