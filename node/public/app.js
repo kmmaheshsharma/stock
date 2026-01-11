@@ -396,7 +396,7 @@ form.addEventListener("submit", async (e) => {
   //appendMessage("You", msg);
   input.value = "";
 
-  const typingDiv = botTypingIndicator();
+  //const typingDiv = botTypingIndicator();
   const phone = localStorage.getItem("userPhone");
   const userId = localStorage.getItem("userId");
     try {
@@ -411,7 +411,7 @@ form.addEventListener("submit", async (e) => {
     // simulate typing delay
     await delay(Math.random() * 1000 + 1000);
 
-    typingDiv.remove();
+   // typingDiv.remove();
     document.getElementById("symbol-loader").style.display = "none";
     //appendMessage("Bot", data.text, data.chart); // display the bot response
   } catch (err) {
