@@ -541,41 +541,77 @@ function updateSentimentCard(data) {
 
   // AI Box
   const aiBox = card.querySelector(".ai-box");
+
   if (aiBox && data.ai_analysis) {
     const ai = data.ai_analysis;
+
+    const symbol = result?.symbol || "";
+    const isUS = !symbol.endsWith(".NS") && !symbol.endsWith(".BO");
+    const currency = isUS ? "$" : "₹";
+
+    const predictedMove = ai.predicted_move
+      ? ai.predicted_move.toUpperCase()
+      : "N/A";
+
+    const confidence =
+      ai.confidence != null
+        ? Math.round(ai.confidence * 100)
+        : null;
+
+    const support = ai.support_level ?? "N/A";
+    const resistance = ai.resistance_level ?? "N/A";
+    const risk = ai.risk ? ai.risk.toUpperCase() : "N/A";
+    const recommendation = ai.recommendation || "N/A";
+
     aiBox.innerHTML = `
-      <div class="analysis-card">
-        <div class="analysis-item ${ai.trend.toLowerCase()}">
-          <span>📉 Trend</span>
-          <strong>${ai.trend}</strong>
+      <div class="groq-analysis">
+        <div class="analysis-header">
+          <h4>🤖 AI Analysis</h4>
+          <button class="why-btn">Why?</button>
         </div>
 
-        <div class="analysis-item">
-          <span>🎯 Confidence</span>
-          <strong>${ai.confidence}%</strong>
-        </div>
+        <div class="analysis-card">
+          <div class="analysis-item ${predictedMove.toLowerCase()}">
+            <span>📈 Trend</span>
+            <strong>${predictedMove}</strong>
+          </div>
 
-        <div class="analysis-item">
-          <span>🧱 Support</span>
-          <strong>₹${ai.support}</strong>
-        </div>
+          <div class="analysis-item">
+            <span>🎯 Confidence</span>
+            <strong>${confidence !== null ? confidence + "%" : "N/A"}</strong>
+            ${
+              confidence !== null
+                ? `<div class="confidence-bar">
+                    <div class="confidence-fill" style="width:${confidence}%"></div>
+                  </div>`
+                : ""
+            }
+          </div>
 
-        <div class="analysis-item">
-          <span>🚧 Resistance</span>
-          <strong>₹${ai.resistance}</strong>
-        </div>
+          <div class="analysis-item">
+            <span>🧱 Support</span>
+            <strong>${currency}${support}</strong>
+          </div>
 
-        <div class="analysis-item ${ai.risk.toLowerCase()}">
-          <span>⚠️ Risk</span>
-          <strong>${ai.risk}</strong>
+          <div class="analysis-item">
+            <span>🚧 Resistance</span>
+            <strong>${currency}${resistance}</strong>
+          </div>
+
+          <div class="analysis-item ${risk.toLowerCase()}">
+            <span>⚠️ Risk</span>
+            <strong>${risk}</strong>
+          </div>
+
+          <div class="analysis-item">
+            <span>💡 Recommendation</span>
+            <strong>${recommendation}</strong>
+          </div>
         </div>
-        <div class="analysis-item ${ai.risk.toLowerCase()}">
-          <span>⚡ Recommendation:</span>
-          <strong>${ai.recommendation}</strong>
-        </div>        
       </div>
     `;
   }
+
   const chartBox = card.querySelector(".chart-box");
   chartBox.innerHTML = renderChart(data.chart);
 }
