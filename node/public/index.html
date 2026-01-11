@@ -228,6 +228,49 @@
     0%, 80%, 100% { transform: scale(0); }
     40% { transform: scale(1); }
   }
+  .analysis-card {
+    background: linear-gradient(180deg, #0f1b2d, #0b1220);
+    border-radius: 16px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .analysis-item {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+  }
+
+  .analysis-item span {
+    color: #9ca3af;
+  }
+
+  .analysis-item strong {
+    color: #fff;
+    font-size: 15px;
+  }
+
+  /* Trend colors */
+  .analysis-item.bearish strong {
+    color: #ef4444;
+  }
+
+  .analysis-item.bullish strong {
+    color: #22c55e;
+  }
+
+  /* Risk colors */
+  .analysis-item.moderate strong {
+    color: #facc15;
+}
+
   </style>
 </head>
 <body>
