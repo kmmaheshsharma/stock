@@ -73,8 +73,11 @@ function arrayBufferToBase64(buffer) {
   bytes.forEach(b => binary += String.fromCharCode(b));
   return btoa(binary);
 }
+window.addEventListener("load", function() {
+  updateMarketStatus();             // Initial check
+  setInterval(updateMarketStatus, 60000); // Update every 60 seconds
+});
 async function enablePushNotifications() {
-  setInterval(updateMarketStatus, 60000);
   const userId = await getAndCheckUser();
   console.log("enablePushNotifications called"); // debug line
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
@@ -506,7 +509,7 @@ function renderChart(chartData) {
 function updateMarketStatus() {
   const now = new Date();
 
-  // Convert to IST (Indian Standard Time) if your server/user is in another timezone
+  // Convert to IST (Indian Standard Time)
   const istOffset = 5.5 * 60; // IST = UTC+5:30 in minutes
   const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
   const istTime = new Date(utc + (istOffset * 60000));
@@ -517,8 +520,8 @@ function updateMarketStatus() {
   const totalMinutes = hours * 60 + minutes;
 
   // NSE market hours: 09:15 - 15:30 IST, Monday-Friday
-  const marketOpen = 9 * 60 + 15;  // 9:15 AM
-  const marketClose = 15 * 60 + 30; // 3:30 PM
+  const marketOpen = 9 * 60 + 15;
+  const marketClose = 15 * 60 + 30;
 
   const isMarketOpen = day >= 1 && day <= 5 && totalMinutes >= marketOpen && totalMinutes <= marketClose;
 
