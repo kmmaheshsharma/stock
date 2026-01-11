@@ -545,7 +545,7 @@ function updateSentimentCard(data) {
   if (aiBox && data.ai_analysis) {
     const ai = data.ai_analysis;
 
-    const symbol = result?.symbol || "";
+    const symbol = data?.symbol || "";
     const isUS = !symbol.endsWith(".NS") && !symbol.endsWith(".BO");
     const currency = isUS ? "$" : "₹";
 
