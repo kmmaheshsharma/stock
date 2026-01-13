@@ -1,17 +1,19 @@
-// PostgreSQL connection helper (Supabase IPv4 Pooler SAFE)
+// PostgreSQL connection helper
 const dns = require("dns");
 dns.setDefaultResultOrder("ipv4first");
-
-const { Pool } = require("pg");
-require("dotenv").config();
+const { Pool } = require('pg');
+require('dotenv').config();
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  host: process.env.PG_HOST,
+  port: Number(process.env.PG_PORT || 6543),
+  database: process.env.PG_DATABASE,
+  user: process.env.PG_USER,
+  password: process.env.PG_PASSWORD,
+  ssl: process.env.PG_SSL === 'true' ? { rejectUnauthorized: false } : false
 });
-
 pool.on("connect", () => {
-  console.log("✅ Connected to Supabase PostgreSQL (IPv4)");
+  console.log("✅ Connected to PostgreSQL");
 });
 
 pool.on("error", (err) => {
@@ -22,3 +24,4 @@ module.exports = {
   query: (text, params) => pool.query(text, params),
   pool
 };
+
