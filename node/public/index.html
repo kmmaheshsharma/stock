@@ -320,48 +320,133 @@
 </head>
 <body>
 <div class="app">
-<!-- Your HTML content remains completely unchanged -->
-<!-- SIGNUP SCREEN -->
-<section id="signup-screen" style="display:none;">
-<!-- ... all signup code unchanged ... -->
-</section>
 
-<!-- CHAT SCREEN -->
-<section id="chat-screen" style="display:block;">
-<header>
-<!-- ... header code unchanged ... -->
-</header>
+  <!-- SIGNUP SCREEN -->
+  <section id="signup-screen" style="display:none;">
+    <h2 style="color:white; text-align:center;">Welcome to NoBroko Bot</h2>
+    <form id="signup-form" style="display:flex; flex-direction:column; gap:12px; padding:20px;">
+      <input type="text" id="name" placeholder="Name" required style="padding:10px; border-radius:8px; border:none;">
+      <input type="text" id="phone" placeholder="Phone (+91xxxxxxx)" required style="padding:10px; border-radius:8px; border:none;">
+      <input type="email" id="email" placeholder="Email" required style="padding:10px; border-radius:8px; border:none;">
+      <label style="color:white;"><input type="checkbox" id="subscribe" checked> Subscribe to alerts</label>
+      <button type="button" id="signin-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%;">Sign In</button>
+      <button type="button" id="signup-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%;">Sign Up</button>
+    </form>
+  </section>
 
-<section id="sentiment-cards">
-<!-- Stock Card Example -->
-<div class="glass-card">
-<!-- ... stock card content unchanged ... -->
-</div>
-</section>
+  <!-- CHAT SCREEN -->
+  <section id="chat-screen" style="display:block;">
+    <header>
+      <div class="header-top">
+        <button id="back-btn" style="background:none; border:none; cursor:pointer;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
 
-<section id="chat-container">
-<div id="messages" class="ScrollStyle"></div>
-<form id="chat-form">
-<input id="message-input" placeholder="Ask about a stock…" autocomplete="off">
-<button type="submit">
-<!-- ... submit icon ... -->
-</button>
-</form>
-</section>
-</section>
+        <div class="header-center">
+          <span>📈</span>
+          <span>NoBroko Bot</span>
+        </div>
+
+        <div class="header-icons">
+          <button id="alerts-btn" style="background:none; border:none; cursor:pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 01-3.46 0"></path>
+            </svg>
+          </button>
+          <button id="install-btn" style="display:none; background:none; border:none; cursor:pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14"></path>
+              <path d="M5 12l7 7 7-7  -7 7 7-7 2-2"></path>
+            </svg>
+          </button>
+          <button style="background:none; border:none; cursor:pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="market-status" id="market-status">
+        <svg width="10" height="10">
+          <circle cx="5" cy="5" r="5" fill="#22c55e" id="market-circle"/>
+        </svg>
+        <span id="market-text">Market Open</span>
+      </div>
+    </header>
+
+    <section id="sentiment-cards">
+      <!-- Stock Card Example -->
+      <div class="glass-card" style="margin:12px 12px 0 12px;">
+      <div class="stock-row">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="loader" id="symbol-loader" style="display:none;"></div>
+          <div class="stock-symbol">STOCK.NS</div>
+        </div>
+        <div class="stock-price">₹xxxx.00 <span style="color:#22c55e;">(+x.xx%)</span></div>
+      </div>
+
+
+        <div class="stats-grid">
+          <div class="stat">Low<br><strong>xxxx.xx</strong></div>
+          <div class="stat">High<br><strong>xxxx.xx</strong></div>
+          <div class="stat">Volume<br><strong>xxxx.xx</strong></div>
+          <div class="stat">Avg Vol<br><strong>xxxxK</strong></div>
+        </div>
+
+        <div class="row-line"><span class="label">Twitter Sentiment</span><span class="value green">xxxxx</span></div>
+        <div class="row-line"><span class="label">Confidence</span><span class="value green">xxxx.xx</span></div>
+        <div class="row-line"><span class="label">Suggested Entry</span><span class="value">₹xxx–₹xxx</span></div>
+        <div class="row-line"><span class="label">Alert</span><span class="value green">xxxxx xxxxx</span></div>
+
+        <div class="ai-box" style="margin-top:12px;">
+          {
+            "xxxx": "xxxx",
+            "xxxx": "xxxx",
+            "xxxx": xxxx,
+            "xxxx": "xxxx xxxx"
+          }
+        </div>
+        <div class="chart-box" style="margin-top:12px;"></div>
+        <div class="action-row">
+          <button class="btn-outline">Add to Watchlist</button>
+          <button class="btn-primary">Set Alert</button>          
+        </div>
+      </div>
+    </section>
+
+    <section id="chat-container">
+      <div id="messages" class="ScrollStyle"></div>
+
+      <form id="chat-form">
+        <input id="message-input" placeholder="Ask about a stock…" autocomplete="off">
+        <button type="submit">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#022c22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </form>
+    </section>
+  </section>
 </div>
 
 <script src="app.js?v=83"></script>
 <script>
-function adjustChatHeight() {
-  const headerHeight = document.querySelector('header').offsetHeight;
-  const windowHeight = window.innerHeight;
-  const cardsEl = document.getElementById('sentiment-cards');
-  const cardsHeight = cardsEl ? cardsEl.offsetHeight : 0;
-  document.querySelector('.ScrollStyle').style.maxHeight = `${windowHeight - headerHeight - cardsHeight - document.getElementById('chat-form').offsetHeight - 100}px`;
-}
-window.addEventListener('load', adjustChatHeight);
-window.addEventListener('resize', adjustChatHeight);
+  function adjustChatHeight() {
+    const headerHeight = document.querySelector('header').offsetHeight;
+    const windowHeight = window.innerHeight;
+    const cardsEl = document.getElementById('sentiment-cards');
+    const cardsHeight = cardsEl ? cardsEl.offsetHeight : 0;
+    document.querySelector('.ScrollStyle').style.maxHeight = `${windowHeight - headerHeight - cardsHeight - document.getElementById('chat-form').offsetHeight - 100}px`;
+  }
+  window.addEventListener('load', adjustChatHeight);
+  window.addEventListener('resize', adjustChatHeight);   
 </script>
 </body>
 </html>
