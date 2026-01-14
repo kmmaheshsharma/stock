@@ -622,14 +622,30 @@ function updateSentimentCard(data) {
   const chartBox = card.querySelector(".chart-box");
   chartBox.innerHTML = renderChart(data.chart);
 
-  
+
   const whyBtn = aiBox.querySelector(".why-btn");
   whyBtn.addEventListener("click", () => {
+      const predictedMoveRaw = ai.predicted_move
+        ? ai.predicted_move.toUpperCase()
+        : "N/A";
+
+      const confidence = ai.confidence != null
+        ? Math.round(ai.confidence * 100)
+        : null;
+
+      const support = ai.support_level ?? "N/A";
+      const resistance = ai.resistance_level ?? "N/A";
+      const riskRaw = ai.risk ? ai.risk.toUpperCase() : "N/A";
+      const recommendation = ai.recommendation || "N/A";
+
+      const symbol = data?.symbol || "";
+      const isUS = !symbol.endsWith(".NS") && !symbol.endsWith(".BO");
+      const currency = isUS ? "$" : "₹";    
     const explanation = `
       <h3>Why this prediction?</h3>
       <p>The AI predicts a <strong>${predictedMoveRaw}</strong> trend based on recent price movements and volume changes.</p>
       <p>Confidence level is <strong>${confidence !== null ? confidence + "%" : "N/A"}</strong>, indicating the model's certainty.</p>
-      <p>Support and resistance levels help identify price floors and ceilings at ₹${support} and ₹${resistance} respectively.</p>
+      <p>Support and resistance levels help identify price floors and ceilings at ${currency}${support} and ${currency}${resistance} respectively.</p>
       <p>Risk is assessed as <strong>${riskRaw}</strong>, considering market volatility and recent fluctuations.</p>
       <p>The AI recommends <strong>${recommendation}</strong> based on these combined factors.</p>
     `;
