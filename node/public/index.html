@@ -316,6 +316,123 @@
       cursor: pointer;
       color: #eee;
     }
+    /* Stock Card Professional Styling */
+    .stock-card {
+      margin: 12px;
+      padding: 16px;
+      background: linear-gradient(180deg, rgba(31,41,55,0.95), rgba(2,6,23,0.95));
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      backdrop-filter: blur(15px);
+    }
+
+    .stock-symbol-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stock-symbol {
+      font-weight: 700;
+      font-size: 16px;
+      color: #e5e7eb;
+    }
+
+    .loader {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top: 2px solid #22c55e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .stock-price {
+      font-weight: 700;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    .price-change.green {
+      color: #22c55e;
+      margin-left: 6px;
+    }
+    .price-change.red {
+      color: #ef4444;
+      margin-left: 6px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px 20px;
+      margin: 12px 0;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 2px;
+    }
+
+    .stat-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+
+    .row-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      margin: 6px 0;
+    }
+
+    .row-line .label {
+      color: #9ca3af;
+      font-weight: 500;
+    }
+
+    .row-line .value {
+      font-weight: 600;
+    }
+
+    .row-line .value.green {
+      color: #22c55e;
+    }
+
+    .row-line .value.red {
+      color: #ef4444;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      .stock-card {
+        padding: 12px;
+        margin: 8px;
+      }
+
+      .stock-symbol, .stock-price {
+        font-size: 14px;
+      }
+
+      .stat-value {
+        font-size: 13px;
+      }
+
+      .row-line {
+        font-size: 13px;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -381,28 +498,57 @@
     </header>
 
     <section id="sentiment-cards">
-      <!-- Stock Card Example -->
-      <div class="glass-card" style="margin:12px 12px 0 12px;">
-      <div class="stock-row">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <div class="loader" id="symbol-loader" style="display:none;"></div>
-          <div class="stock-symbol">STOCK.NS</div>
-        </div>
-        <div class="stock-price">₹xxxx.00 <span style="color:#22c55e;">(+x.xx%)</span></div>
+  <!-- Stock Card -->
+  <div class="glass-card stock-card">
+    <!-- Stock Header -->
+    <div class="stock-row">
+      <div class="stock-symbol-wrapper">
+        <div class="loader" id="symbol-loader" style="display:none;"></div>
+        <div class="stock-symbol">STOCK.NS</div>
       </div>
+      <div class="stock-price">
+        ₹xxxx.00 <span class="price-change green">(+x.xx%)</span>
+      </div>
+    </div>
 
+          <!-- Stats Grid -->
+          <div class="stats-grid">
+            <div class="stat">
+              <span class="stat-label">Low</span>
+              <strong class="stat-value">xxxx.xx</strong>
+            </div>
+            <div class="stat">
+              <span class="stat-label">High</span>
+              <strong class="stat-value">xxxx.xx</strong>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Volume</span>
+              <strong class="stat-value">xxxx.xx</strong>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Avg Vol</span>
+              <strong class="stat-value">xxxxK</strong>
+            </div>
+          </div>
 
-        <div class="stats-grid">
-          <div class="stat">Low<br><strong>xxxx.xx</strong></div>
-          <div class="stat">High<br><strong>xxxx.xx</strong></div>
-          <div class="stat">Volume<br><strong>xxxx.xx</strong></div>
-          <div class="stat">Avg Vol<br><strong>xxxxK</strong></div>
+          <!-- Sentiment Rows -->
+          <div class="row-line">
+            <span class="label">Twitter Sentiment</span>
+            <span class="value green">xxxxx</span>
+          </div>
+          <div class="row-line">
+            <span class="label">Confidence</span>
+            <span class="value green">xxxx.xx</span>
+          </div>
+          <div class="row-line">
+            <span class="label">Suggested Entry</span>
+            <span class="value">₹xxx–₹xxx</span>
+          </div>
+          <div class="row-line">
+            <span class="label">Alert</span>
+            <span class="value green">xxxxx xxxxx</span>
+          </div>
         </div>
-
-        <div class="row-line"><span class="label">Twitter Sentiment</span><span class="value green">xxxxx</span></div>
-        <div class="row-line"><span class="label">Confidence</span><span class="value green">xxxx.xx</span></div>
-        <div class="row-line"><span class="label">Suggested Entry</span><span class="value">₹xxx–₹xxx</span></div>
-        <div class="row-line"><span class="label">Alert</span><span class="value green">xxxxx xxxxx</span></div>
 
         <div class="ai-box" style="margin-top:12px;">
           {
