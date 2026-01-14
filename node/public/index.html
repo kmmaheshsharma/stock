@@ -252,20 +252,33 @@
   .analysis-card {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px 10px;            /* row-gap column-gap */
-    align-items: start;       /* prevent vertical stretching */
+
+    /* KEY FIXES */
+    align-content: start;        /* stop vertical distribution */
+    grid-auto-rows: max-content; /* rows wrap content tightly */
+
+    row-gap: 12px;
+    column-gap: 10px;
   }
 
   .analysis-item {
-    line-height: 1.2;         /* reduce line box height */
-    padding: 2px 0;           /* compact vertical spacing */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+
+    padding: 0;
+    line-height: 1.25;
+  }
+
+  .analysis-item span,
+  .analysis-item strong {
+    margin: 0;
+    padding: 0;
   }
 
   .analysis-item strong {
-    display: block;
-    font-weight: 600;
     margin-top: 2px;
-    line-height: 1.2;
+    font-weight: 600;
   }
 
   /* Trend */
