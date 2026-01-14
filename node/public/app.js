@@ -621,6 +621,36 @@ function updateSentimentCard(data) {
 
   const chartBox = card.querySelector(".chart-box");
   chartBox.innerHTML = renderChart(data.chart);
+
+  
+  const whyBtn = aiBox.querySelector(".why-btn");
+  whyBtn.addEventListener("click", () => {
+    const explanation = `
+      <h3>Why this prediction?</h3>
+      <p>The AI predicts a <strong>${predictedMoveRaw}</strong> trend based on recent price movements and volume changes.</p>
+      <p>Confidence level is <strong>${confidence !== null ? confidence + "%" : "N/A"}</strong>, indicating the model's certainty.</p>
+      <p>Support and resistance levels help identify price floors and ceilings at ₹${support} and ₹${resistance} respectively.</p>
+      <p>Risk is assessed as <strong>${riskRaw}</strong>, considering market volatility and recent fluctuations.</p>
+      <p>The AI recommends <strong>${recommendation}</strong> based on these combined factors.</p>
+    `;
+
+    // Simple modal creation
+    const modal = document.createElement("div");
+    modal.classList.add("ai-explanation-modal");
+    modal.innerHTML = `
+      <div class="modal-content">
+        ${explanation}
+        <button class="close-modal">Close</button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close button handler
+    modal.querySelector(".close-modal").addEventListener("click", () => {
+      document.body.removeChild(modal);
+    });
+  });
 }
 function renderChart(chartData) {
   if (!chartData) return "";

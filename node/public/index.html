@@ -292,6 +292,34 @@
   .analysis-item.high strong {
     color: #ef4444;
   }
+  .ai-explanation-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  .ai-explanation-modal .modal-content {
+    background: #121722;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 400px;
+    color: #ccc;
+    box-shadow: 0 0 15px rgba(0,0,0,0.8);
+  }
+
+  .ai-explanation-modal button.close-modal {
+    margin-top: 20px;
+    background: #2d3748;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #eee;
+  }
 
  </style>
 </head>
@@ -376,7 +404,7 @@
           <div class="stat">Avg Vol<br><strong>xxxxK</strong></div>
         </div>
 
-        <div class="row-line"><span class="label">Sentiment</span><span class="value green">xxxxx</span></div>
+        <div class="row-line"><span class="label">Twitter Sentiment</span><span class="value green">xxxxx</span></div>
         <div class="row-line"><span class="label">Confidence</span><span class="value green">xxxx.xx</span></div>
         <div class="row-line"><span class="label">Suggested Entry</span><span class="value">₹xxx–₹xxx</span></div>
         <div class="row-line"><span class="label">Alert</span><span class="value green">xxxxx xxxxx</span></div>
