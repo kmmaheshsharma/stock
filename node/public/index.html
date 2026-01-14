@@ -191,6 +191,15 @@
       .msg-content{ font-size:13px; padding:8px;}
       .glass-card{padding:12px;margin:8px;}
     }
+    @media (max-width: 480px) {
+      .analysis-card {
+        gap: 6px 8px;
+      }
+
+      .analysis-item {
+        font-size: 12px;
+      }
+    }    
     .loader {
       width: 14px;
       height: 14px;
@@ -241,22 +250,22 @@
   }
 
   .analysis-card {
-    width: 100%;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    box-sizing: border-box;
+    gap: 8px 10px;            /* row-gap column-gap */
+    align-items: start;       /* prevent vertical stretching */
   }
 
   .analysis-item {
-    min-width: 0;
-    overflow: hidden;
+    line-height: 1.2;         /* reduce line box height */
+    padding: 2px 0;           /* compact vertical spacing */
   }
 
   .analysis-item strong {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: block;
+    font-weight: 600;
+    margin-top: 2px;
+    line-height: 1.2;
   }
 
   /* Trend */
