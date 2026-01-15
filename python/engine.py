@@ -291,7 +291,7 @@ def run_engine(symbol, entry_price=None):
             if price_data:  # only calculate indicators if price_data exists
                 resolved_symbol = sym               
 
-                indicators = calculate_indicators(price_data)
+                indicators = calculate_indicators_from_price(price_data)
                 
                 # Ensure numeric defaults if any indicator is None
                 if not indicators:
