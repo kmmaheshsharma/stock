@@ -315,6 +315,24 @@
       cursor: pointer;
       color: #eee;
     }
+    .breakdown-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+
+    .breakdown-grid div {
+      background: rgba(255,255,255,0.05);
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    .trade-plan .stop-loss strong {
+      color: #ef4444;
+    }
+
   </style>
 </head>
 <body>
@@ -399,7 +417,56 @@
         </div>
 
         <div class="row-line"><span class="label">Twitter Sentiment</span><span class="value green">xxxxx</span></div>
-        <div class="row-line"><span class="label">Confidence</span><span class="value green">xxxx.xx</span></div>
+        <div class="row-line" style="cursor:pointer;">
+          <span class="label">Confidence</span>
+          <span class="value green">
+            <button class="confidence-toggle" onclick="toggleConfidence()">
+              📊 Confidence Breakdown
+            </button>
+            <div id="confidence-breakdown" style="display:none; margin-top:10px;">
+              <div class="analysis-item">
+                <span>📊 Technical Indicators</span>
+                <strong id="conf-tech">xx%</strong>
+                <div class="confidence-bar">
+                  <div class="confidence-fill" id="bar-tech" style="width:70%"></div>
+                </div>
+              </div>
+
+              <div class="analysis-item">
+                <span>📈 Volume Behavior</span>
+                <strong id="conf-volume">xx%</strong>
+                <div class="confidence-bar">
+                  <div class="confidence-fill" id="bar-volume" style="width:60%"></div>
+                </div>
+              </div>
+
+              <div class="analysis-item">
+                <span>🧠 Market Sentiment</span>
+                <strong id="conf-sentiment">xx%</strong>
+                <div class="confidence-bar">
+                  <div class="confidence-fill" id="bar-sentiment" style="width:50%"></div>
+                </div>
+              </div>
+
+              <div class="analysis-item">
+                <span>📉 Price Action</span>
+                <strong id="conf-price">xx%</strong>
+                <div class="confidence-bar">
+                  <div class="confidence-fill" id="bar-price" style="width:65%"></div>
+                </div>
+              </div>
+
+              <div class="analysis-item">
+                <span>📐 Trend Strength</span>
+                <strong id="conf-trend">xx%</strong>
+                <div class="confidence-bar">
+                  <div class="confidence-fill" id="bar-trend" style="width:60%"></div>
+                </div>
+              </div>
+            </div>            
+          </span>
+        </div>
+
         <div class="row-line"><span class="label">Suggested Entry</span><span class="value">₹xxx–₹xxx</span></div>
         <div class="row-line"><span class="label">Alert</span><span class="value green">xxxxx xxxxx</span></div>
 
@@ -435,7 +502,7 @@
   </section>
 </div>
 
-<script src="app.js?v=83"></script>
+<script src="app.js?v=84"></script>
 <script>
   function adjustChatHeight() {
     const headerHeight = document.querySelector('header').offsetHeight;

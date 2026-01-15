@@ -646,6 +646,44 @@ function updateSentimentCard(data) {
           document.body.removeChild(modal);
         });
       });      
+      if (ai.confidence_breakdown) {
+        const cb = ai.confidence_breakdown;
+
+        document.getElementById("confidence-breakdown").innerHTML = `
+          <div class="breakdown-grid">
+            <div>
+              <strong>📐 Technical</strong>
+              <p>${cb.technical.score}/${cb.technical.max}</p>
+              <small>
+                EMA: ${cb.technical.signals.ema_alignment}<br/>
+                RSI: ${cb.technical.signals.rsi}<br/>
+                MACD: ${cb.technical.signals.macd}
+              </small>
+            </div>
+
+            <div>
+              <strong>📰 Sentiment</strong>
+              <p>${cb.sentiment.score}/${cb.sentiment.max}</p>
+            </div>
+
+            <div>
+              <strong>📊 Volume</strong>
+              <p>${cb.volume.score}/${cb.volume.max}</p>
+            </div>
+
+            <div>
+              <strong>📈 Price Action</strong>
+              <p>${cb.price_action.score}/${cb.price_action.max}</p>
+            </div>
+
+            <div class="total-score">
+              <strong>Total Confidence</strong>
+              <p>${cb.total}%</p>
+            </div>
+          </div>
+        `;
+      }
+
     }
 
   const chartBox = card.querySelector(".chart-box");
@@ -744,4 +782,8 @@ if ("serviceWorker" in navigator) {
       enablePushNotifications(); // call here after registration
     })
     .catch(console.error);
+}
+function toggleConfidence() {
+  const el = document.getElementById("confidence-breakdown");
+  el.style.display = el.style.display === "none" ? "grid" : "none";
 }
