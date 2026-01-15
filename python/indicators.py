@@ -54,7 +54,7 @@ def calculate_indicators(data):
     # Helper to safely extract last value from a Series
     def safe_float(series):
         try:
-            return round(float(series.iloc[-1]), 4)
+            return round(float(series.iat[-1]), 4)
         except (IndexError, TypeError, ValueError):
             return None
 
