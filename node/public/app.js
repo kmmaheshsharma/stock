@@ -690,9 +690,9 @@ function updateSentimentCard(data) {
             <strong>📐 Technical</strong>
             <p>${cb.technical}/100</p>
             <small>
-              EMA: ${cb.technical.signals.ema_alignment}<br/>
-              RSI: ${cb.technical.signals.rsi}<br/>
-              MACD: ${cb.technical.signals.macd}
+              EMA: ${cb.signals.signals.ema_alignment}<br/>
+              RSI: ${cb.signals.rsi}<br/>
+              MACD: ${cb.signals.macd}
             </small>
           </div>
           <div>
