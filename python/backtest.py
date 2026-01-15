@@ -44,7 +44,6 @@ def calculate_rsi(prices, period=14):
     rsi = [np.nan] * period + rsi
     return np.array(rsi)
 
-
 # Function to fetch historical stock data from Yahoo Finance
 def fetch_historical_data(symbol, start_date, end_date):
     """
@@ -59,29 +58,29 @@ def fetch_historical_data(symbol, start_date, end_date):
 def perform_backtest(symbol, strategy, start_date, end_date):
     # Fetch historical price data
     data = fetch_historical_data(symbol, start_date, end_date)
-    
-    # Check if data is empty or does not have enough rows
+
+    # Check if data is empty or doesn't have enough rows
     if data.empty or len(data) < 14:
         print(f"Not enough data to perform backtest for {symbol} from {start_date} to {end_date}")
-        return {
+        return json.dumps({
             "profit": 0.0,
             "winRate": 0.0,
             "maxDrawdown": 0.0,
             "sharpeRatio": 0.0
-        }
-    
+        })
+
     # Calculate RSI (rolling window of 14 days)
     rsi_values = calculate_rsi(data['Close'].values, period=14)
-    
+
     if rsi_values.size == 0:
         print(f"No valid RSI values generated for {symbol}.")
-        return {
+        return json.dumps({
             "profit": 0.0,
             "winRate": 0.0,
             "maxDrawdown": 0.0,
             "sharpeRatio": 0.0
-        }
-    
+        })
+
     data['RSI'] = rsi_values
 
     # Initialize backtest variables
@@ -125,13 +124,14 @@ def perform_backtest(symbol, strategy, start_date, end_date):
     else:
         sharpe_ratio = 0
     
-    return {
+    result = {
         "profit": round(total_profit, 2),
         "winRate": round(win_rate, 2),
         "maxDrawdown": round(max_drawdown, 2),
         "sharpeRatio": round(sharpe_ratio, 2)
     }
-
+    
+    return json.dumps(result)  # Return result as JSON string
 
 def main():
     # Get the stock symbol and strategy from the arguments
@@ -147,8 +147,8 @@ def main():
     # Perform the backtest dynamically
     results = perform_backtest(symbol, strategy, start_date, end_date)
 
-    # Return results as JSON
-    print(json.dumps(results))
+    # Print the results in JSON format
+    print(results)
 
 if __name__ == "__main__":
     main()
