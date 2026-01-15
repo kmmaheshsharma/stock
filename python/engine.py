@@ -195,6 +195,41 @@ def search_yahoo_symbol(name):
 
 
 def build_groq_combined_prompt(symbol, price_data, sentiment_score, indicators):
+    """
+    Build a combined prompt for Groq AI with price data, sentiment, and technical indicators.
+    Handles missing values safely.
+    """
+
+    # Safe helpers
+    def safe_float(val, default=0.0):
+        try:
+            if val is None:
+                return default
+            return float(val)
+        except (TypeError, ValueError):
+            return default
+
+    def safe_str(val, default="N/A"):
+        return str(val) if val is not None else default
+
+    # Price data
+    price = safe_float(price_data.get("price"))
+    low = safe_float(price_data.get("low"))
+    high = safe_float(price_data.get("high"))
+    volume = safe_float(price_data.get("volume"), 0)
+    avg_volume = safe_float(price_data.get("avg_volume"), 0)
+    change_percent = safe_float(price_data.get("change_percent"))
+
+    # Indicators
+    ema20 = safe_str(indicators.get("ema20"))
+    ema50 = safe_str(indicators.get("ema50"))
+    rsi = safe_str(indicators.get("rsi"))
+    macd = indicators.get("macd", {})
+    macd_value = safe_str(macd.get("value"))
+    macd_signal = safe_str(macd.get("signal"))
+    macd_hist = safe_str(macd.get("histogram"))
+
+    # Build prompt
     return f"""
 You are a professional financial and technical market analyst.
 
@@ -203,21 +238,21 @@ Analyze the following asset using BOTH market data and technical indicators.
 Symbol: "{symbol}"
 
 Market Data:
-- Current Price: {price_data.get('price', 0.0)}
-- Daily Low: {price_data.get('low', 0.0)}
-- Daily High: {price_data.get('high', 0.0)}
-- Volume: {price_data.get('volume', 0)}
-- Average Volume: {price_data.get('avg_volume', 0)}
-- Change %: {price_data.get('change_percent', 0.0)}
+- Current Price: {price}
+- Daily Low: {low}
+- Daily High: {high}
+- Volume: {volume}
+- Average Volume: {avg_volume}
+- Change %: {change_percent}
 - Sentiment Score: {sentiment_score}
 
 Technical Indicators:
-- EMA20: {indicators['ema20']}
-- EMA50: {indicators['ema50']}
-- RSI: {indicators['rsi']}
-- MACD Value: {indicators['macd']['value']}
-- MACD Signal: {indicators['macd']['signal']}
-- MACD Histogram: {indicators['macd']['histogram']}
+- EMA20: {ema20}
+- EMA50: {ema50}
+- RSI: {rsi}
+- MACD Value: {macd_value}
+- MACD Signal: {macd_signal}
+- MACD Histogram: {macd_hist}
 
 Return ONLY valid JSON with NO extra text:
 
@@ -235,13 +270,13 @@ Return ONLY valid JSON with NO extra text:
     "sentiment": 0-100
   }},
   "levels": {{
-    "support": float,
-    "resistance": float
+    "support": 0.0,
+    "resistance": 0.0
   }},
   "trade_plan": {{
-    "entry": float,
-    "stop_loss": float,
-    "targets": [float, float, float]
+    "entry": 0.0,
+    "stop_loss": 0.0,
+    "targets": [0.0, 0.0, 0.0]
   }},
   "risk": "low | moderate | high",
   "recommendation": "buy | sell | hold"
@@ -252,7 +287,6 @@ IMPORTANT RULES:
 - confidence_hint is only an estimation
 - No explanations outside JSON
 """
-
 
 # ------------------- Core Engine -------------------
 def run_engine(symbol, entry_price=None):
