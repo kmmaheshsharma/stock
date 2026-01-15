@@ -1,39 +1,40 @@
 import pandas as pd
+import numpy as np
 
-def safe_float(x, default=0.0):
-    """Convert to float, fallback to default if invalid."""
-    try:
-        if x is None or pd.isna(x):
-            return default
-        return float(x)
-    except (ValueError, TypeError):
-        return default
-
-def calculate_indicators_from_price(price_data):
+def calculate_indicators(data):
     """
-    Calculate EMA20, EMA50, RSI, MACD from single price_data dict.
-    Returns JSON-safe dictionary.
+    Calculate EMA20, EMA50, RSI, and MACD from a DataFrame with 'Close'.
+    Ensures all returned values are valid floats for JSON (no NaN/None).
     """
-    price = safe_float(price_data.get("price"), default=0.0)
+    # Default values if data is missing
+    defaults = {
+        "ema20": 0.0,
+        "ema50": 0.0,
+        "rsi": 50.0,
+        "macd": {"value": 0.0, "signal": 0.0, "histogram": 0.0}
+    }
 
-    # Create temp DataFrame with Close price
-    temp_df = pd.DataFrame({"Close": [price]})
+    if data is None or data.empty or 'Close' not in data.columns:
+        return defaults
 
-    close = temp_df['Close']
+    close = data['Close']
+
+    # Ensure series is numeric
+    close = pd.to_numeric(close, errors='coerce').fillna(method='ffill').fillna(0.0)
 
     # EMA
-    ema20 = close.ewm(span=20, adjust=False).mean().iat[-1]
-    ema50 = close.ewm(span=50, adjust=False).mean().iat[-1]
+    ema20 = close.ewm(span=20, adjust=False).mean()
+    ema50 = close.ewm(span=50, adjust=False).mean()
 
     # RSI
     delta = close.diff()
     up = delta.clip(lower=0)
     down = -1 * delta.clip(upper=0)
-    avg_gain = up.rolling(14, min_periods=1).mean()  # min_periods=1 to avoid NaN
+    avg_gain = up.rolling(14, min_periods=1).mean()
     avg_loss = down.rolling(14, min_periods=1).mean()
-    rs = avg_gain / avg_loss
+    rs = avg_gain / avg_loss.replace(0, np.nan)
     rsi_val = 100 - (100 / (1 + rs))
-    rsi_val = rsi_val.iat[-1]
+    rsi_val = rsi_val.fillna(50.0)  # default neutral if division by zero
 
     # MACD
     ema12 = close.ewm(span=12, adjust=False).mean()
@@ -42,28 +43,23 @@ def calculate_indicators_from_price(price_data):
     macd_signal = macd_line.ewm(span=9, adjust=False).mean()
     macd_hist = macd_line - macd_signal
 
-    # JSON-safe rounding
-    def round_safe(x, default=0.0, ndigits=4):
+    # Helper to safely convert last value to JSON-safe float
+    def safe_float(series, default=0.0):
         try:
-            if pd.isna(x):
+            val = float(series.iat[-1])
+            if np.isnan(val):
                 return default
-            return round(float(x), ndigits)
-        except (ValueError, TypeError):
+            return round(val, 4)
+        except:
             return default
 
     return {
-        "ema20": round_safe(ema20),
-        "ema50": round_safe(ema50),
-        "rsi": round_safe(rsi_val),
+        "ema20": safe_float(ema20),
+        "ema50": safe_float(ema50),
+        "rsi": safe_float(rsi_val, default=50.0),
         "macd": {
-            "value": round_safe(macd_line.iat[-1]),
-            "signal": round_safe(macd_signal.iat[-1]),
-            "histogram": round_safe(macd_hist.iat[-1])
+            "value": safe_float(macd_line),
+            "signal": safe_float(macd_signal),
+            "histogram": safe_float(macd_hist)
         }
     }
-
-# ===== Example usage =====
-if __name__ == "__main__":
-    price_data_example = {"price": 435.5, "low": 430, "high": 440, "volume": 10000}
-    indicators = calculate_indicators_from_price(price_data_example)
-    print(indicators)
