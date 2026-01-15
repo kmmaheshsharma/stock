@@ -286,13 +286,16 @@ def run_engine(symbol, entry_price=None):
         price_data = None
         resolved_symbol = None
         indicators = None
+        temp_df = None
         for sym in symbols:
             price_data = get_price(sym)  # your existing function, returns dict
             if price_data:  # only calculate indicators if price_data exists
                 resolved_symbol = sym               
+                temp_df = pd.DataFrame({
+                    "Close": price_data.get("history", [price_data.get("price")])
+                })
+                indicators = calculate_indicators_from_price(temp_df)
 
-                indicators = calculate_indicators_from_price(price_data)
-                
                 # Ensure numeric defaults if any indicator is None
                 if not indicators:
                     indicators = {
