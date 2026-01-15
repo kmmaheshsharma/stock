@@ -9,9 +9,8 @@ from market import get_price
 from sentiment import sentiment_for_symbol
 from chart import generate_chart
 import pandas as pd
-import pandas_ta as ta
 import yfinance as yf
-
+from indicators import get_indicators
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger("matplotlib").setLevel(logging.ERROR)
 logging.getLogger("PIL").setLevel(logging.ERROR)
@@ -61,23 +60,6 @@ Return a JSON object ONLY with the following keys (no extra text):
 - recommendation (values: "buy", "sell", "hold")
 
 Do not include any explanations or extra text. Output must be valid JSON.
-"""
-
-
-def build_groq_prompt_for_symbol(message):
-    return f"""
-You are a professional market analyst.
-
-A user has asked for the analysis of a stock or cryptocurrency.
-The name or symbol given by the user is:
-'{message}'
-
-Please provide the full, correct trading symbol.
-Examples:
-- Stocks: AAPL, SBIN.NS, TSLA
-- Crypto: BTC-USD, ETH-USD
-
-Only return the symbol.
 """
 
 # ------------------- Groq AI Call Wrappers -------------------
@@ -269,33 +251,65 @@ def get_technical_indicators(symbol):
         logging.warning(f"Indicator calculation failed: {e}")
         return None
 
-def build_groq_technical_prompt(symbol, indicators):
+def build_groq_combined_prompt(symbol, price_data, sentiment_score, indicators):
     return f"""
-You are a technical analysis assistant.
+You are a professional financial and technical market analyst.
 
-Symbol: {symbol}
+Analyze the following asset using BOTH market data and technical indicators.
 
-Indicators:
-EMA20: {indicators['ema20']}
-EMA50: {indicators['ema50']}
-RSI: {indicators['rsi']}
-MACD Value: {indicators['macd']['value']}
-MACD Signal: {indicators['macd']['signal']}
-MACD Histogram: {indicators['macd']['histogram']}
+Symbol: "{symbol}"
 
-Interpret the indicators and respond ONLY in JSON:
+Market Data:
+- Current Price: {price_data.get('price', 0.0)}
+- Daily Low: {price_data.get('low', 0.0)}
+- Daily High: {price_data.get('high', 0.0)}
+- Volume: {price_data.get('volume', 0)}
+- Average Volume: {price_data.get('avg_volume', 0)}
+- Change %: {price_data.get('change_percent', 0.0)}
+- Sentiment Score: {sentiment_score}
+
+Technical Indicators:
+- EMA20: {indicators['ema20']}
+- EMA50: {indicators['ema50']}
+- RSI: {indicators['rsi']}
+- MACD Value: {indicators['macd']['value']}
+- MACD Signal: {indicators['macd']['signal']}
+- MACD Histogram: {indicators['macd']['histogram']}
+
+Return ONLY valid JSON with NO extra text:
 
 {{
-  "ema_alignment": "bullish | bearish | neutral",
-  "rsi_state": "overbought | oversold | neutral",
-  "macd_state": "bullish | bearish | neutral",
-  "technical_bias": "bullish | bearish | neutral",
-  "confidence_hint": 0-100,
-  "reason": "short explanation"
+  "predicted_move": "up | down | neutral",
+  "technical_analysis": {{
+    "ema_alignment": "bullish | bearish | neutral",
+    "rsi_state": "overbought | oversold | neutral",
+    "macd_state": "bullish | bearish | neutral",
+    "technical_bias": "bullish | bearish | neutral",
+    "reason": "short explanation"
+  }},
+  "confidence_hint": {{
+    "technical": 0-100,
+    "sentiment": 0-100
+  }},
+  "levels": {{
+    "support": float,
+    "resistance": float
+  }},
+  "trade_plan": {{
+    "entry": float,
+    "stop_loss": float,
+    "targets": [float, float, float]
+  }},
+  "risk": "low | moderate | high",
+  "recommendation": "buy | sell | hold"
 }}
 
-No extra text.
+IMPORTANT RULES:
+- Do NOT calculate final confidence
+- confidence_hint is only an estimation
+- No explanations outside JSON
 """
+
 
 # ------------------- Core Engine -------------------
 def run_engine(symbol, entry_price=None):
@@ -356,13 +370,15 @@ def run_engine(symbol, entry_price=None):
         technical_analysis = {}
         technical_score = 0
 
-        if indicators:
-            try:
-                tech_prompt = build_groq_technical_prompt(resolved_symbol, indicators)
-                technical_analysis = call_groq_ai(tech_prompt)
-                technical_score = calculate_technical_score(technical_analysis)
-            except Exception as e:
-                logging.warning(f"Technical Grok analysis failed: {e}")
+        indicators = get_indicators(resolved_symbol)
+
+        if not indicators:
+            indicators = {
+                "ema20": None,
+                "ema50": None,
+                "rsi": None,
+                "macd": {"value": None, "signal": None, "histogram": None}
+            }
         # ----------------- Sentiment -----------------
         try:
             result = sentiment_for_symbol(resolved_symbol)
@@ -395,8 +411,8 @@ def run_engine(symbol, entry_price=None):
         chart_base64 = generate_chart(resolved_symbol)
 
         try:
-            prompt = build_groq_prompt(
-                resolved_symbol, price_data, result.get("sentiment_score", 0)
+            prompt = build_grbuild_groq_combined_promptoq_prompt(
+                resolved_symbol, price_data, result.get("sentiment_score", 0, ), indicators
             )
             ai_analysis = call_groq_ai(prompt)
             if not isinstance(ai_analysis, dict):
