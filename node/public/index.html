@@ -541,8 +541,8 @@
     /* Push your app to the right on desktop */
     @media (min-width: 1024px) {
       .app {
-        margin-left: auto;
-        margin-right: 40px;
+        margin-left: 40px;
+        margin-right: auto;
       }
     }
 
@@ -550,6 +550,46 @@
     @media (max-width: 1023px) {
       .ai-hero-panel {
         display: none;
+      }
+    }
+    /* MOBILE OPTIMIZATION */
+    @media (max-width: 768px) {
+
+      body {
+        overflow-x: hidden;
+      }
+
+      .ai-hero-panel {
+        position: relative;
+        width: 100%;
+        height: auto;
+        padding: 20px 16px;
+        background: linear-gradient(180deg, #020617, #020617);
+      }
+
+      .ai-hero-content {
+        padding: 24px;
+        border-radius: 18px;
+        animation: none;
+      }
+
+      .ai-hero-content h1 {
+        font-size: 26px;
+      }
+
+      .ai-sub {
+        font-size: 14px;
+      }
+
+      .ai-features li {
+        font-size: 13px;
+      }
+
+      .app {
+        margin: 0 !important;
+        max-width: 100%;
+        border-radius: 0;
+        box-shadow: none;
       }
     }
 
