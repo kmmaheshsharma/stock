@@ -7,27 +7,38 @@ import yfinance as yf
 # Function to calculate the Relative Strength Index (RSI)
 def calculate_rsi(prices, period=14):
     if len(prices) < period:
-        return np.array([])  # Return an empty array if there are not enough data points
-
+        print(f"Not enough data to calculate RSI. Expected at least {period} values, but got {len(prices)}.")
+        return np.array([])  # Return empty array if not enough data
+    
     deltas = np.diff(prices)
     gains = np.where(deltas > 0, deltas, 0)
     losses = np.where(deltas < 0, -deltas, 0)
-    
+
+    # Check if the gains and losses arrays are empty and return an empty RSI
+    if gains.size == 0 or losses.size == 0:
+        print(f"No gains or losses for {len(prices)} values.")
+        return np.array([])
+
     avg_gain = np.mean(gains[:period])
     avg_loss = np.mean(losses[:period])
 
-    # Compute RSI for each point after the first `period` values
-    rsi = []
-    for i in range(period, len(prices)):
-        gain = gains[i]
-        loss = losses[i]
-        
-        avg_gain = (avg_gain * (period - 1) + gain) / period
-        avg_loss = (avg_loss * (period - 1) + loss) / period
-        
-        rs = avg_gain / avg_loss if avg_loss != 0 else 100
-        rsi_value = 100 - (100 / (1 + rs))
-        rsi.append(rsi_value)
+    # Check for zero division error (if avg_loss is 0, RSI will be 100)
+    if avg_loss == 0:
+        print("No losses in the data, RSI will be 100.")
+        rsi = np.ones(len(prices)) * 100  # RSI = 100 when no losses
+    else:
+        rsi = []
+        for i in range(period, len(prices)):
+            gain = gains[i]
+            loss = losses[i]
+
+            avg_gain = (avg_gain * (period - 1) + gain) / period
+            avg_loss = (avg_loss * (period - 1) + loss) / period
+
+            # Prevent division by zero (handle the case where avg_loss might still be 0)
+            rs = avg_gain / avg_loss if avg_loss != 0 else 100
+            rsi_value = 100 - (100 / (1 + rs))
+            rsi.append(rsi_value)
 
     # Pad the first `period` values with NaN since they cannot be calculated
     rsi = [np.nan] * period + rsi
