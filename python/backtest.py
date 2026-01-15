@@ -7,11 +7,28 @@ import yfinance as yf
 # Function to calculate the Relative Strength Index (RSI)
 def calculate_rsi(prices, period=14):
     deltas = np.diff(prices)
-    gains = deltas[deltas > 0].sum() / period
-    losses = -deltas[deltas < 0].sum() / period
-    rs = gains / losses if losses != 0 else 100
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
+    gains = np.where(deltas > 0, deltas, 0)
+    losses = np.where(deltas < 0, -deltas, 0)
+    
+    avg_gain = np.mean(gains[:period])
+    avg_loss = np.mean(losses[:period])
+
+    # Compute RSI for each point after the first `period` values
+    rsi = []
+    for i in range(period, len(prices)):
+        gain = gains[i]
+        loss = losses[i]
+        
+        avg_gain = (avg_gain * (period - 1) + gain) / period
+        avg_loss = (avg_loss * (period - 1) + loss) / period
+        
+        rs = avg_gain / avg_loss if avg_loss != 0 else 100
+        rsi_value = 100 - (100 / (1 + rs))
+        rsi.append(rsi_value)
+
+    # Pad the first `period` values with NaN since they cannot be calculated
+    rsi = [np.nan] * period + rsi
+    return np.array(rsi)
 
 # Function to fetch historical stock data from Yahoo Finance
 def fetch_historical_data(symbol, start_date, end_date):
@@ -29,7 +46,7 @@ def perform_backtest(symbol, strategy, start_date, end_date):
     data = fetch_historical_data(symbol, start_date, end_date)
     
     # Calculate RSI (rolling window of 14 days)
-    rsi_values = data['Close'].rolling(window=14).apply(lambda x: calculate_rsi(x), raw=False)
+    rsi_values = calculate_rsi(data['Close'].values, period=14)
     data['RSI'] = rsi_values
     
     # Initialize backtest variables
