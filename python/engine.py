@@ -313,7 +313,7 @@ def run_engine(symbol, entry_price=None):
         technical_analysis = {}
         technical_score = 0
         
-        indicators = get_indicators_for_symbol(symbols)
+        indicators = get_indicators_for_symbol(resolved_symbol)
         if not indicators:
             indicators = {
                 "ema20": None,
