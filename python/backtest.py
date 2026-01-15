@@ -90,7 +90,7 @@ def main():
     strategy = sys.argv[2]  # Not currently used, but can be extended for different strategies
     start_date = sys.argv[3]
     end_date = sys.argv[4]
-
+    print(f"Performing backtest for {symbol} using strategy {strategy} from {start_date} to {end_date}...")
     # Perform the backtest dynamically
     results = perform_backtest(symbol, strategy, start_date, end_date)
 
