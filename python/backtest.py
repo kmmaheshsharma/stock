@@ -6,6 +6,7 @@ import yfinance as yf
 
 # Function to calculate the Relative Strength Index (RSI)
 def calculate_rsi(prices, period=14):
+    # Ensure the length of prices is large enough to calculate RSI
     if len(prices) < period:
         return np.array([])  # Return empty array if not enough data
     
@@ -31,6 +32,7 @@ def calculate_rsi(prices, period=14):
             rsi_value = 100 - (100 / (1 + rs))
             rsi.append(rsi_value)
 
+    # Return the full RSI series with initial NaNs for the first 'period' values
     rsi = [np.nan] * period + rsi
     return np.array(rsi)
 
@@ -49,6 +51,7 @@ def fetch_historical_data(symbol, start_date, end_date):
 def perform_backtest(symbol, strategy, start_date, end_date):
     data = fetch_historical_data(symbol, start_date, end_date)
 
+    # Check if data is empty or too small to calculate RSI
     if data.empty or len(data) < 14:
         print(f"Not enough data to perform backtest for {symbol} from {start_date} to {end_date}")
         return json.dumps({
@@ -60,6 +63,7 @@ def perform_backtest(symbol, strategy, start_date, end_date):
 
     rsi_values = calculate_rsi(data['Close'].values, period=14)
     if rsi_values.size == 0:
+        print("RSI calculation failed due to insufficient data.")
         return json.dumps({
             "profit": 0.0,
             "winRate": 0.0,
@@ -108,7 +112,7 @@ def perform_backtest(symbol, strategy, start_date, end_date):
         "maxDrawdown": round(max_drawdown, 2),
         "sharpeRatio": round(sharpe_ratio, 2)
     }
-    print(f"Backtest result for {symbol} from {start_date} to {end_date}: {result}")
+
     return json.dumps(result)
 
 def main():
