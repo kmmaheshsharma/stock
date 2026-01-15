@@ -332,6 +332,38 @@
     .trade-plan .stop-loss strong {
       color: #ef4444;
     }
+    .why-btn {
+        background: linear-gradient(145deg, #22c55e, #16a34a); /* Green gradient */
+        border: 2px solid transparent;
+        border-radius: 50px; /* Rounded corners */
+        color: #fff;
+        font-weight: bold;
+        padding: 12px 24px; /* Some padding to make it larger */
+        text-transform: uppercase; /* All text in uppercase */
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease-in-out; /* Smooth transition for hover effect */
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* Soft shadow effect */
+    }
+
+    /* Hover effect for the button */
+    .why-btn:hover {
+        background: linear-gradient(145deg, #16a34a, #22c55e); /* Reverse gradient for hover */
+        transform: translateY(-2px); /* Lift the button slightly */
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); /* Shadow deepens on hover */
+    }
+
+    /* Focus effect for accessibility */
+    .why-btn:focus {
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.5); /* Green glow on focus */
+    }
+
+    /* Active state when the button is clicked */
+    .why-btn:active {
+        transform: translateY(2px); /* Button moves slightly down when clicked */
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Shadow lightens */
+    }
 
   </style>
 </head>
@@ -423,47 +455,6 @@
             <button class="confidence-toggle" onclick="toggleConfidence()">
               📊 Confidence Breakdown
             </button>
-            <div id="confidence-breakdown" style="display:none; margin-top:10px;">
-              <div class="analysis-item">
-                <span>📊 Technical Indicators</span>
-                <strong id="conf-tech">xx%</strong>
-                <div class="confidence-bar">
-                  <div class="confidence-fill" id="bar-tech" style="width:70%"></div>
-                </div>
-              </div>
-
-              <div class="analysis-item">
-                <span>📈 Volume Behavior</span>
-                <strong id="conf-volume">xx%</strong>
-                <div class="confidence-bar">
-                  <div class="confidence-fill" id="bar-volume" style="width:60%"></div>
-                </div>
-              </div>
-
-              <div class="analysis-item">
-                <span>🧠 Market Sentiment</span>
-                <strong id="conf-sentiment">xx%</strong>
-                <div class="confidence-bar">
-                  <div class="confidence-fill" id="bar-sentiment" style="width:50%"></div>
-                </div>
-              </div>
-
-              <div class="analysis-item">
-                <span>📉 Price Action</span>
-                <strong id="conf-price">xx%</strong>
-                <div class="confidence-bar">
-                  <div class="confidence-fill" id="bar-price" style="width:65%"></div>
-                </div>
-              </div>
-
-              <div class="analysis-item">
-                <span>📐 Trend Strength</span>
-                <strong id="conf-trend">xx%</strong>
-                <div class="confidence-bar">
-                  <div class="confidence-fill" id="bar-trend" style="width:60%"></div>
-                </div>
-              </div>
-            </div>            
           </span>
         </div>
 

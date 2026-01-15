@@ -684,36 +684,56 @@ function updateSentimentCard(data) {
     }
     if (data.confidence_breakdown) {
       const cb = data.confidence_breakdown;
-      document.getElementById("confidence-breakdown").innerHTML = `
-        <div class="breakdown-grid">
-          <div>
-            <strong>📐 Technical</strong>
-            <p>${cb.technical}/100</p>
-            <small>
-              EMA: ${cb.signals.ema_alignment}<br/>
-              RSI: ${cb.signals.rsi}<br/>
-              MACD: ${cb.signals.macd}
-            </small>
+      const brekbtn = aiBox.querySelector(".confidence-toggle");
+      brekbtn.addEventListener("click", () => {     
+          const explanation = `
+           <h3>Confidence Breakdown?</h3>
+            <div class="breakdown-grid">
+              <div>
+                <strong>📐 Technical</strong>
+                <p>${cb.technical}/100</p>
+                <small>
+                  EMA: ${cb.signals.ema_alignment}<br/>
+                  RSI: ${cb.signals.rsi}<br/>
+                  MACD: ${cb.signals.macd}
+                </small>
+              </div>
+              <div>
+                <strong>📰 Sentiment</strong>
+                <p>${cb.sentiment}/100</p>
+              </div>
+              <div>
+                <strong>📊 Volume</strong>
+                <p>${cb.volume}/100</p>
+              </div>
+              <div>
+                <strong>📈 Price Action</strong>
+                <p>${cb.price_action}/100</p>
+              </div>
+              <div class="total-score">
+                <strong>Total Confidence</strong>
+                <p>${data.confidence_breakdown.total}%</p>
+              </div>
+            </div>
+          `;
+        // Simple modal creation
+        const modal = document.createElement("div");
+        modal.classList.add("ai-explanation-modal");
+        modal.innerHTML = `
+          <div class="modal-content">
+            ${explanation}
+            <button class="close-modal">Close</button>
           </div>
-          <div>
-            <strong>📰 Sentiment</strong>
-            <p>${cb.sentiment}/100</p>
-          </div>
-          <div>
-            <strong>📊 Volume</strong>
-            <p>${cb.volume}/100</p>
-          </div>
-          <div>
-            <strong>📈 Price Action</strong>
-            <p>${cb.price_action}/100</p>
-          </div>
-          <div class="total-score">
-            <strong>Total Confidence</strong>
-            <p>${data.confidence_breakdown.total}%</p>
-          </div>
-        </div>
-      `;
-      }
+        `;
+
+        document.body.appendChild(modal);
+
+        // Close button handler
+        modal.querySelector(".close-modal").addEventListener("click", () => {
+          document.body.removeChild(modal);
+        });
+      });          
+    }
   const chartBox = card.querySelector(".chart-box");
   chartBox.innerHTML = renderChart(data.chart);
 
