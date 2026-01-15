@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-def calculate_indicators(data):
+def calculate_indicators_from_price(data):
     """
     Calculate EMA20, EMA50, RSI, and MACD from a DataFrame with 'Close'.
     Ensures all returned values are valid floats for JSON (no NaN/None).
