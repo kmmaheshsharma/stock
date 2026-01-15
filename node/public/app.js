@@ -467,28 +467,6 @@ form.addEventListener("submit", async (e) => {
 function updateSentimentCard(data) {
   const card = document.querySelector("#sentiment-cards .glass-card");
   if (!card) return;
-  // --- Clear all fields first ---
-  card.querySelector(".stock-symbol").textContent = "--";
-  card.querySelector(".stock-price").innerHTML = "₹-- <span>(--)</span>";
-
-  // Helpers
-  const safeNum = (n) => (isNaN(parseFloat(n)) ? "--" : parseFloat(n).toFixed(2));
-  const formatNumber = (n) => {
-    n = parseFloat(n);
-    if (isNaN(n)) return "--";
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + "M";
-    if (n >= 1_000) return (n / 1_000).toFixed(2) + "K";
-    return n.toString();
-  };
-
-  const getColorClass = (label) => {
-    if (label === "Bullish") return "green";
-    if (label === "Bearish") return "red";
-    return "neutral";
-  };
-
-  // Symbol
-  card.querySelector(".stock-symbol").textContent = data.symbol || "--";
 
   // Price + Change
   const priceEl = card.querySelector(".stock-price");
