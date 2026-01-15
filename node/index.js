@@ -7,7 +7,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 
 const { pool } = require("./db");
-const { handleMessage, handleChat } = require("./routes");
+const { handleMessage, handleChat, handleBackTest } = require("./routes");
 const { generateUserAlerts, getLastKnownState, detectMeaningfulChange, saveLastStatus, extractSymbolFromMessage } = require("./alerts");
 const { sendPushToUser } = require("./push/sendPush");
 let isApp = false;
@@ -202,6 +202,8 @@ app.post("/api/push/subscribe", async (req, res) => {
 });
 // POST /api/chat
 app.post("/api/webchat", handleChat);
+//back test
+app.post("/api/backtest", handleBackTest);
 
 // ================= SUBSCRIBE USER =================
 // Mark user as subscribed in DB

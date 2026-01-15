@@ -12,9 +12,9 @@ if (!fs.existsSync(chartDir)) {
 }
 
 // --- Helper to run Python engine and parse JSON ---
-function runPythonEngine(message) {
+function runPythonEngine(message, execute= "engine.py") {
   return new Promise((resolve) => {
-    const enginePath = path.join(__dirname, "../python/engine.py");
+    const enginePath = path.join(__dirname, "../python/" + execute);
 
     const py = spawn("python3", [enginePath, message], {
       env: process.env
@@ -53,7 +53,11 @@ function runPythonEngine(message) {
     });
   });
 }
-
+async function processBacktest(message) {
+  console.log(`[BACKTEST] Processing backtest for message: ${message}`);
+  const result = await runPythonEngine(message, "backtest.py");
+  return result;
+}
 // --- Handle chat messages (greetings included) ---
 async function processMessage(message) {
   if (!message) return "Please type something!";
@@ -377,4 +381,4 @@ function extractSymbolFromMessage(text) {
   return match ? match[1].trim() : null;
 }
 
-module.exports = { generateUserAlerts, processMessage, getLastKnownState, detectMeaningfulChange, saveLastStatus, extractSymbolFromMessage };
+module.exports = { generateUserAlerts, processMessage, processBacktest, getLastKnownState, detectMeaningfulChange, saveLastStatus, extractSymbolFromMessage };

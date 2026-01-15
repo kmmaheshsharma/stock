@@ -2,7 +2,7 @@ const { sendWhatsApp, sendWhatsAppImage } = require("./whatsapp");
 const { pool } = require("./db");
 const fs = require("fs");
 const path = require("path");
-const { processMessage } = require("./alerts"); // <-- import processMessage
+const { processMessage, processBacktest } = require("./alerts"); // <-- import processMessage
 
 // --- Ensure chart folder exists ---
 const chartDir = path.join(__dirname, "chart");
@@ -70,6 +70,19 @@ async function addToPortfolio(userId, symbol, entryPrice, quantity) {
     throw err;
   }
 }
+exports.handleBackTest = async (req, res) => {
+  const { symbol, strategy } = req.body;
+
+  if (!symbol || !strategy) {
+    return res.status(400).json({ success: false, error: "Missing symbol or strategy" });
+  }
+
+  const message = `${symbol} ${strategy}`;
+  
+  console.log(`[SYMBOL] Processing symbol: ${message}`);
+  const result = await processBacktest(message);
+  return result;
+};
 exports.handleChat = async (req, res) => {
   try {
     const text = req.body.message?.trim();
