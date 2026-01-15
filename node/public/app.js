@@ -531,67 +531,36 @@ if (rows[1]) {
     if (breakdownBtn) {
       const cb = data.confidence_breakdown;
       breakdownBtn.addEventListener("click", () => {     
-      const explanation = `
-        <h3>Confidence Breakdown</h3>
-        <div class="breakdown-grid">
-          <!-- Technical -->
-          <div>
-            <strong>📐 Technical Indicators</strong>
-            <div class="progress-bar-container">
-              <div class="progress-bar" style="width: ${cb.technical}%"></div>
+          const explanation = `
+           <h3>Confidence Breakdown?</h3>
+            <div class="breakdown-grid">
+              <div>
+                <strong>📐 Technical</strong>
+                <p>${cb.technical}/100</p>
+                <small>
+                  EMA: ${cb.signals.ema_alignment}<br/>
+                  RSI: ${cb.signals.rsi}<br/>
+                  MACD: ${cb.signals.macd}
+                </small>
+              </div>
+              <div>
+                <strong>📰 Sentiment</strong>
+                <p>${cb.sentiment}/100</p>
+              </div>
+              <div>
+                <strong>📊 Volume</strong>
+                <p>${cb.volume}/100</p>
+              </div>
+              <div>
+                <strong>📈 Price Action</strong>
+                <p>${cb.price_action}/100</p>
+              </div>
+              <div class="total-score">
+                <strong>Total Confidence</strong>
+                <p>${data.confidence_breakdown.total}%</p>
+              </div>
             </div>
-            <p>${cb.technical}%</p>
-            <small>
-              EMA: ${cb.signals ? cb.signals.ema_alignment : "N/A"}<br/>
-              RSI: ${cb.signals ? cb.signals.rsi : "N/A"}<br/>
-              MACD: ${cb.signals ? cb.signals.macd : "N/A"}
-            </small>
-          </div>
-
-          <!-- Sentiment -->
-          <div>
-            <strong>📰 Market Sentiment</strong>
-            <div class="progress-bar-container">
-              <div class="progress-bar" style="width: ${cb.sentiment}%"></div>
-            </div>
-            <p>${cb.sentiment}%</p>
-          </div>
-
-          <!-- Volume -->
-          <div>
-            <strong>📊 Volume Behavior</strong>
-            <div class="progress-bar-container">
-              <div class="progress-bar" style="width: ${cb.volume}%"></div>
-            </div>
-            <p>${cb.volume}%</p>
-          </div>
-
-          <!-- Price Action -->
-          <div>
-            <strong>📈 Price Action</strong>
-            <div class="progress-bar-container">
-              <div class="progress-bar" style="width: ${cb.price_action}%"></div>
-            </div>
-            <p>${cb.price_action}%</p>
-          </div>
-
-          <!-- Trend -->
-          <div>
-            <strong>📉 Trend Strength</strong>
-            <div class="progress-bar-container">
-              <div class="progress-bar" style="width: ${cb.trend}%"></div>
-            </div>
-            <p>${cb.trend}%</p>
-          </div>
-
-          <!-- Total Confidence -->
-          <div class="total-score">
-            <strong>Total Confidence</strong>
-            <p>${data.confidence_breakdown.total}%</p>
-          </div>
-        </div>
-      `;
-
+          `;
         // Simple modal creation
         const modal = document.createElement("div");
         modal.classList.add("ai-explanation-modal");
