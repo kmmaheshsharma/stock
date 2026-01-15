@@ -11,10 +11,46 @@ if (!fs.existsSync(chartDir)) {
   fs.mkdirSync(chartDir);
 }
 
+async function runPythonBackTestEngine(message) {
+  console.log(`[BACKTEST] Processing backtest for message: ${message}`);
+
+  // Split the message into individual arguments (symbol, strategy, start_date, end_date)
+  const [symbol, strategy, startDate, endDate] = message.split(" ");
+
+  // Spawn Python process
+  return new Promise((resolve, reject) => {
+    const testPath = path.join(__dirname, "../python/backtest.py");
+    const py = spawn('python3', [testPath, symbol, strategy, startDate, endDate]);
+
+    let output = '';
+
+    py.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    py.stderr.on('data', (error) => {
+      console.error('Python error:', error.toString());
+    });
+
+    py.on('close', (code) => {
+      if (code === 0) {
+        try {
+          const json = JSON.parse(output);
+          resolve(json);
+        } catch (error) {
+          reject('Error parsing Python output.');
+        }
+      } else {
+        reject(`Python process exited with code ${code}`);
+      }
+    });
+  });
+}
+
 // --- Helper to run Python engine and parse JSON ---
-function runPythonEngine(message, execute= "engine.py") {
+function runPythonEngine(message) {
   return new Promise((resolve) => {
-    const enginePath = path.join(__dirname, "../python/" + execute);
+    const enginePath = path.join(__dirname, "../python/engine.py");
 
     const py = spawn("python3", [enginePath, message], {
       env: process.env
@@ -55,7 +91,7 @@ function runPythonEngine(message, execute= "engine.py") {
 }
 async function processBacktest(message) {
   console.log(`[BACKTEST] Processing backtest for message: ${message}`);
-  const result = await runPythonEngine(message, "backtest.py");
+  const result = await runPythonBackTestEngine(message);
   return result;
 }
 // --- Handle chat messages (greetings included) ---
