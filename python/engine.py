@@ -313,7 +313,11 @@ def run_engine(symbol, entry_price=None):
                 "error": "No price data found",
                 "alerts": ["error"]
             }
-
+        technical_signals = {
+            "ema_alignment": "bullish" if indicators["ema20"] > indicators["ema50"] else "bearish",
+            "rsi": "overbought" if indicators["rsi"] > 70 else "oversold" if indicators["rsi"] < 30 else "neutral",
+            "macd": "bullish" if indicators["macd"]["value"] > indicators["macd"]["signal"] else "bearish" if indicators["macd"]["value"] < indicators["macd"]["signal"] else "neutral"
+        }
         price = safe_float(price_data.get("price"))
         low = safe_float(price_data.get("low"))
         high = safe_float(price_data.get("high"))
@@ -370,13 +374,24 @@ def run_engine(symbol, entry_price=None):
             logging.warning(f"Groq AI analysis failed: {e_ai}")
             ai_analysis = {"error": "Groq AI call failed"}
 
+        # Confidence Breakdown
         confidence_breakdown = {
             "technical": technical_score,
             "sentiment": int(result.get("confidence", 0) * 100),
             "volume": 60 if volume and avg_volume and volume > avg_volume else 45,
-            "price_action": 60,  # can improve later
-            "trend": 65 if technical_score > 60 else 50
+            "price_action": 60,  # Can improve later
+            "trend": 65 if technical_score > 60 else 50,
+            "signals": technical_signals  # Added technical signals
         }
+
+        # Total Confidence
+        confidence_breakdown["total"] = round(
+            confidence_breakdown["technical"] * 0.30 +
+            confidence_breakdown["volume"] * 0.20 +
+            confidence_breakdown["sentiment"] * 0.15 +
+            confidence_breakdown["price_action"] * 0.20 +
+            confidence_breakdown["trend"] * 0.15
+        )
 
         overall_confidence = round(
             confidence_breakdown["technical"] * 0.30 +
