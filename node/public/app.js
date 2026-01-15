@@ -566,7 +566,13 @@ function updateSentimentCard(data) {
       const riskClass = riskRaw === "high" ? "high-risk" : riskRaw === "moderate" ? "moderate-risk" : "low-risk";
 
       const recommendation = ai.recommendation || "N/A";
+      const technicalAnalysis = ai.technical_analysis;
 
+      const emaAlignment = technicalAnalysis.ema_alignment;
+      const rsiState = technicalAnalysis.rsi_state;
+      const macdState = technicalAnalysis.macd_state;
+      const technicalBias = technicalAnalysis.technical_bias;
+      const reason = technicalAnalysis.reason;
       aiBox.innerHTML = `
         <div class="groq-analysis">
           <div class="analysis-header">
@@ -611,10 +617,42 @@ function updateSentimentCard(data) {
               <span>💡 Recommendation</span>
               <strong>${recommendation}</strong>
             </div>
+            <div class="analysis-item">
+              <span>📊 Technical Analysis</span>
+              <button class="tech-analysis-btn">Why?</button>
+            </div>                     
           </div>
         </div>
       `;
+      const techBtn = aiBox.querySelector(".tech-analysis-btn");
+      techBtn.addEventListener("click", () => {     
+            const explanation = `
+              <h3>Technical Analysis?</h3>             
+              <p>EMA Alignment: <strong>${emaAlignment}</strong></p>
+              <p>RSI State: <strong>${rsiState}</strong></p>
+              <p>MACD State: <strong>${macdState}</strong></p>
+              <p>Technical Bias: <strong>${technicalBias}</strong></p>
+              <p>Reason: <em>${reason}</em></p>              
+            `;
 
+          // Simple modal creation
+          const modal = document.createElement("div");
+          modal.classList.add("ai-explanation-modal");
+          modal.innerHTML = `
+            <div class="modal-content">
+              ${explanation}
+              <button class="close-modal">Close</button>
+            </div>
+          `;
+
+          document.body.appendChild(modal);
+
+          // Close button handler
+          modal.querySelector(".close-modal").addEventListener("click", () => {
+            document.body.removeChild(modal);
+          });
+      });      
+      
       const whyBtn = aiBox.querySelector(".why-btn");
       whyBtn.addEventListener("click", () => {     
           const explanation = `
