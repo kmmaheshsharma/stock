@@ -10,7 +10,7 @@ from sentiment import sentiment_for_symbol
 from chart import generate_chart
 import pandas as pd
 import yfinance as yf
-from indicators import calculate_indicators
+from indicators import calculate_indicators_from_price
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger("matplotlib").setLevel(logging.ERROR)
 logging.getLogger("PIL").setLevel(logging.ERROR)
