@@ -76,11 +76,8 @@ exports.handleBackTest = async (req, res) => {
   if (!symbol || !strategy) {
     return res.status(400).json({ success: false, error: "Missing symbol or strategy" });
   }
-
-  const message = `${symbol} ${strategy} ${start_date} ${end_date}`;
-  
-  console.log(`[SYMBOL] Processing symbol: ${message}`);
-  const result = await processBacktest(message);
+    
+  const result = await processBacktest(symbol, strategy, start_date, end_date);
   return result;
 };
 exports.handleChat = async (req, res) => {

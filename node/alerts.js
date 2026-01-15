@@ -11,8 +11,8 @@ if (!fs.existsSync(chartDir)) {
   fs.mkdirSync(chartDir);
 }
 
-async function runPythonBackTestEngine(message) {
-  console.log(`[BACKTEST] Processing backtest for message: ${message}`);
+async function runPythonBackTestEngine(symbol, strategy, startDate, endDate) {
+  console.log(`[BACKTEST] Processing backtest for symbol: ${symbol}, strategy: ${strategy}, start date: ${startDate}, end date: ${endDate}`);
 
   // Split the message into individual arguments (symbol, strategy, start_date, end_date)
   const [symbol, strategy, startDate, endDate] = message.split(" ");
@@ -89,9 +89,9 @@ function runPythonEngine(message) {
     });
   });
 }
-async function processBacktest(message) {
-  console.log(`[BACKTEST] Processing backtest for message: ${message}`);
-  const result = await runPythonBackTestEngine(message);
+async function processBacktest(symbol, strategy, startDate, endDate) {
+  console.log(`[BACKTEST] Processing backtest for symbol: ${symbol}, strategy: ${strategy}, start date: ${startDate}, end date: ${endDate}`);
+  const result = await runPythonBackTestEngine(symbol, strategy, startDate, endDate);
   return result;
 }
 // --- Handle chat messages (greetings included) ---
