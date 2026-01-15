@@ -679,10 +679,77 @@ if (rows[1]) {
             <div class="analysis-item">
               <span>📊 Technical Analysis</span>
               <button class="tech-analysis-btn">See?</button>
-            </div>                     
+            </div> 
+            <!-- Adding the backtesting button -->
+            <div class="analysis-item">
+              <span>⚡ Backtest Strategy</span>
+              <input type="text" id="strategy-input" placeholder="Enter strategy e.g RSI < 30">
+              <button class="backtest-btn">Backtest</button>
+            </div>                                 
           </div>
         </div>
       `;
+      const backtestBtn = aiBox.querySelector(".backtest-btn");
+      backtestBtn.addEventListener("click", () => {    
+        // Collect the necessary data for backtesting       
+        const strategy = document.getElementById("strategy-input").value || "RSI < 30";  // Use user input if available
+
+        // Show a loading indicator (optional)
+        document.getElementById("market-status").innerHTML = "Backtesting... Please wait.";
+
+        // Send a request to the backend (engine.py) to perform backtesting
+        fetch("/api/backtest", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            symbol: symbol,
+            strategy: strategy
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          // Process the response from the backend
+          if (data.success) {
+            // Display the backtest results (example)
+            const results = data.results; // Example: results of the backtest
+
+            const resultHTML = `
+              <h3>Backtest Results for ${symbol}</h3>
+              <div>
+                <strong>Profit:</strong> ${results.profit} <br/>
+                <strong>Win Rate:</strong> ${results.winRate}% <br/>
+                <strong>Max Drawdown:</strong> ${results.maxDrawdown} <br/>
+                <strong>Sharpe Ratio:</strong> ${results.sharpeRatio}
+              </div>
+            `;
+
+            // Show the results to the user
+            const modal = document.createElement("div");
+            modal.classList.add("ai-explanation-modal");
+            modal.innerHTML = `
+              <div class="modal-content">
+                ${resultHTML}
+                <button class="close-modal">Close</button>
+              </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Close button handler
+            modal.querySelector(".close-modal").addEventListener("click", () => {
+              document.body.removeChild(modal);
+            });
+          } else {
+            // Handle errors (e.g., invalid strategy or data issues)
+            alert("Error: " + data.error);
+          }
+        })
+        .catch(error => {
+          console.error("Error during backtest:", error);
+          alert("An error occurred during the backtesting process.");
+        });         
+      });
       const techBtn = aiBox.querySelector(".tech-analysis-btn");
       techBtn.addEventListener("click", () => {     
             const explanation = `
