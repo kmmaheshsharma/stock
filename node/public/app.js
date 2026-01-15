@@ -683,36 +683,36 @@ function updateSentimentCard(data) {
       });      
     }
     if (data.confidence_breakdown) {
-       const cb = data.confidence_breakdown;
-       document.getElementById("confidence-breakdown").innerHTML = `
-         <div class="breakdown-grid">
-           <div>
-             <strong>📐 Technical</strong>
-             <p>${cb.technical.score}/${cb.technical.max}</p>
-             <small>
-               EMA: ${cb.technical.signals.ema_alignment}<br/>
-               RSI: ${cb.technical.signals.rsi}<br/>
-               MACD: ${cb.technical.signals.macd}
-             </small>
-           </div>
-           <div>
-             <strong>📰 Sentiment</strong>
-             <p>${cb.sentiment.score}/${cb.sentiment.max}</p>
-           </div>
-           <div>
-             <strong>📊 Volume</strong>
-             <p>${cb.volume.score}/${cb.volume.max}</p>
-           </div>
-           <div>
-             <strong>📈 Price Action</strong>
-             <p>${cb.price_action.score}/${cb.price_action.max}</p>
-           </div>
-           <div class="total-score">
-             <strong>Total Confidence</strong>
-             <p>${cb.total}%</p>
-           </div>
-         </div>
-        `;
+      const cb = data.confidence_breakdown;
+      document.getElementById("confidence-breakdown").innerHTML = `
+        <div class="breakdown-grid">
+          <div>
+            <strong>📐 Technical</strong>
+            <p>${cb.technical}/100</p>
+            <small>
+              EMA: ${cb.technical.signals.ema_alignment}<br/>
+              RSI: ${cb.technical.signals.rsi}<br/>
+              MACD: ${cb.technical.signals.macd}
+            </small>
+          </div>
+          <div>
+            <strong>📰 Sentiment</strong>
+            <p>${cb.sentiment}/100</p>
+          </div>
+          <div>
+            <strong>📊 Volume</strong>
+            <p>${cb.volume}/100</p>
+          </div>
+          <div>
+            <strong>📈 Price Action</strong>
+            <p>${cb.price_action}/100</p>
+          </div>
+          <div class="total-score">
+            <strong>Total Confidence</strong>
+            <p>${data.confidence_breakdown.total}%</p>
+          </div>
+        </div>
+      `;
       }
   const chartBox = card.querySelector(".chart-box");
   chartBox.innerHTML = renderChart(data.chart);
