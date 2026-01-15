@@ -701,7 +701,7 @@
         <div class="row-line"><span class="label">Suggested Entry</span><span class="value">₹xxx–₹xxx</span></div>
         <div class="row-line"><span class="label">Alert</span><span class="value green">xxxxx xxxxx</span></div>
 
-        <div class="ai-box" style="margin-top:12px;">
+        <div class="ai-box" style="margin-top:12px;min-height: 300px;">
           {
             "xxxx": "xxxx",
             "xxxx": "xxxx",
@@ -738,9 +738,10 @@
   function adjustChatHeight() {
     const headerHeight = document.querySelector('header').offsetHeight;
     const windowHeight = window.innerHeight;
-    const cardsEl = document.getElementById('sentiment-cards');
+    const cardsEl = document.getElementById('sentiment-cards');    
     const cardsHeight = cardsEl ? cardsEl.offsetHeight : 0;
-    document.querySelector('.ScrollStyle').style.maxHeight = `${windowHeight - headerHeight - cardsHeight - document.getElementById('chat-form').offsetHeight - 200}px`;
+    const maxheight = `${windowHeight - headerHeight - cardsHeight - document.getElementById('chat-form').offsetHeight - 200}px`;
+    document.querySelector('.ScrollStyle').style.maxHeight = maxheight;
   }
   window.addEventListener('load', adjustChatHeight);
   window.addEventListener('resize', adjustChatHeight);   
