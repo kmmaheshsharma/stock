@@ -218,38 +218,6 @@ def search_yahoo_symbol(name):
         logging.error(f"Yahoo search error: {e}")
         return None
 
-def get_technical_indicators(symbol):
-    try:
-        data = yf.download(symbol, period="3mo", interval="1d", progress=False)
-
-        if data.empty or "Close" not in data:
-            return None
-
-        close = data["Close"]
-
-        ema20 = ta.ema(close, length=20).iloc[-1]
-        ema50 = ta.ema(close, length=50).iloc[-1]
-        rsi = ta.rsi(close, length=14).iloc[-1]
-
-        macd = ta.macd(close)
-        macd_val = macd["MACD_12_26_9"].iloc[-1]
-        macd_signal = macd["MACDs_12_26_9"].iloc[-1]
-        macd_hist = macd["MACDh_12_26_9"].iloc[-1]
-
-        return {
-            "ema20": round(float(ema20), 4),
-            "ema50": round(float(ema50), 4),
-            "rsi": round(float(rsi), 2),
-            "macd": {
-                "value": round(float(macd_val), 4),
-                "signal": round(float(macd_signal), 4),
-                "histogram": round(float(macd_hist), 4)
-            }
-        }
-
-    except Exception as e:
-        logging.warning(f"Indicator calculation failed: {e}")
-        return None
 
 def build_groq_combined_prompt(symbol, price_data, sentiment_score, indicators):
     return f"""
@@ -365,13 +333,12 @@ def run_engine(symbol, entry_price=None):
 
         alerts = []
         # ----------------- Technical Indicators -----------------
-        indicators = get_technical_indicators(resolved_symbol)
+        #indicators = get_technical_indicators(resolved_symbol)
 
         technical_analysis = {}
         technical_score = 0
-
-        indicators = get_indicators(resolved_symbol)
-
+        
+        indicators = get_indicators_for_symbol(symbols)
         if not indicators:
             indicators = {
                 "ema20": None,

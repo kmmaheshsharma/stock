@@ -1,57 +1,49 @@
 import yfinance as yf
 import pandas as pd
-def get_ohlc(symbol, period="3mo", interval="1d"):
-    try:
-        df = yf.download(
-            symbol,
-            period=period,
-            interval=interval,
-            progress=False
-        )
-        if df.empty:
-            return None
-        return df
-    except Exception:
-        return None
+import numpy as np
 
-def ema(series, period):
-    return series.ewm(span=period, adjust=False).mean()
+def fetch_price_data(symbols, period="60d"):
+    """
+    Try multiple symbols until valid price data is found.
+    Returns the first valid DataFrame or None.
+    """
+    for sym in symbols:
+        try:
+            data = yf.download(sym, period=period, progress=False)
+            if not data.empty:
+                return data
+        except Exception as e:
+            print(f"Error fetching {sym}: {e}")
+    return None
 
-def rsi(series, period=14):
-    delta = series.diff()
-    gain = delta.clip(lower=0)
-    loss = -delta.clip(upper=0)
 
-    avg_gain = gain.rolling(period).mean()
-    avg_loss = loss.rolling(period).mean()
+def calculate_indicators(data):
+    """
+    Given a DataFrame with 'Close' prices, compute EMA20, EMA50, RSI, MACD.
+    Returns a dictionary with rounded float values.
+    """
+    close = data['Close']
 
+    # EMA
+    ema20 = close.ewm(span=20, adjust=False).mean().iloc[-1]
+    ema50 = close.ewm(span=50, adjust=False).mean().iloc[-1]
+
+    # RSI
+    delta = close.diff()
+    up = delta.clip(lower=0)
+    down = -1 * delta.clip(upper=0)
+    avg_gain = up.rolling(14).mean()
+    avg_loss = down.rolling(14).mean()
     rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
+    rsi_val = 100 - (100 / (1 + rs))
+    rsi_val = rsi_val.iloc[-1]
 
-def macd(series):
-    ema12 = ema(series, 12)
-    ema26 = ema(series, 26)
+    # MACD
+    ema12 = close.ewm(span=12, adjust=False).mean()
+    ema26 = close.ewm(span=26, adjust=False).mean()
     macd_line = ema12 - ema26
-    signal = ema(macd_line, 9)
-    histogram = macd_line - signal
-
-    return macd_line, signal, histogram
-    
-def get_indicators(symbol):
-    df = get_ohlc(symbol)
-
-    if df is None or len(df) < 50:
-        return None
-
-    close = df["Close"]
-
-    ema20 = ema(close, 20).iloc[-1]
-    ema50 = ema(close, 50).iloc[-1]
-
-    rsi_val = rsi(close).iloc[-1]
-
-    macd_line, macd_signal, macd_hist = macd(close)
+    macd_signal = macd_line.ewm(span=9, adjust=False).mean()
+    macd_hist = macd_line - macd_signal
 
     return {
         "ema20": round(float(ema20), 2),
@@ -60,6 +52,30 @@ def get_indicators(symbol):
         "macd": {
             "value": round(float(macd_line.iloc[-1]), 4),
             "signal": round(float(macd_signal.iloc[-1]), 4),
-            "histogram": round(float(macd_hist.iloc[-1]), 4),
+            "histogram": round(float(macd_hist.iloc[-1]), 4)
         }
     }
+
+
+def get_indicators_for_symbol(normalized_symbols):
+    """
+    Main helper to fetch price data and compute indicators.
+    Returns a dictionary or None if no valid data is found.
+    """
+    data = fetch_price_data(normalized_symbols)
+    if data is None:
+        print(f"WARNING: No valid price data for symbols: {normalized_symbols}")
+        return None
+
+    indicators = calculate_indicators(data)
+    return indicators
+
+
+# Example usage:
+if __name__ == "__main__":
+    symbols = ["IFL.NS", "IFL.BO", "IFL.US"]
+    indicators = get_indicators_for_symbol(symbols)
+    if indicators:
+        print(indicators)
+    else:
+        print("No indicators could be calculated.")
