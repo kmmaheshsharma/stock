@@ -6,6 +6,9 @@ import yfinance as yf
 
 # Function to calculate the Relative Strength Index (RSI)
 def calculate_rsi(prices, period=14):
+    if len(prices) < period:
+        return np.array([])  # Return an empty array if there are not enough data points
+
     deltas = np.diff(prices)
     gains = np.where(deltas > 0, deltas, 0)
     losses = np.where(deltas < 0, -deltas, 0)
@@ -30,6 +33,7 @@ def calculate_rsi(prices, period=14):
     rsi = [np.nan] * period + rsi
     return np.array(rsi)
 
+
 # Function to fetch historical stock data from Yahoo Finance
 def fetch_historical_data(symbol, start_date, end_date):
     """
@@ -45,10 +49,30 @@ def perform_backtest(symbol, strategy, start_date, end_date):
     # Fetch historical price data
     data = fetch_historical_data(symbol, start_date, end_date)
     
+    # Check if data is empty or does not have enough rows
+    if data.empty or len(data) < 14:
+        print(f"Not enough data to perform backtest for {symbol} from {start_date} to {end_date}")
+        return {
+            "profit": 0.0,
+            "winRate": 0.0,
+            "maxDrawdown": 0.0,
+            "sharpeRatio": 0.0
+        }
+    
     # Calculate RSI (rolling window of 14 days)
     rsi_values = calculate_rsi(data['Close'].values, period=14)
-    data['RSI'] = rsi_values
     
+    if rsi_values.size == 0:
+        print(f"No valid RSI values generated for {symbol}.")
+        return {
+            "profit": 0.0,
+            "winRate": 0.0,
+            "maxDrawdown": 0.0,
+            "sharpeRatio": 0.0
+        }
+    
+    data['RSI'] = rsi_values
+
     # Initialize backtest variables
     initial_balance = 10000  # Starting with $10,000
     balance = initial_balance
@@ -96,6 +120,7 @@ def perform_backtest(symbol, strategy, start_date, end_date):
         "maxDrawdown": round(max_drawdown, 2),
         "sharpeRatio": round(sharpe_ratio, 2)
     }
+
 
 def main():
     # Get the stock symbol and strategy from the arguments
