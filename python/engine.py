@@ -8,6 +8,10 @@ import requests
 from market import get_price
 from sentiment import sentiment_for_symbol
 from chart import generate_chart
+import pandas as pd
+import pandas_ta as ta
+import yfinance as yf
+
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger("matplotlib").setLevel(logging.ERROR)
 logging.getLogger("PIL").setLevel(logging.ERROR)
@@ -232,6 +236,67 @@ def search_yahoo_symbol(name):
         logging.error(f"Yahoo search error: {e}")
         return None
 
+def get_technical_indicators(symbol):
+    try:
+        data = yf.download(symbol, period="3mo", interval="1d", progress=False)
+
+        if data.empty or "Close" not in data:
+            return None
+
+        close = data["Close"]
+
+        ema20 = ta.ema(close, length=20).iloc[-1]
+        ema50 = ta.ema(close, length=50).iloc[-1]
+        rsi = ta.rsi(close, length=14).iloc[-1]
+
+        macd = ta.macd(close)
+        macd_val = macd["MACD_12_26_9"].iloc[-1]
+        macd_signal = macd["MACDs_12_26_9"].iloc[-1]
+        macd_hist = macd["MACDh_12_26_9"].iloc[-1]
+
+        return {
+            "ema20": round(float(ema20), 4),
+            "ema50": round(float(ema50), 4),
+            "rsi": round(float(rsi), 2),
+            "macd": {
+                "value": round(float(macd_val), 4),
+                "signal": round(float(macd_signal), 4),
+                "histogram": round(float(macd_hist), 4)
+            }
+        }
+
+    except Exception as e:
+        logging.warning(f"Indicator calculation failed: {e}")
+        return None
+
+def build_groq_technical_prompt(symbol, indicators):
+    return f"""
+You are a technical analysis assistant.
+
+Symbol: {symbol}
+
+Indicators:
+EMA20: {indicators['ema20']}
+EMA50: {indicators['ema50']}
+RSI: {indicators['rsi']}
+MACD Value: {indicators['macd']['value']}
+MACD Signal: {indicators['macd']['signal']}
+MACD Histogram: {indicators['macd']['histogram']}
+
+Interpret the indicators and respond ONLY in JSON:
+
+{{
+  "ema_alignment": "bullish | bearish | neutral",
+  "rsi_state": "overbought | oversold | neutral",
+  "macd_state": "bullish | bearish | neutral",
+  "technical_bias": "bullish | bearish | neutral",
+  "confidence_hint": 0-100,
+  "reason": "short explanation"
+}}
+
+No extra text.
+"""
+
 # ------------------- Core Engine -------------------
 def run_engine(symbol, entry_price=None):
     try:
@@ -285,7 +350,19 @@ def run_engine(symbol, entry_price=None):
         change_percent = safe_float(price_data.get("change_percent"))
 
         alerts = []
+        # ----------------- Technical Indicators -----------------
+        indicators = get_technical_indicators(resolved_symbol)
 
+        technical_analysis = {}
+        technical_score = 0
+
+        if indicators:
+            try:
+                tech_prompt = build_groq_technical_prompt(resolved_symbol, indicators)
+                technical_analysis = call_groq_ai(tech_prompt)
+                technical_score = calculate_technical_score(technical_analysis)
+            except Exception as e:
+                logging.warning(f"Technical Grok analysis failed: {e}")
         # ----------------- Sentiment -----------------
         try:
             result = sentiment_for_symbol(resolved_symbol)
@@ -328,6 +405,23 @@ def run_engine(symbol, entry_price=None):
             logging.warning(f"Groq AI analysis failed: {e_ai}")
             ai_analysis = {"error": "Groq AI call failed"}
 
+        confidence_breakdown = {
+            "technical": technical_score,
+            "sentiment": int(result.get("confidence", 0) * 100),
+            "volume": 60 if volume and avg_volume and volume > avg_volume else 45,
+            "price_action": 60,  # can improve later
+            "trend": 65 if technical_score > 60 else 50
+        }
+
+        overall_confidence = round(
+            confidence_breakdown["technical"] * 0.30 +
+            confidence_breakdown["volume"] * 0.20 +
+            confidence_breakdown["sentiment"] * 0.15 +
+            confidence_breakdown["price_action"] * 0.20 +
+            confidence_breakdown["trend"] * 0.15
+        )
+
+
         return {
             "symbol": resolved_symbol,
             "price": price,
@@ -336,16 +430,24 @@ def run_engine(symbol, entry_price=None):
             "volume": volume,
             "avg_volume": avg_volume,
             "change_percent": change_percent,
+
             "sentiment_score": safe_float(result.get("sentiment_score", 0)),
             "sentiment_label": result.get("sentiment_label", "Neutral"),
-            "confidence": safe_float(result.get("confidence", 0.0)),
+
+            "confidence": overall_confidence,
+            "confidence_breakdown": confidence_breakdown,
+
+            "technical_indicators": indicators,
+            "technical_analysis": technical_analysis,
+
             "emoji": result.get("emoji", "⚪"),
-            "explanation": result.get("explanation", ""),
+            "explanation": technical_analysis.get("reason", ""),
             "alerts": alerts,
             "suggested_entry": suggested_entry,
             "chart": chart_base64,
             "ai_analysis": ai_analysis
         }
+
 
     except Exception as e:
         logging.error(f"Engine failed: {str(e)}")
