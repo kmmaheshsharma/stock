@@ -71,13 +71,13 @@ async function addToPortfolio(userId, symbol, entryPrice, quantity) {
   }
 }
 exports.handleBackTest = async (req, res) => {
-  const { symbol, strategy } = req.body;
+  const { symbol, strategy, start_date, end_date } = req.body;
 
   if (!symbol || !strategy) {
     return res.status(400).json({ success: false, error: "Missing symbol or strategy" });
   }
 
-  const message = `${symbol} ${strategy}`;
+  const message = `${symbol} ${strategy} ${start_date} ${end_date}`;
   
   console.log(`[SYMBOL] Processing symbol: ${message}`);
   const result = await processBacktest(message);
