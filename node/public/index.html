@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>NoBroko Bot</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#020617">
@@ -24,456 +24,32 @@
 
     * { box-sizing: border-box; margin:0; }
 
-    body {      
+    body {
       background: black;
       font-family: -apple-system, BlinkMacSystemFont, Inter, system-ui, sans-serif;
       color: var(--text);
+      overflow-x: hidden;
     }
 
-    .app {
+    /* ===== LAYOUT WRAPPER ===== */
+    .layout-wrapper {
+      display: flex;
+      min-height: 100vh;
       width: 100%;
-      height: 100%;
-      background: linear-gradient(180deg, #020617 0%, #020617 100%);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
     }
 
-    /* HEADER */
-    header {
-      background: rgba(2,6,23,.85);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--stroke);
-      padding: 12px 16px 10px;
-    }
-
-    .header-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .header-center {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      letter-spacing: .3px;
-    }
-
-    .header-icons {
-      display: flex;
-      gap: 14px;
-    }
-
-    .market-status {
-      font-size: 12px;
-      color: var(--primary);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    /* GLASS CARD */
-    .glass-card {
-      background: linear-gradient(180deg, rgba(31,41,55,.95), rgba(2,6,23,.95));
-      border-radius: 20px;
-      padding: 20px;
-      border: 1px solid var(--stroke);
-      backdrop-filter: blur(30px);
-      box-shadow: 0 15px 35px rgba(0,0,0,0.6);
-      margin: 12px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;     
-    }
-    .glass-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 25px 50px rgba(0,0,0,0.8);
-    }
-
-    /* CHAT */
-    #chat-container { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-
-    .ScrollStyle {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-      scrollbar-width: none;
-      scroll-behavior: smooth;
-    }
-
-    /* MESSAGES */
-    #messages { display:flex; flex-direction:column; gap:10px;}
-    .user-msg, .bot-msg { display:flex; flex-direction:column; }
-    .user-msg { align-items:flex-end; }
-    .bot-msg { align-items:flex-start; }
-    .msg-content {
-      max-width:100%;
-      padding:12px 16px;
-      border-radius:18px;
-      font-size:15px;
-      word-wrap:break-word;
-      background: var(--card);
-      color: var(--text);
-    }
-    .user-msg .msg-content {
-      background: var(--primary);
-      color: #022c22;
-    }
-
-    /* CHAT FORM */
-    #chat-form {      
-      bottom: env(safe-area-inset-bottom,0);      
-      width:100%;
-      padding:10px 16px;
-      display:flex;
-      gap:8px;
-      background: rgba(2,6,23,.85);
-      backdrop-filter: blur(20px);
-      border-top: 1px solid var(--stroke);
-      z-index:20;
-    }
-    #message-input {
-      flex:1;
-      padding:12px 16px;
-      border-radius:999px;
-      border:1px solid var(--stroke);
-      background: rgba(31,41,55,.6);
-      color: var(--text);
-      font-size:15px;
-    }
-    #chat-form button {
-      width:48px;
-      height:48px;
-      border-radius:50%;
-      background: linear-gradient(180deg, #22c55e, #16a34a);
-      border:none;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-    }
-    #chat-form button svg { stroke:#022c22; stroke-width:2; }
-
-    /* STOCK CARD */
-    .stock-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-    .stock-symbol { font-weight:600; font-size:16px; }
-    .stock-price { font-weight:600; font-size:16px; }
-    .stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:12px; }
-    .stat { font-size:12px; color: var(--muted); }
-    .stat strong { color: var(--text); font-weight:500; }
-    .row-line { display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px; }
-    .row-line .label { color: var(--muted); }
-    .row-line .value.green { color: var(--primary); font-weight:500; }
-
-    .action-row { display:flex; gap:12px; margin-top:12px; }
-    .btn-outline { flex:1; border-radius:999px; padding:10px; background:transparent; border:1px solid var(--stroke); color: var(--text); font-weight:500; }
-    .btn-outline:hover { background: rgba(255,255,255,0.05); }
-    .btn-primary { flex:1; border-radius:999px; padding:10px; background: linear-gradient(180deg, #22c55e, #16a34a); border:none; color:#022c22; font-weight:600; }
-    .btn-primary:hover { filter: brightness(1.1); }
-
-    img, .chart { width:100%; height:auto; border-radius:14px; }
-
-    /* RESPONSIVE */
-    @media (min-width:768px) {
-      .app { max-width:480px; margin:auto; border-radius:28px; box-shadow:0 30px 80px rgba(0,0,0,.8); }
-    }
-    @media (max-width:768px){
-      #message-input{ font-size:14px; padding:10px;}
-      .msg-content{ font-size:14px; padding:10px;}
-      .glass-card{padding:14px;margin:10px;}
-    }
-    @media (max-width:480px){
-      #message-input{ font-size:13px; padding:8px;}
-      .msg-content{ font-size:13px; padding:8px;}
-      .glass-card{padding:12px;margin:8px;}
-    }
-
-    /* LOADER */
-    .loader {
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(255,255,255,0.2);
-      border-top: 2px solid #22c55e;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    .bot-msg .typing-dots {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-      justify-content: flex-start;
-      margin-top: 2px;
-    }
-
-    .bot-msg .typing-dots span {
-      width: 6px;
-      height: 6px;
-      background-color: #22c55e;
-      border-radius: 50%;
-      animation: bounce 1s infinite;
-    }
-    .bot-msg .typing-dots span:nth-child(1) { animation-delay: 0s; }
-    .bot-msg .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .bot-msg .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes bounce {
-      0%, 80%, 100% { transform: scale(0); }
-      40% { transform: scale(1); }
-    }
-
-    /* AI ANALYSIS FIXES */
-    .groq-analysis {
-      width: 100%;
-      box-sizing: border-box;
-      margin-top:12px;
-      background: rgba(40,50,70,0.9);
-      padding: 16px;
-      border-radius: 14px;
-      border: 1px solid var(--stroke);
-    }
-
-    .analysis-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .analysis-card {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-content: start;
-      grid-auto-rows: max-content;
-      row-gap: 12px;
-      column-gap: 10px;
-    }
-
-    .analysis-item {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      padding: 6px 8px;
-      line-height: 1.25;
-      background: rgba(255,255,255,0.05);
-      border-radius: 8px;
-    }
-
-    .analysis-item span,
-    .analysis-item strong { margin: 0; padding: 0; }
-    .analysis-item strong { margin-top: 2px; font-weight: 600; }
-
-    .analysis-item.bullish strong { color: #22c55e; }
-    .analysis-item.bearish strong { color: #ef4444; }
-    .analysis-item.low strong { color: #22c55e; }
-    .analysis-item.moderate strong { color: #facc15; }
-    .analysis-item.high strong { color: #ef4444; }
-
-    .confidence-bar {
-      background: rgba(255,255,255,0.1);
-      height: 6px;
-      border-radius: 6px;
-      margin-top: 4px;
-    }
-    .confidence-fill {
-      height: 100%;
-      border-radius: 6px;
-      background: linear-gradient(90deg, #22c55e, #16a34a);
-    }
-
-    .ai-explanation-modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    .ai-explanation-modal .modal-content {
-      background: #121722;
-      border-radius: 12px;
-      padding: 24px;
-      max-width: 400px;
-      color: #ccc;
-      box-shadow: 0 0 15px rgba(0,0,0,0.8);
-    }
-
-    .ai-explanation-modal button.close-modal {
-      margin-top: 20px;
-      background: #2d3748;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      color: #eee;
-    }
-    .breakdown-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-top: 12px;
-      font-size: 13px;
-    }
-
-    .breakdown-grid div {
-      background: rgba(255,255,255,0.05);
-      padding: 10px;
-      border-radius: 10px;
-    }
-
-    .trade-plan .stop-loss strong {
-      color: #ef4444;
-    }
-    .why-btn {
-        background: linear-gradient(145deg, #22c55e, #16a34a); /* Green gradient */
-        border: 2px solid transparent;
-        border-radius: 50px; /* Rounded corners */
-        color: #fff;
-        font-weight: bold;
-        padding: 6px 12px; /* Some padding to make it larger */
-        text-transform: uppercase; /* All text in uppercase */
-        font-size: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease-in-out; /* Smooth transition for hover effect */
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* Soft shadow effect */
-    }
-
-    /* Hover effect for the button */
-    .why-btn:hover {
-        background: linear-gradient(145deg, #16a34a, #22c55e); /* Reverse gradient for hover */
-        transform: translateY(-2px); /* Lift the button slightly */
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); /* Shadow deepens on hover */
-    }
-
-    /* Focus effect for accessibility */
-    .why-btn:focus {
-        outline: none;
-        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.5); /* Green glow on focus */
-    }
-
-    /* Active state when the button is clicked */
-    .why-btn:active {
-        transform: translateY(2px); /* Button moves slightly down when clicked */
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Shadow lightens */
-    }
-    .breakdown-btn {
-        background: linear-gradient(145deg, #22c55e, #16a34a); /* Green gradient */
-        border: 2px solid transparent;
-        border-radius: 50px; /* Rounded corners */
-        color: #fff;
-        font-weight: bold;
-        padding: 6px 12px; /* Some padding to make it larger */
-        text-transform: uppercase; /* All text in uppercase */
-        font-size: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease-in-out; /* Smooth transition for hover effect */
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* Soft shadow effect */
-    }
-
-    /* Hover effect for the button */
-    .breakdown-btn:hover {
-        background: linear-gradient(145deg, #16a34a, #22c55e); /* Reverse gradient for hover */
-        transform: translateY(-2px); /* Lift the button slightly */
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); /* Shadow deepens on hover */
-    }
-
-    /* Focus effect for accessibility */
-    .breakdown-btn:focus {
-        outline: none;
-        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.5); /* Green glow on focus */
-    }
-
-    /* Active state when the button is clicked */
-    .breakdown-btn:active {
-        transform: translateY(2px); /* Button moves slightly down when clicked */
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Shadow lightens */
-    }    
-    .tech-analysis-btn {
-        background: linear-gradient(145deg, #22c55e, #16a34a); /* Green gradient */
-        border: 2px solid transparent;
-        border-radius: 50px; /* Rounded corners */
-        color: #fff;
-        font-weight: bold;
-        padding: 6px 12px; /* Some padding to make it larger */
-        text-transform: uppercase; /* All text in uppercase */
-        font-size: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease-in-out; /* Smooth transition for hover effect */
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* Soft shadow effect */
-    }
-
-    /* Hover effect for the button */
-    .tech-analysis-btn:hover {
-        background: linear-gradient(145deg, #16a34a, #22c55e); /* Reverse gradient for hover */
-        transform: translateY(-2px); /* Lift the button slightly */
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); /* Shadow deepens on hover */
-    }
-
-    /* Focus effect for accessibility */
-    .tech-analysis-btn:focus {
-        outline: none;
-        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.5); /* Green glow on focus */
-    }
-
-    /* Active state when the button is clicked */
-    .tech-analysis-btn:active {
-        transform: translateY(2px); /* Button moves slightly down when clicked */
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Shadow lightens */
-    }     
-    /* Backtest Button */
-    .backtest-btn {
-        background: linear-gradient(145deg, #22c55e, #16a34a); /* Green gradient */
-        border: 2px solid transparent;
-        border-radius: 50px; /* Rounded corners */
-        color: #fff;
-        font-weight: bold;
-        padding: 6px 12px; /* Some padding to make it larger */
-        text-transform: uppercase; /* All text in uppercase */
-        font-size: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease-in-out; /* Smooth transition for hover effect */
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* Soft shadow effect */
-    }
-
-    /* Hover effect for the button */
-    .backtest-btn:hover {
-        background: linear-gradient(145deg, #16a34a, #22c55e); /* Reverse gradient for hover */
-        transform: translateY(-2px); /* Lift the button slightly */
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); /* Shadow deepens on hover */
-    }
-
-    /* Focus effect for accessibility */
-    .backtest-btn:focus {
-        outline: none;
-        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.5); /* Green glow on focus */
-    }
-
-    /* Active state when the button is clicked */
-    .backtest-btn:active {
-        transform: translateY(2px); /* Button moves slightly down when clicked */
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Shadow lightens */
-    }
-    /* LEFT AI HERO PANEL */
+    /* ===== LEFT AI PANEL ===== */
     .ai-hero-panel {
-      position: fixed;
-      left: 0;
-      top: 0;
       width: calc(100vw - 520px);
-      height: 100vh;
+      min-height: 100vh;
       background: radial-gradient(circle at top, #0a1225, #020617 60%);
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 1;
       padding: 40px;
+      position: fixed;
+      left: 0;
+      top: 0;
     }
 
     .ai-hero-content {
@@ -538,213 +114,288 @@
       100% { transform: translateY(0px); }
     }
 
-    /* Push your app to the right on desktop */
-    @media (min-width: 1024px) {
-      .app {
-        margin-left: auto;
-        margin-right: 40px;
-      }
+    /* ===== APP ===== */
+    .app {
+      width: 420px;
+      max-width: 100%;
+      height: 100vh;
+      background: linear-gradient(180deg, #020617 0%, #020617 100%);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 28px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.8);
+      margin-left: auto;
+      margin-right: 40px;
+      margin-top: 24px;
+      margin-bottom: 24px;
+      z-index: 2;
+      position: relative;
     }
 
-    /* Hide hero panel on mobile */
+    /* ===== MOBILE ===== */
     @media (max-width: 1023px) {
       .ai-hero-panel {
         display: none;
       }
+
+      .app {
+        width: 100%;
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
     }
 
+    header {
+      background: rgba(2,6,23,.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--stroke);
+      padding: 12px 16px 10px;
+      flex-shrink: 0;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      letter-spacing: .3px;
+    }
+
+    .header-icons {
+      display: flex;
+      gap: 14px;
+    }
+
+    .market-status {
+      font-size: 12px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    #chat-container { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+    .ScrollStyle {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      scrollbar-width: none;
+      scroll-behavior: smooth;
+    }
+
+    #messages { display:flex; flex-direction:column; gap:10px;}
+
+    .user-msg, .bot-msg { display:flex; flex-direction:column; }
+    .user-msg { align-items:flex-end; }
+    .bot-msg { align-items:flex-start; }
+
+    .msg-content {
+      max-width:100%;
+      padding:12px 16px;
+      border-radius:18px;
+      font-size:15px;
+      word-wrap:break-word;
+      background: var(--card);
+      color: var(--text);
+    }
+
+    .user-msg .msg-content {
+      background: var(--primary);
+      color: #022c22;
+    }
+
+    #chat-form {
+      width:100%;
+      padding:10px 16px;
+      display:flex;
+      gap:8px;
+      background: rgba(2,6,23,.85);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--stroke);
+      z-index:20;
+    }
+
+    #message-input {
+      flex:1;
+      padding:12px 16px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(31,41,55,.6);
+      color: var(--text);
+      font-size:15px;
+    }
+
+    #chat-form button {
+      width:48px;
+      height:48px;
+      border-radius:50%;
+      background: linear-gradient(180deg, #22c55e, #16a34a);
+      border:none;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+    }
   </style>
-  <script>
-      const phrases = [
-        "Analyzing 2,184 stocks in real time...",
-        "Scanning momentum shifts...",
-        "Tracking smart money flow...",
-        "Detecting breakout patterns...",
-        "Monitoring sentiment spikes..."
-      ];
-
-      let i = 0, j = 0, current = "", deleting = false;
-      const el = document.getElementById("ai-typing");
-
-      function typeLoop() {
-        if (!el) return;
-
-        if (!deleting && j <= phrases[i].length) {
-          current = phrases[i].slice(0, j++);
-        } else if (deleting && j >= 0) {
-          current = phrases[i].slice(0, j--);
-        }
-
-        el.textContent = current;
-
-        if (j === phrases[i].length + 10) deleting = true;
-        if (deleting && j === 0) {
-          deleting = false;
-          i = (i + 1) % phrases.length;
-        }
-
-        setTimeout(typeLoop, deleting ? 40 : 70);
-      }
-
-      typeLoop();
-  </script>
-
 </head>
+
 <body>
-<!-- LEFT AI BRAND PANEL (DESKTOP ONLY) -->
-<div class="ai-hero-panel">
-  <div class="ai-hero-content">
-    <h1>Trade Smarter with AI</h1>
-    <p class="ai-sub">
-      Real-time market intelligence.<br>
-      Emotion-free decisions.<br>
-      Built for serious traders.
-    </p>
 
-    <ul class="ai-features">
-      <li>📊 Live sentiment tracking</li>
-      <li>⚡ Smart entry & exit zones</li>
-      <li>🧠 AI confidence scoring</li>
-      <li>🛡 Risk-aware strategies</li>
-      <li>🔁 Backtesting engine</li>
-    </ul>
+<div class="layout-wrapper">
 
-    <div class="ai-live-line">
-      <span id="ai-typing"></span>
-      <span class="cursor">|</span>
+  <!-- LEFT AI PANEL -->
+  <div class="ai-hero-panel">
+    <div class="ai-hero-content">
+      <h1>Trade Smarter with AI</h1>
+      <p class="ai-sub">
+        Real-time market intelligence.<br>
+        Emotion-free decisions.<br>
+        Built for serious traders.
+      </p>
+
+      <ul class="ai-features">
+        <li>📊 Live sentiment tracking</li>
+        <li>⚡ Smart entry & exit zones</li>
+        <li>🧠 AI confidence scoring</li>
+        <li>🛡 Risk-aware strategies</li>
+        <li>🔁 Backtesting engine</li>
+      </ul>
+
+      <div class="ai-live-line">
+        <span id="ai-typing"></span>
+        <span class="cursor">|</span>
+      </div>
     </div>
   </div>
-</div>  
-<div class="app">
 
-  <!-- SIGNUP SCREEN -->
-  <section id="signup-screen" style="display:none;">
-    <h2 style="color:white; text-align:center;">Welcome to NoBroko Bot</h2>
-    <form id="signup-form" style="display:flex; flex-direction:column; gap:12px; padding:20px;">
-      <input type="text" id="name" placeholder="Name" required style="padding:10px; border-radius:8px; border:none;">
-      <input type="text" id="phone" placeholder="Phone (+91xxxxxxx)" required style="padding:10px; border-radius:8px; border:none;">
-      <input type="email" id="email" placeholder="Email" required style="padding:10px; border-radius:8px; border:none;">
-      <label style="color:white;"><input type="checkbox" id="subscribe" checked> Subscribe to alerts</label>
-      <button type="button" id="signin-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%;">Sign In</button>
-      <button type="button" id="signup-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%;">Sign Up</button>
-    </form>
-  </section>
+  <!-- APP -->
+  <div class="app">
 
-  <!-- CHAT SCREEN -->
-  <section id="chat-screen" style="display:block;">
-    <header>
-      <div class="header-top">
-        <button id="back-btn" style="background:none; border:none; cursor:pointer;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
-        </button>
-
-        <div class="header-center">
-          <span>📈</span>
-          <span>NoBroko Bot</span>
-        </div>
-
-        <div class="header-icons">
-          <button id="alerts-btn" style="background:none; border:none; cursor:pointer;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-              <path d="M13.73 21a2 2 0 01-3.46 0"></path>
-            </svg>
-          </button>
-          <button id="install-btn" style="display:none; background:none; border:none; cursor:pointer;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 5v14"></path>
-              <path d="M5 12l7 7 7-7  -7 7 7-7 2-2"></path>
-            </svg>
-          </button>
-          <button style="background:none; border:none; cursor:pointer;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="3" y1="12" x2="21" y2="12"></line>
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="market-status" id="market-status">
-        <svg width="10" height="10">
-          <circle cx="5" cy="5" r="5" fill="#22c55e" id="market-circle"/>
-        </svg>
-        <span id="market-text">Market Open</span>
-      </div>
-    </header>
-
-    <section id="sentiment-cards">
-      <!-- Stock Card Example -->
-      <div class="glass-card" style="margin:12px 12px 0 12px;">
-      <div class="stock-row">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <div class="loader" id="symbol-loader" style="display:none;"></div>
-          <div class="stock-symbol">STOCK.NS</div>
-        </div>
-        <div class="stock-price">₹xxxx.00 <span style="color:#22c55e;">(+x.xx%)</span></div>
-      </div>
-
-
-        <div class="stats-grid">
-          <div class="stat">Low<br><strong>xxxx.xx</strong></div>
-          <div class="stat">High<br><strong>xxxx.xx</strong></div>
-          <div class="stat">Volume<br><strong>xxxx.xx</strong></div>
-          <div class="stat">Avg Vol<br><strong>xxxxK</strong></div>
-        </div>
-
-        <div class="row-line"><span class="label">Twitter Sentiment</span><span class="value green">xxxxx</span></div>
-        <div class="row-line"><span class="label">Confidence Breakdown</span><span class="value green">xxxxx</span></div>
-
-        <div class="row-line"><span class="label">Suggested Entry</span><span class="value">₹xxx–₹xxx</span></div>
-        <div class="row-line"><span class="label">Alert</span><span class="value green">xxxxx xxxxx</span></div>
-
-        <div class="ai-box" style="margin-top:12px;min-height: 300px;">
-          {
-            "xxxx": "xxxx",
-            "xxxx": "xxxx",
-            "xxxx": xxxx,
-            "xxxx": "xxxx xxxx"
-          }
-        </div>
-        <div class="chart-box" style="margin-top:12px;"></div>
-        <div class="action-row">
-          <button class="btn-outline">Add to Watchlist</button>
-          <button class="btn-primary">Set Alert</button>          
-        </div>
-      </div>
-    </section>
-
-    <section id="chat-container">
-      <div id="messages" class="ScrollStyle"></div>
-
-      <form id="chat-form">
-        <input id="message-input" placeholder="Ask about a stock…" autocomplete="off">
-        <button type="submit">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#022c22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
-        </button>
+    <!-- SIGNUP SCREEN -->
+    <section id="signup-screen" style="display:none;">
+      <h2 style="color:white; text-align:center;">Welcome to NoBroko Bot</h2>
+      <form id="signup-form" style="display:flex; flex-direction:column; gap:12px; padding:20px;">
+        <input type="text" id="name" placeholder="Name" required style="padding:10px; border-radius:8px; border:none;">
+        <input type="text" id="phone" placeholder="Phone (+91xxxxxxx)" required style="padding:10px; border-radius:8px; border:none;">
+        <input type="email" id="email" placeholder="Email" required style="padding:10px; border-radius:8px; border:none;">
+        <label style="color:white;"><input type="checkbox" id="subscribe" checked> Subscribe to alerts</label>
+        <button type="button" id="signin-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%;">Sign In</button>
+        <button type="button" id="signup-btn" style="padding:12px; border:none; border-radius:8px; background:#22c55e; color:#000; width:100%;">Sign Up</button>
       </form>
     </section>
-  </section>
+
+    <!-- CHAT SCREEN -->
+    <section id="chat-screen" style="display:block;">
+      <header>
+        <div class="header-top">
+          <button id="back-btn" style="background:none; border:none; cursor:pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+
+          <div class="header-center">
+            <span>📈</span>
+            <span>NoBroko Bot</span>
+          </div>
+
+          <div class="header-icons">
+            <button id="alerts-btn" style="background:none; border:none; cursor:pointer;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 01-3.46 0"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="market-status" id="market-status">
+          <svg width="10" height="10">
+            <circle cx="5" cy="5" r="5" fill="#22c55e" id="market-circle"/>
+          </svg>
+          <span id="market-text">Market Open</span>
+        </div>
+      </header>
+
+      <section id="sentiment-cards"></section>
+
+      <section id="chat-container">
+        <div id="messages" class="ScrollStyle"></div>
+
+        <form id="chat-form">
+          <input id="message-input" placeholder="Ask about a stock…" autocomplete="off">
+          <button type="submit">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#022c22" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </form>
+      </section>
+    </section>
+
+  </div>
 </div>
 
 <script src="app.js?v=85"></script>
+
 <script>
+  const phrases = [
+    "Analyzing 2,184 stocks in real time...",
+    "Scanning momentum shifts...",
+    "Tracking smart money flow...",
+    "Detecting breakout patterns...",
+    "Monitoring sentiment spikes..."
+  ];
+
+  let i = 0, j = 0, current = "", deleting = false;
+  const el = document.getElementById("ai-typing");
+
+  function typeLoop() {
+    if (!el) return;
+
+    if (!deleting && j <= phrases[i].length) {
+      current = phrases[i].slice(0, j++);
+    } else if (deleting && j >= 0) {
+      current = phrases[i].slice(0, j--);
+    }
+
+    el.textContent = current;
+
+    if (j === phrases[i].length + 10) deleting = true;
+    if (deleting && j === 0) {
+      deleting = false;
+      i = (i + 1) % phrases.length;
+    }
+
+    setTimeout(typeLoop, deleting ? 40 : 70);
+  }
+
+  typeLoop();
+
   function adjustChatHeight() {
     const headerHeight = document.querySelector('header').offsetHeight;
     const windowHeight = window.innerHeight;
-    const cardsEl = document.getElementById('sentiment-cards');    
+    const cardsEl = document.getElementById('sentiment-cards');
     const cardsHeight = cardsEl ? cardsEl.offsetHeight : 0;
-    const maxheight = `${windowHeight - headerHeight - cardsHeight - document.getElementById('chat-form').offsetHeight - 200}px`;
+    const maxheight = `${windowHeight - headerHeight - cardsHeight - document.getElementById('chat-form').offsetHeight - 40}px`;
     document.querySelector('.ScrollStyle').style.maxHeight = maxheight;
   }
+
   window.addEventListener('load', adjustChatHeight);
-  window.addEventListener('resize', adjustChatHeight);   
+  window.addEventListener('resize', adjustChatHeight);
 </script>
+
 </body>
 </html>
