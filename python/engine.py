@@ -10,7 +10,7 @@ from sentiment import sentiment_for_symbol
 from chart import generate_chart
 import pandas as pd
 import yfinance as yf
-from indicators import get_indicators
+from indicators import get_indicators_for_symbol
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger("matplotlib").setLevel(logging.ERROR)
 logging.getLogger("PIL").setLevel(logging.ERROR)
@@ -61,31 +61,6 @@ Return a JSON object ONLY with the following keys (no extra text):
 
 Do not include any explanations or extra text. Output must be valid JSON.
 """
-
-# ------------------- Groq AI Call Wrappers -------------------
-def call_groq_ai_symbol(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
-    try:
-        response = groq_client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": "You are a professional market analyst."},
-                {"role": "user", "content": prompt}
-            ],
-            model=model,
-            max_tokens=max_tokens,
-            temperature=0.3
-        )
-
-        raw_text = response.choices[0].message.content
-        symbol = raw_text.strip()
-
-        if re.match(r'^[A-Z0-9\-]{1,15}(\.[A-Z]{2,10})?$', symbol):
-            return {"symbol": symbol}
-        else:
-            return {"error": "Invalid symbol format", "raw_text": raw_text}
-
-    except Exception as e:
-        logging.error(f"Groq AI call failed: {str(e)}")
-        return {"error": str(e)}
 
 def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
     try:
