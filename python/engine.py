@@ -378,7 +378,7 @@ def run_engine(symbol, entry_price=None):
         chart_base64 = generate_chart(resolved_symbol)
 
         try:
-            prompt = build_grbuild_groq_combined_promptoq_prompt(
+            prompt = build_groq_combined_prompt(
                 resolved_symbol, price_data, result.get("sentiment_score", 0, ), indicators
             )
             ai_analysis = call_groq_ai(prompt)
