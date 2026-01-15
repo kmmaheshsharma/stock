@@ -684,7 +684,7 @@ function updateSentimentCard(data) {
     }
     if (data.confidence_breakdown) {
       const cb = data.confidence_breakdown;
-      const brekbtn = aiBox.querySelector(".confidence-toggle");
+      const brekbtn = document.querySelector(".confidence-toggle");
       brekbtn.addEventListener("click", () => {     
           const explanation = `
            <h3>Confidence Breakdown?</h3>
