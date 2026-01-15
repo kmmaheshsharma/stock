@@ -16,7 +16,7 @@ async function runPythonBackTestEngine(message) {
 
   // Split the message into individual arguments (symbol, strategy, start_date, end_date)
   const [symbol, strategy, startDate, endDate] = message.split(" ");
-
+  console.log(`[BACKTEST] Symbol: ${symbol}, Strategy: ${strategy}, Start Date: ${startDate}, End Date: ${endDate}`);
   // Spawn Python process
   return new Promise((resolve, reject) => {
     const testPath = path.join(__dirname, "../python/backtest.py");
