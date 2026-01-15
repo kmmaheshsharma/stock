@@ -10,7 +10,7 @@ from sentiment import sentiment_for_symbol
 from chart import generate_chart
 import pandas as pd
 import yfinance as yf
-from indicators import calculate_indicators_from_price
+from indicators import calculate_indicators_from_price, sanitize_indicators
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger("matplotlib").setLevel(logging.ERROR)
 logging.getLogger("PIL").setLevel(logging.ERROR)
@@ -62,7 +62,7 @@ Return a JSON object ONLY with the following keys (no extra text):
 Do not include any explanations or extra text. Output must be valid JSON.
 """
 
-def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=400):
+def call_groq_ai(prompt: str, model="openai/gpt-oss-20b", max_tokens=612):
     try:
         response = groq_client.chat.completions.create(
             messages=[
@@ -295,7 +295,7 @@ def run_engine(symbol, entry_price=None):
                     "Close": price_data.get("history", [price_data.get("price")])
                 })
                 indicators = calculate_indicators_from_price(temp_df)
-
+                indicators = sanitize_indicators(indicators)
                 # Ensure numeric defaults if any indicator is None
                 if not indicators:
                     indicators = {

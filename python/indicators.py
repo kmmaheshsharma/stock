@@ -1,6 +1,27 @@
 import pandas as pd
 import numpy as np
 
+def sanitize_indicators(indicators):
+    # Convert None or np.nan to float 0.0 (or neutral defaults)
+    if indicators is None:
+        return {
+            "ema20": 0.0,
+            "ema50": 0.0,
+            "rsi": 50.0,
+            "macd": {"value": 0.0, "signal": 0.0, "histogram": 0.0}
+        }
+    sanitized = {}
+    sanitized["ema20"] = float(indicators.get("ema20") or 0.0)
+    sanitized["ema50"] = float(indicators.get("ema50") or 0.0)
+    sanitized["rsi"] = float(indicators.get("rsi") or 50.0)
+    macd = indicators.get("macd", {})
+    sanitized["macd"] = {
+        "value": float(macd.get("value") or 0.0),
+        "signal": float(macd.get("signal") or 0.0),
+        "histogram": float(macd.get("histogram") or 0.0)
+    }
+    return sanitized
+
 def calculate_indicators_from_price(data):
     """
     Calculate EMA20, EMA50, RSI, and MACD from a DataFrame with 'Close'.
