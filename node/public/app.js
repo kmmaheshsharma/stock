@@ -684,6 +684,10 @@ if (rows[1]) {
             <div class="analysis-item">
               <span>⚡ Backtest Strategy</span>
               <input type="text" id="strategy-input" placeholder="Enter strategy e.g RSI < 30">
+              <label for="start-date">Start Date:</label>
+              <input type="date" id="start-date" name="start-date" value="2021-01-01">
+              <label for="end-date">End Date:</label>
+              <input type="date" id="end-date" name="end-date" value="2021-12-31">
               <button class="backtest-btn">Backtest</button>
             </div>                                 
           </div>
@@ -693,11 +697,8 @@ if (rows[1]) {
       backtestBtn.addEventListener("click", () => {    
         // Collect the necessary data for backtesting       
         const strategy = document.getElementById("strategy-input").value || "RSI < 30";  // Use user input if available
-
-        // Show a loading indicator (optional)
-        document.getElementById("market-status").innerHTML = "Backtesting... Please wait.";
-
-        // Send a request to the backend (engine.py) to perform backtesting
+        const startDate = document.getElementById("start-date").value;
+        const endDate = document.getElementById("end-date").value;
         fetch("/api/backtest", {
           method: "POST",
           headers: {
@@ -705,7 +706,9 @@ if (rows[1]) {
           },
           body: JSON.stringify({
             symbol: symbol,
-            strategy: strategy
+            strategy: strategy,
+            start_date: startDate,
+            end_date: endDate            
           })
         })
         .then(response => response.json())
