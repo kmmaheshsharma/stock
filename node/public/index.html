@@ -24,8 +24,7 @@
 
     * { box-sizing: border-box; margin:0; }
 
-    body {
-      height: 100vh;
+    body {      
       background: black;
       font-family: -apple-system, BlinkMacSystemFont, Inter, system-ui, sans-serif;
       color: var(--text);
@@ -86,6 +85,7 @@
       box-shadow: 0 15px 35px rgba(0,0,0,0.6);
       margin: 12px;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
+      overflow: scroll;
     }
     .glass-card:hover {
       transform: translateY(-4px);
