@@ -10,7 +10,7 @@ from sentiment import sentiment_for_symbol
 from chart import generate_chart
 import pandas as pd
 import yfinance as yf
-from indicators import get_indicators_for_symbol
+from indicators import calculate_indicators
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger("matplotlib").setLevel(logging.ERROR)
 logging.getLogger("PIL").setLevel(logging.ERROR)
@@ -285,11 +285,26 @@ def run_engine(symbol, entry_price=None):
 
         price_data = None
         resolved_symbol = None
+        indicators = None
         for sym in symbols:
-            price_data = get_price(sym)
-            resolved_symbol = sym
-            if price_data:
-                break
+            price_data = get_price(sym)  # your existing function, returns dict
+            if price_data:  # only calculate indicators if price_data exists
+                resolved_symbol = sym
+                
+                # Convert price_data to a temporary DataFrame with 'Close' for indicators
+                temp_df = pd.DataFrame({"Close": [safe_float(price_data.get("price"))]})
+                
+                indicators = calculate_indicators(temp_df)
+                
+                # Ensure numeric defaults if any indicator is None
+                if not indicators:
+                    indicators = {
+                        "ema20": 0.0,
+                        "ema50": 0.0,
+                        "rsi": 50.0,
+                        "macd": {"value": 0.0, "signal": 0.0, "histogram": 0.0}
+                    }
+                break  # stop after first valid price_data
 
         if not price_data:
             logging.warning("No price data found.")
@@ -313,14 +328,6 @@ def run_engine(symbol, entry_price=None):
         technical_analysis = {}
         technical_score = 0
         
-        indicators = get_indicators_for_symbol(resolved_symbol)
-        if not indicators:
-            indicators = {
-                "ema20": None,
-                "ema50": None,
-                "rsi": None,
-                "macd": {"value": None, "signal": None, "histogram": None}
-            }
         # ----------------- Sentiment -----------------
         try:
             result = sentiment_for_symbol(resolved_symbol)

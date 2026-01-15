@@ -69,25 +69,6 @@ def calculate_indicators(data):
         }
     }
 
-def get_indicators_for_symbol(normalized_symbols):
-    """
-    Main helper to fetch price data and compute indicators.
-    Returns a dictionary with indicators or None if no valid data is found.
-    """
-    data = fetch_price_data(normalized_symbols)
-    if data is None:
-        print(f"WARNING: No valid price data for symbols: {normalized_symbols}")
-        return {
-            "ema20": None,
-            "ema50": None,
-            "rsi": None,
-            "macd": {"value": None, "signal": None, "histogram": None}
-        }
-
-    indicators = calculate_indicators(data)
-    return indicators
-
-
 # ==============================
 # Example usage
 # ==============================
