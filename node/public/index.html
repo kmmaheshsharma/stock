@@ -461,98 +461,7 @@
         transform: translateY(2px); /* Button moves slightly down when clicked */
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Shadow lightens */
     }
-    /* LEFT AI HERO PANEL */
-    .ai-hero-panel {
-      position: fixed;
-      left: 0;
-      top: 0;
-      /* width: calc(100vw - 520px); */
-      height: 100vh;
-      background: radial-gradient(circle at top, #0a1225, #020617 60%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1;
-      padding: 40px;
-    }
-
-    .ai-hero-content {
-      max-width: 520px;
-      background: linear-gradient(180deg, rgba(31,41,55,.6), rgba(2,6,23,.8));
-      border-radius: 28px;
-      padding: 48px;
-      border: 1px solid rgba(255,255,255,0.08);
-      backdrop-filter: blur(40px);
-      box-shadow: 0 30px 80px rgba(0,0,0,.8);
-      animation: floatPanel 6s ease-in-out infinite;
-    }
-
-    .ai-hero-content h1 {
-      font-size: 38px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      background: linear-gradient(90deg, #22c55e, #a7f3d0);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .ai-sub {
-      margin-top: 14px;
-      font-size: 16px;
-      color: #9ca3af;
-      line-height: 1.6;
-    }
-
-    .ai-features {
-      list-style: none;
-      margin-top: 28px;
-      padding: 0;
-    }
-
-    .ai-features li {
-      margin-bottom: 12px;
-      font-size: 15px;
-      color: #e5e7eb;
-      opacity: 0.9;
-    }
-
-    .ai-live-line {
-      margin-top: 30px;
-      font-size: 14px;
-      color: #22c55e;
-      font-family: monospace;
-    }
-
-    .cursor {
-      animation: blink 1s infinite;
-    }
-
-    @keyframes blink {
-      0%,50%,100% { opacity: 1; }
-      25%,75% { opacity: 0; }
-    }
-
-    @keyframes floatPanel {
-      0% { transform: translateY(0px); }
-      50% { transform: translateY(-8px); }
-      100% { transform: translateY(0px); }
-    }
-
-    /* Push your app to the right on desktop */
-    @media (min-width: 1024px) {
-      .app {
-        margin-left: auto;
-        margin-right: 40px;
-      }
-    }
-
-    /* Hide hero panel on mobile */
-    @media (max-width: 1023px) {
-      .ai-hero-panel {
-        display: none;
-      }
-    }
-
+   
   </style>
   <script>
       const phrases = [
@@ -591,30 +500,8 @@
 
 </head>
 <body>
-<!-- LEFT AI BRAND PANEL (DESKTOP ONLY) -->
-<div class="ai-hero-panel">
-  <div class="ai-hero-content">
-    <h1>Trade Smarter with AI</h1>
-    <p class="ai-sub">
-      Real-time market intelligence.<br>
-      Emotion-free decisions.<br>
-      Built for serious traders.
-    </p>
-
-    <ul class="ai-features">
-      <li>📊 Live sentiment tracking</li>
-      <li>⚡ Smart entry & exit zones</li>
-      <li>🧠 AI confidence scoring</li>
-      <li>🛡 Risk-aware strategies</li>
-      <li>🔁 Backtesting engine</li>
-    </ul>
-
-    <div class="ai-live-line">
-      <span id="ai-typing"></span>
-      <span class="cursor">|</span>
-    </div>
-  </div>
-  <div class="app">
+  
+<div class="app">
 
   <!-- SIGNUP SCREEN -->
   <section id="signup-screen" style="display:none;">
@@ -731,8 +618,6 @@
     </section>
   </section>
 </div>
-</div>  
-
 
 <script src="app.js?v=85"></script>
 <script>
