@@ -463,41 +463,6 @@
     }
    
   </style>
-  <script>
-      const phrases = [
-        "Analyzing 2,184 stocks in real time...",
-        "Scanning momentum shifts...",
-        "Tracking smart money flow...",
-        "Detecting breakout patterns...",
-        "Monitoring sentiment spikes..."
-      ];
-
-      let i = 0, j = 0, current = "", deleting = false;
-      const el = document.getElementById("ai-typing");
-
-      function typeLoop() {
-        if (!el) return;
-
-        if (!deleting && j <= phrases[i].length) {
-          current = phrases[i].slice(0, j++);
-        } else if (deleting && j >= 0) {
-          current = phrases[i].slice(0, j--);
-        }
-
-        el.textContent = current;
-
-        if (j === phrases[i].length + 10) deleting = true;
-        if (deleting && j === 0) {
-          deleting = false;
-          i = (i + 1) % phrases.length;
-        }
-
-        setTimeout(typeLoop, deleting ? 40 : 70);
-      }
-
-      typeLoop();
-  </script>
-
 </head>
 <body>
   
