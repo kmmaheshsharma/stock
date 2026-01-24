@@ -113,12 +113,17 @@ async function processMessage(message) {
   console.log(`[SYMBOL] Valid symbol received: ${result.symbol}`);
 
   // --- Build recommendation string ---
-  let recommendation = result.recommendation || "Wait / Monitor";
-  if (result.suggested_entry) {
-    const lower = result.suggested_entry.lower ?? "N/A";
-    const upper = result.suggested_entry.upper ?? "N/A";
-    recommendation += ` | Suggested entry: ₹${lower} - ₹${upper}`;
-  }
+const symbol = result.symbol || "";
+const isUS = !symbol.endsWith(".NS") && !symbol.endsWith(".BO");
+const currency = isUS ? "$" : "₹";
+
+let recommendation = result.recommendation || "Wait / Monitor";
+
+if (result.suggested_entry) {
+  const lower = result.suggested_entry.lower ?? "N/A";
+  const upper = result.suggested_entry.upper ?? "N/A";
+  recommendation += ` | Suggested entry: ${currency}${lower} - ${currency}${upper}`;
+}
 
   // --- Build alerts HTML ---
 let alertsHTML = "";
