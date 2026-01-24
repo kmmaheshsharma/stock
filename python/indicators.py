@@ -40,8 +40,8 @@ def calculate_indicators_from_price(data):
 
     close = data['Close']
 
-    # Ensure series is numeric
-    close = pd.to_numeric(close, errors='coerce').fillna(method='ffill').fillna(0.0)
+    # Ensure series is numeric (pandas 2.x compatible)
+    close = pd.to_numeric(close, errors='coerce').ffill().fillna(0.0)
 
     # EMA
     ema20 = close.ewm(span=20, adjust=False).mean()
